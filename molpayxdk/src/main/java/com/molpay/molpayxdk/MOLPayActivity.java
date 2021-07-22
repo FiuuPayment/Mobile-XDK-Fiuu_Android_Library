@@ -184,11 +184,6 @@ public class MOLPayActivity extends AppCompatActivity {
         mpMainUI.setWebViewClient(new MPMainUIWebClient());
         mpMainUI.loadUrl("file:///android_asset/molpay-mobile-xdk-www/index.html");
 
-//        mpMainUI.loadUrl("https://www.cimbclicks.com.my/clicks/#/fpx?refId=3d5ad74c5202cecc2bcae04f7a0c316088f5a78a601d9a27913ef09edeffdb9a47f0e506ee208ff88494340a4a945dddeee7088c903fb1dc59e0b121a7330004631559cec169370cd9cf09547dcff090ac5c22fb5920e8063ec1f86d7ec8f1328db26b38dbd9e7c0ab5fda5388bab66730ede95ee309c17a27f7de5f1297b43f");
-//        mpMainUI.loadUrl("https://www.molpay.com/seamless-demo-v3.16/index.html");
-//        mpMainUI.loadUrl("https://www.onlinepayment.com.my/MOLPay/pay/molpay/cimb.php?amount=1.10&orderid=DEMO9521&bill_desc=testing+by+MOLPay&bill_name=MOLPay+Demo&bill_email=demo@molpay.com&bill_mobile=55218438&currency=MYR");
-//        mpMainUI.loadUrl("https://www.cimbclicks.com.my/clicks/#/fpx?refId=5003a8b3a246552bd53c6d832720162019ec8407a844f122ca5b5f0be9e8747f9c6b039adeee9d11d574e035fa2a440ce158240992fa3760fc568aff6ad30abbcbeac1fe987326f4975ae668197b6f0a34415a3f17356327c043a120cf2293997ad33fcdc85a402ebe4839840c622001ccb83fac1c1c9daf4d47f792264b778c");
-
         // Configure MOLPay ui
         mpMOLPayUI.getSettings().setAllowUniversalAccessFromFileURLs(true);
         mpMOLPayUI.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
@@ -445,7 +440,6 @@ public class MOLPayActivity extends AppCompatActivity {
 
                     byte[] decodedBytes = Base64.decode(base64Img, 0);
                     imgBitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
-//                    Log.d(MOLPAY, "Bitmap Img = " + imgBitmap);
 
                     isStoragePermissionGranted();
 
@@ -472,12 +466,6 @@ public class MOLPayActivity extends AppCompatActivity {
                 mpMainUI.loadUrl("javascript:updateSdkData(" + json.toString() + ")");
 
             }
-
-//            // CB-10395 InAppBrowser's WebView not storing cookies reliable to local device storage
-//            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-//                CookieManager.getInstance().flush();
-//            }
-
         }
 
     }
@@ -489,13 +477,6 @@ public class MOLPayActivity extends AppCompatActivity {
 
             FileOutputStream fOut = null;
             File file = new File(fullPath, filename);
-//            if (file.exists()){
-//            	file.delete(); //DELETE existing file
-//  	        fileName = "myfile.jpg";
-//            	file = new File(fullPath, filename);
-//
-//        	    }
-//            File file = new File(Environment.getExternalStorageDirectory(), "receipt.png");
             file.createNewFile();
             fOut = new FileOutputStream(file);
 
