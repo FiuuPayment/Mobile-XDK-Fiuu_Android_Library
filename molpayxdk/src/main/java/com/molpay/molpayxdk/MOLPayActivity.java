@@ -2,6 +2,7 @@ package com.molpay.molpayxdk;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -12,9 +13,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Message;
-import android.support.annotation.RequiresApi;
-import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.ActivityCompat;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
@@ -254,8 +255,13 @@ public class MOLPayActivity extends AppCompatActivity {
             Log.d(MOLPAY, "MPMOLPayUIWebClient shouldOverrideUrlLoading url = " + url);
             if (url != null) {
                 if (url.contains("scbeasy/easy_app_link.html")) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    startActivity(intent);
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        startActivity(intent);
+                    } catch (ActivityNotFoundException e) {
+                        // Define what your app should do if no activity can handle the intent.
+                        e.printStackTrace();
+                    }
                     view.evaluateJavascript("document.getElementById(\"ref_no\").value", new ValueCallback<String>() {
                         @Override
                         public void onReceiveValue(String ref_no) {
@@ -263,6 +269,15 @@ public class MOLPayActivity extends AppCompatActivity {
                             view.loadUrl("https://pay.merchant.razer.com/RMS/intermediate_app/loading.php?tranID=" + ref_no.replaceAll("\"", ""));
                         }
                     });
+                    return true;
+                } else if (url.contains("atome-my.onelink.me")) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        startActivity(intent);
+                    } catch (ActivityNotFoundException e) {
+                        // Define what your app should do if no activity can handle the intent.
+                        e.printStackTrace();
+                    }
                     return true;
                 }
             }

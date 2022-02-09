@@ -1,51 +1,15 @@
-apply plugin: 'maven'
-
-uploadArchives {
-    repositories.mavenDeployer {
-        pom.groupId = 'com.molpay'
-        pom.artifactId = 'molpay-mobile-xdk-android'
-        pom.version = '3.30.0'
-        // Add other pom properties here if you want (developer details / licenses)
-        repository(url: "file:///someLocation/")
-    }
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
 }
-
-apply plugin: 'com.android.library'
-
-ext {
-    PUBLISH_GROUP_ID = 'com.molpay'
-    PUBLISH_ARTIFACT_ID =  'molpay-mobile-xdk-android'
-    PUBLISH_VERSION = '3.30.0'
-}
-
-//android {
-//    compileSdkVersion 22
-//    buildToolsVersion '22.0.1'
-//    defaultConfig {
-//        minSdkVersion 16
-//        targetSdkVersion 22
-//        versionCode 1
-//        versionName "1.2.0"
-//    }
-//    buildTypes {
-//        release {
-//            minifyEnabled false
-//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-//        }
-//    }
-////    useLibrary 'org.apache.http.legacy'
-//    productFlavors {
-//    }
-//}
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion '27.0.3'
+    compileSdkVersion 31
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 27
+        targetSdkVersion 31
         versionCode 1
-        versionName '3.30.0'
+        versionName "1.0"
     }
     buildTypes {
         release {
@@ -53,44 +17,30 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    useLibrary 'org.apache.http.legacy'
-    productFlavors {
-    }
-    lintOptions {
-        abortOnError false
+    compileOptions {
+        sourceCompatibility(JavaVersion.VERSION_1_8)
+        targetCompatibility(JavaVersion.VERSION_1_8)
     }
 }
-
-//dependencies {
-//    compile fileTree(include: ['*.jar'], dir: 'libs')
-//    testCompile 'junit:junit:4.12'
-//    compile 'com.android.support:appcompat-v7:22.2.1'
-//    compile 'com.android.volley:volley:1.0.0'
-//    compile 'com.android.support:support-v4:22.2.1'
-//}
-//
-//apply from: 'https://raw.githubusercontent.com/ArthurHub/release-android-library/master/android-release-aar.gradle'
-//
-//artifacts {
-//    archives androidSourcesJar
-//    archives androidJavadocsJar
-//}
-//dependencies {
-//    compile 'com.android.support:design:22.2.1'
-//}
 
 dependencies {
     testImplementation 'junit:junit:4.12'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'com.android.volley:volley:1.2.0'
-    implementation 'com.android.support:support-v4:27.1.1'
-    implementation 'com.android.support:appcompat-v7:27.1.1'
-    implementation 'com.android.support:design:27.1.1'
+    implementation 'com.android.volley:volley:1.2.1'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'com.google.android.material:material:1.5.0'
 }
 
-apply from: 'https://raw.githubusercontent.com/ArthurHub/release-android-library/master/android-release-aar.gradle'
-
-artifacts {
-    archives androidSourcesJar
-    archives androidJavadocsJar
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+                groupId ='com.rms.mobile'
+                artifactId = 'mobile_xdk'
+                version = '3.33.0'
+            }
+        }
+    }
 }

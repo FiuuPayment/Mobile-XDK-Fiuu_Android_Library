@@ -11,5 +11,5 @@
         android:id="@+id/newBtn"
         android:orderInCategory="200"
         android:title="@string/restart"
-        app:showAsAction="always" />
+        app:showAsAction="ifRoom" />
 </menu>
