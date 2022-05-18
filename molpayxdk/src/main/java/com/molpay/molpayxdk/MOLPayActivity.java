@@ -95,7 +95,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mppinstructioncapture = "mppinstructioncapture://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "1";
+    private final static String wrapperVersion = "2";
 
     private String base64Img;
     private String filename;
@@ -143,8 +143,6 @@ public class MOLPayActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_molpay);
-
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
 
         paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(MOLPayPaymentDetails);
 
@@ -270,7 +268,10 @@ public class MOLPayActivity extends AppCompatActivity {
                         }
                     });
                     return true;
-                } else if (url.contains("atome-my.onelink.me")) {
+                } else if (url.contains("atome-my.onelink.me") ||
+                        url.contains("boostappdeeplink://") ||
+                        url.contains("market://") ||
+                        url.contains("intent://")) {
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                         startActivity(intent);
