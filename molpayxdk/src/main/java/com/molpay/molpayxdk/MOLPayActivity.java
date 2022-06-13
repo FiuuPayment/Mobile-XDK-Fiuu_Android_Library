@@ -193,6 +193,32 @@ public class MOLPayActivity extends AppCompatActivity {
 
         CookieManager.getInstance().setAcceptCookie(true);
 
+        mpMOLPayUI.setLongClickable(true);
+        mpMOLPayUI.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                Log.d(MOLPAY, "Long press fired!");
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    mpMOLPayUI.evaluateJavascript("document.getElementById(\"qrcode_img\").src", new ValueCallback<String>() {
+                        @Override
+                        public void onReceiveValue(String qrdata) {
+                            Log.d(MOLPAY, "QR data = " + qrdata);
+                            if(qrdata != null && !qrdata.equals("null")) {
+                                String imageQrCode = qrdata.replaceAll("data:image/png;base64,", "");
+                                Log.d(MOLPAY, "imageQrCode = " + imageQrCode);
+                                byte[] decodedBytes = Base64.decode(imageQrCode, 0);
+                                imgBitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                                filename = paymentDetails.get("mp_order_ID").toString() + ".png";
+
+                                isStoragePermissionGranted();
+                            }
+                        }
+                    });
+                }
+                return false;
+            }
+        });
+
     }
 
     private void nativeWebRequestUrlUpdates(String url) {
