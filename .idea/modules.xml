@@ -4,7 +4,13 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/rms-mobile-xdk-android-library.iml" filepath="$PROJECT_DIR$/.idea/modules/rms-mobile-xdk-android-library.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/rms-mobile-xdk-android-library.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/rms-mobile-xdk-android-library.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/rms-mobile-xdk-android-library.app.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/rms-mobile-xdk-android-library.app.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/rms-mobile-xdk-android-library.app.main.iml" filepath="$PROJECT_DIR$/.idea/modules/app/rms-mobile-xdk-android-library.app.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/rms-mobile-xdk-android-library.app.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/rms-mobile-xdk-android-library.app.unitTest.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/molpayxdk/rms-mobile-xdk-android-library.molpayxdk.iml" filepath="$PROJECT_DIR$/.idea/modules/molpayxdk/rms-mobile-xdk-android-library.molpayxdk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/molpayxdk/rms-mobile-xdk-android-library.molpayxdk.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/molpayxdk/rms-mobile-xdk-android-library.molpayxdk.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/molpayxdk/rms-mobile-xdk-android-library.molpayxdk.main.iml" filepath="$PROJECT_DIR$/.idea/modules/molpayxdk/rms-mobile-xdk-android-library.molpayxdk.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/molpayxdk/rms-mobile-xdk-android-library.molpayxdk.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/molpayxdk/rms-mobile-xdk-android-library.molpayxdk.unitTest.iml" />
     </modules>
   </component>
 </project>
