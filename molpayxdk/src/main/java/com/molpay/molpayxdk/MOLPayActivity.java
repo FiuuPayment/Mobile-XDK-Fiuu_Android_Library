@@ -190,6 +190,8 @@ public class MOLPayActivity extends AppCompatActivity {
         mpMOLPayUI.getSettings().setDomStorageEnabled(true);
         mpMOLPayUI.setWebViewClient(new MPMOLPayUIWebClient());
         mpMOLPayUI.setWebChromeClient(new MPMOLPayUIWebChromeClient());
+        mpMOLPayUI.getSettings().setLoadWithOverviewMode(true);
+        mpMOLPayUI.getSettings().setUseWideViewPort(true);
 
         CookieManager.getInstance().setAcceptCookie(true);
 
