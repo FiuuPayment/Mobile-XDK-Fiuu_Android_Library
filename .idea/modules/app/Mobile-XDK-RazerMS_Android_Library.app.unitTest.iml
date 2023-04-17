@@ -27,8 +27,8 @@
     <content url="file://$MODULE_DIR$/../../../app/src/testDebug" />
     <orderEntry type="jdk" jdkName="Android API 32 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="rms-mobile-xdk-android-library.molpayxdk.main" scope="TEST" />
-    <orderEntry type="module" module-name="rms-mobile-xdk-android-library.app.main" scope="TEST" />
+    <orderEntry type="module" module-name="Mobile-XDK-RazerMS_Android_Library.molpayxdk.main" scope="TEST" />
+    <orderEntry type="module" module-name="Mobile-XDK-RazerMS_Android_Library.app.main" scope="TEST" />
     <orderEntry type="library" scope="TEST" name="Gradle: junit:junit:4.12" level="project" />
     <orderEntry type="library" scope="TEST" name="Gradle: org.hamcrest:hamcrest-core:1.3" level="project" />
     <orderEntry type="library" scope="TEST" name="Gradle: androidx.collection:collection:1.1.0" level="project" />
@@ -71,5 +71,5 @@
     <orderEntry type="library" scope="TEST" name="Gradle: androidx.print:print:1.0.0@aar" level="project" />
     <orderEntry type="library" scope="TEST" name="Gradle: androidx.annotation:annotation-experimental:1.1.0@aar" level="project" />
   </component>
-  <component name="TestModuleProperties" production-module="rms-mobile-xdk-android-library.app.main" />
+  <component name="TestModuleProperties" production-module="Mobile-XDK-RazerMS_Android_Library.app.main" />
 </module>
