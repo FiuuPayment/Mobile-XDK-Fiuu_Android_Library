@@ -26,6 +26,7 @@ import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
@@ -86,6 +87,8 @@ public class MOLPayActivity extends AppCompatActivity {
     public final static String mp_non_3DS = "mp_non_3DS";
     public final static String mp_card_list_disabled = "mp_card_list_disabled";
     public final static String mp_disabled_channels = "mp_disabled_channels";
+    public final static String mp_dpa_id = "mp_dpa_id";
+    public final static String mp_company = "mp_company";
 
     public final static String MOLPAY = "MOLPAY";
     private final static String mpopenmolpaywindow = "mpopenmolpaywindow://";
@@ -95,7 +98,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mppinstructioncapture = "mppinstructioncapture://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "6";
+    private final static String wrapperVersion = "0";
 
     private String base64Img;
     private String filename;
@@ -179,11 +182,19 @@ public class MOLPayActivity extends AppCompatActivity {
         mpMOLPayUI.setVisibility(View.GONE);
 
         // Load the main ui
+        mpMainUI.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
         mpMainUI.getSettings().setAllowUniversalAccessFromFileURLs(true);
         mpMainUI.setWebViewClient(new MPMainUIWebClient());
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+            cookieManager.setAcceptThirdPartyCookies(mpMainUI, true);
+            cookieManager.setAcceptThirdPartyCookies(mpMOLPayUI, true);
+        }
         mpMainUI.loadUrl("file:///android_asset/molpay-mobile-xdk-www/index.html");
 
         // Configure MOLPay ui
+        mpMOLPayUI.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
         mpMOLPayUI.getSettings().setAllowUniversalAccessFromFileURLs(true);
         mpMOLPayUI.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         mpMOLPayUI.getSettings().setSupportMultipleWindows(true);
@@ -368,6 +379,7 @@ public class MOLPayActivity extends AppCompatActivity {
             mpBankUI = new WebView(MOLPayActivity.this);
 
             mpBankUI.getSettings().setJavaScriptEnabled(true);
+            mpBankUI.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
             mpBankUI.getSettings().setAllowUniversalAccessFromFileURLs(true);
             mpBankUI.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
             mpBankUI.getSettings().setSupportMultipleWindows(true);
