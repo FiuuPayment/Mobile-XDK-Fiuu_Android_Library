@@ -250,6 +250,19 @@ public class MOLPayActivity extends AppCompatActivity {
         mpMainUI.loadUrl("javascript:nativeWebRequestUrlUpdates(" + json.toString() + ")");
     }
 
+    private void nativeWebRequestUrlUpdatesOnFinishLoad(String url) {
+        Log.d(MOLPAY, "nativeWebRequestUrlUpdatesOnFinishLoad url = " + url);
+
+        HashMap<String, String> data = new HashMap<>();
+        data.put("requestPath", url);
+
+        // Create JSON object for Payment details
+        JSONObject json = new JSONObject(data);
+
+        // Init javascript
+        mpMainUI.loadUrl("javascript:nativeWebRequestUrlUpdatesOnFinishLoad(" + json.toString() + ")");
+    }
+
     private class MPBankUIWebClient extends WebViewClient {
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
@@ -369,7 +382,7 @@ public class MOLPayActivity extends AppCompatActivity {
             mpBankUI.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
             mpBankUI.getSettings().setAllowUniversalAccessFromFileURLs(true);
             mpBankUI.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
-            mpBankUI.getSettings().setSupportMultipleWindows(false);
+            mpBankUI.getSettings().setSupportMultipleWindows(true);
 
             mpBankUI.setWebViewClient(new MPBankUIWebClient());
             mpBankUI.setWebChromeClient(new WebChromeClient() {
