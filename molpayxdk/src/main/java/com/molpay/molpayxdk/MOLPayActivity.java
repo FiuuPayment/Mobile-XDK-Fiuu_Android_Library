@@ -36,6 +36,8 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -94,7 +96,7 @@ public class MOLPayActivity extends AppCompatActivity {
     public final static String mp_dpa_id = "mp_dpa_id";
     public final static String mp_company = "mp_company";
 
-    public final static String MOLPAY = "MOLPAY";
+    public final static String MOLPAY = "logMOLPAY";
     private final static String mpopenmolpaywindow = "mpopenmolpaywindow://";
     private final static String mpcloseallwindows = "mpcloseallwindows://";
     private final static String mptransactionresults = "mptransactionresults://";
@@ -102,7 +104,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mppinstructioncapture = "mppinstructioncapture://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "0";
+    private final static String wrapperVersion = "9";
 
     private String base64Img;
     private String filename;
@@ -418,8 +420,13 @@ public class MOLPayActivity extends AppCompatActivity {
 
                 if (dataString.length() > 0) {
                     Log.d(MOLPAY, "MPMainUIWebClient mpopenmolpaywindow success");
-                    mpMOLPayUI.loadDataWithBaseURL("", dataString, "text/html", "UTF-8", "");
-                    mpMOLPayUI.setVisibility(View.VISIBLE);
+                    if (mpMOLPayUI != null) {
+                        Log.d(MOLPAY, "mpMOLPayUI not NULL update UI");
+                        mpMOLPayUI.loadDataWithBaseURL("", dataString, "text/html", "UTF-8", "");
+                        mpMOLPayUI.setVisibility(View.VISIBLE);
+                    } else {
+                        Log.d(MOLPAY, "mpMOLPayUI NULL avoid crash");
+                    }
                 } else {
                     Log.d(MOLPAY, "MPMainUIWebClient mpopenmolpaywindow empty dataString");
                 }
@@ -454,23 +461,31 @@ public class MOLPayActivity extends AppCompatActivity {
 
                 Intent result = new Intent();
                 result.putExtra(MOLPayTransactionResult, dataString);
-                setResult(RESULT_OK, result);
 
-                // Check if mp_request_type is "Receipt", if it is, don't finish()
-                try {
-                    JSONObject jsonResult = new JSONObject(dataString);
+                if (isJSONValid(dataString)){
+                    Log.d(MOLPAY, "isJSONValid setResult");
+                    setResult(RESULT_OK, result);
 
-                    Log.d(MOLPAY, "MPMainUIWebClient jsonResult = " + jsonResult);
+                    // Check if mp_request_type is "Receipt", if it is, don't finish()
+                    try {
+                        JSONObject jsonResult = new JSONObject(dataString);
 
-                    if (!jsonResult.has("mp_request_type") || !jsonResult.getString("mp_request_type").equals("Receipt") || jsonResult.has("error_code")) {
+                        Log.d(MOLPAY, "MPMainUIWebClient jsonResult = " + jsonResult);
+
+                        if (!jsonResult.has("mp_request_type") || !jsonResult.getString("mp_request_type").equals("Receipt") || jsonResult.has("error_code")) {
+                            finish();
+                        } else {
+                            // Next close button click will finish() the activity
+                            isClosingReceipt = true;
+                            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+                        }
+                    } catch (Throwable t) {
                         finish();
-                    } else {
-                        // Next close button click will finish() the activity
-                        isClosingReceipt = true;
-                        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
                     }
-                } catch (Throwable t) {
-                    finish();
+                }
+                else {
+                    Log.d(MOLPAY, "json not valid dont setResult");
+//                    setResult(RESULT_CANCELED, result);
                 }
 
             } else if (url != null && url.startsWith(mprunscriptonpopup)) {
@@ -535,6 +550,20 @@ public class MOLPayActivity extends AppCompatActivity {
 
     }
 
+    public boolean isJSONValid(String test) {
+        try {
+            new JSONObject(test);
+        } catch (JSONException ex) {
+            // in case JSONArray is valid as well
+            try {
+                new JSONArray(test);
+            } catch (JSONException ex1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private boolean storeImage(Bitmap image) {
         String fullPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
 
@@ -568,7 +597,7 @@ public class MOLPayActivity extends AppCompatActivity {
     @TargetApi(23)
     public boolean isStoragePermissionGranted() {
         if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                 Log.d(MOLPAY, "isStoragePermissionGranted Permission granted");
                 storeImage(imgBitmap);
                 return true;
