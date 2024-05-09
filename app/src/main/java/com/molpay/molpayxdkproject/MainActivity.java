@@ -20,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
         HashMap<String, Object> paymentDetails = new HashMap<>();
         paymentDetails.put(MOLPayActivity.mp_amount, "1.10");
 
+        // TODO: Enter your merchant account credentials before test run
         paymentDetails.put(MOLPayActivity.mp_username, "");
         paymentDetails.put(MOLPayActivity.mp_password, "");
         paymentDetails.put(MOLPayActivity.mp_merchant_ID, "");
@@ -34,11 +35,13 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_bill_name, "bill name");
         paymentDetails.put(MOLPayActivity.mp_bill_email, "example@gmail.com");
         paymentDetails.put(MOLPayActivity.mp_bill_mobile, "01234567888");
-        paymentDetails.put(MOLPayActivity.mp_channel_editing, false);
-        paymentDetails.put(MOLPayActivity.mp_editing_enabled, true);
-        paymentDetails.put(MOLPayActivity.mp_express_mode, false);
-        paymentDetails.put(MOLPayActivity.mp_dev_mode, false);
-        paymentDetails.put(MOLPayActivity.mp_preferred_token, "new");
+
+        // TODO: Learn more about optional parameters here https://github.com/RazerMS/Mobile-XDK-RazerMS_Android_Studio/wiki/Installation-Guidance#prepare-the-payment-detail-object
+//        paymentDetails.put(MOLPayActivity.mp_channel_editing, false);
+//        paymentDetails.put(MOLPayActivity.mp_editing_enabled, true);
+//        paymentDetails.put(MOLPayActivity.mp_express_mode, false);
+//        paymentDetails.put(MOLPayActivity.mp_dev_mode, false);
+//        paymentDetails.put(MOLPayActivity.mp_preferred_token, "new");
 
         Intent intent = new Intent(MainActivity.this, MOLPayActivity.class);
         intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
