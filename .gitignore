@@ -2,3 +2,6 @@ local.properties
 .gradle/*
 .idea/*
 molpayxdk/build/*
+.github/ISSUE_TEMPLATE/bug_report.md
+.github/ISSUE_TEMPLATE/feature_request.md
+molpayxdk/.idea/*
