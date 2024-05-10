@@ -9,23 +9,32 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import com.google.android.gms.wallet.button.ButtonConstants;
+import com.google.android.gms.wallet.button.ButtonOptions;
+import com.google.android.gms.wallet.button.PayButton;
 import com.molpay.molpayxdk.MOLPayActivity;
+import com.molpay.molpayxdk.googlepay.ActivityGP;
+import com.molpay.molpayxdk.googlepay.UtilGP;
+
+import org.json.JSONException;
 
 import java.util.Calendar;
 import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
 
+    private PayButton googlePayButton;
+
     private void restartmolpay() {
         HashMap<String, Object> paymentDetails = new HashMap<>();
         paymentDetails.put(MOLPayActivity.mp_amount, "1.10");
 
         // TODO: Enter your merchant account credentials before test run
-        paymentDetails.put(MOLPayActivity.mp_username, "");
-        paymentDetails.put(MOLPayActivity.mp_password, "");
-        paymentDetails.put(MOLPayActivity.mp_merchant_ID, "");
-        paymentDetails.put(MOLPayActivity.mp_app_name, "");
-        paymentDetails.put(MOLPayActivity.mp_verification_key, "");
+        paymentDetails.put(MOLPayActivity.mp_username, "RMSxdk_2022");
+        paymentDetails.put(MOLPayActivity.mp_password, "RMSpwd@2022");
+        paymentDetails.put(MOLPayActivity.mp_merchant_ID, "rmsxdk_mobile_Dev");
+        paymentDetails.put(MOLPayActivity.mp_app_name, "mobile");
+        paymentDetails.put(MOLPayActivity.mp_verification_key, "ee738b541eff7b6b495e44771f71c0ec");
 
         paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis());
         paymentDetails.put(MOLPayActivity.mp_currency, "MYR");
@@ -46,13 +55,43 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(MainActivity.this, MOLPayActivity.class);
         intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
         startActivityForResult(intent, MOLPayActivity.MOLPayXDK);
+    }
 
+    private void googlePayPayment() {
+        HashMap<String, Object> paymentDetails = new HashMap<>();
+
+        /*
+            TODO: Follow Google’s instructions to request production access for your app: https://developers.google.com/pay/api/android/guides/test-and-deploy/request-prod-access
+            *
+             Choose the integration type Gateway when prompted, and provide screenshots of your app for review.
+             After your app has been approved, test your integration in production by set mp_sandbox_mode = false & use production mp_verification_key & mp_merchant_ID.
+             Then launching Google Pay from a signed, release build of your app.
+             */
+        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // Only set to false once you have request production access for your app
+        paymentDetails.put(MOLPayActivity.mp_merchant_ID, "SB_molpayxdk"); // Your sandbox / production merchant ID
+        paymentDetails.put(MOLPayActivity.mp_verification_key, "4445db44bdb60687a8e7f7903a59c3a9"); // Your sandbox / production verification key
+
+        paymentDetails.put(MOLPayActivity.mp_amount, "1.11");
+        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis());
+        paymentDetails.put(MOLPayActivity.mp_currency, "MYR");
+        paymentDetails.put(MOLPayActivity.mp_country, "MY");
+        paymentDetails.put(MOLPayActivity.mp_bill_description, "Testing Google Pay XDK");
+        paymentDetails.put(MOLPayActivity.mp_bill_name, "This is Google Pay");
+        paymentDetails.put(MOLPayActivity.mp_bill_email, "googlepay@gmail.com");
+        paymentDetails.put(MOLPayActivity.mp_bill_mobile, "0123456789");
+
+        Intent intent = new Intent(MainActivity.this, ActivityGP.class);
+        intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
+        startActivityForResult(intent, MOLPayActivity.MOLPayXDK);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
         super.onActivityResult(requestCode, resultCode, data);
+
+        Log.e("logGooglePay" , "onActivityResult requestCode = " + requestCode);
+        Log.e("logGooglePay" , "onActivityResult resultCode = " + resultCode);
 
         if (requestCode == MOLPayActivity.MOLPayXDK && resultCode == RESULT_OK){
             Log.d(MOLPayActivity.MOLPAY, "MOLPay result = "+data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
@@ -68,18 +107,27 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-    }
 
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        int id = item.getItemId();
-//
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
-//
-//        return super.onOptionsItemSelected(item);
-//    }
+        // The Google Pay button is a layout file – take the root view
+        googlePayButton = findViewById(R.id.googlePayButton);
+
+        try {
+            // TODO: Choose your preferred Google Pay button : https://developers.google.com/pay/api/android/guides/brand-guidelines
+            googlePayButton.initialize(
+                    ButtonOptions.newBuilder()
+                            .setButtonTheme(ButtonConstants.ButtonTheme.DARK)
+                            .setButtonType(ButtonConstants.ButtonType.PAY)
+                            .setCornerRadius(99)
+                            .setAllowedPaymentMethods(UtilGP.getAllowedPaymentMethods().toString())
+                            .build()
+            );
+            googlePayButton.setOnClickListener(view -> {
+                googlePayPayment();
+            });
+        } catch (JSONException e) {
+            // Keep Google Pay button hidden (consider logging this to your app analytics service)
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -92,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        // closebtn clicked
+        // START clicked
         if (id == R.id.newBtn) {
             restartmolpay();
         }
