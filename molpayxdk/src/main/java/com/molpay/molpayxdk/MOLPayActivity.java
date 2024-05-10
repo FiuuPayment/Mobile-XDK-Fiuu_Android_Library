@@ -102,6 +102,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mptransactionresults = "mptransactionresults://";
     private final static String mprunscriptonpopup = "mprunscriptonpopup://";
     private final static String mppinstructioncapture = "mppinstructioncapture://";
+    private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
     private final static String wrapperVersion = "1";
@@ -202,7 +203,7 @@ public class MOLPayActivity extends AppCompatActivity {
         }
 //        mpMainUI.loadUrl("https://pay.merchant.razer.com/RMS/API/xdk/");
 //        mpMainUI.loadUrl("https://apps.apis17.net/v5/");
-        mpMainUI.loadUrl("https://apps.apis17.net/ashraf/xdkwebcore");
+        mpMainUI.loadUrl("https://apps.apis17.net/ashraf/xdkwebcore/");
 
         // Configure MOLPay ui
         mpMOLPayUI.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
@@ -412,124 +413,130 @@ public class MOLPayActivity extends AppCompatActivity {
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             Log.d(MOLPAY, "MPMainUIWebClient shouldOverrideUrlLoading url = " + url);
 
-            if (url != null && url.startsWith(mpopenmolpaywindow)) {
-                String base64String = url.replace(mpopenmolpaywindow, "");
-                Log.d(MOLPAY, "MPMainUIWebClient mpopenmolpaywindow base64String = " + base64String);
+            if (url != null) {
+                if (url.startsWith(mpopenmolpaywindow)) {
+                    String base64String = url.replace(mpopenmolpaywindow, "");
+                    Log.d(MOLPAY, "MPMainUIWebClient mpopenmolpaywindow base64String = " + base64String);
 
-                // Decode base64
-                byte[] data = Base64.decode(base64String, Base64.DEFAULT);
-                String dataString = new String(data);
-                Log.d(MOLPAY, "MPMainUIWebClient mpopenmolpaywindow dataString = " + dataString);
+                    // Decode base64
+                    byte[] data = Base64.decode(base64String, Base64.DEFAULT);
+                    String dataString = new String(data);
+                    Log.d(MOLPAY, "MPMainUIWebClient mpopenmolpaywindow dataString = " + dataString);
 
-                if (dataString.length() > 0) {
-                    Log.d(MOLPAY, "MPMainUIWebClient mpopenmolpaywindow success");
-                    if (mpMOLPayUI != null) {
-                        Log.d(MOLPAY, "mpMOLPayUI not NULL update UI");
-                        mpMOLPayUI.loadDataWithBaseURL("", dataString, "text/html", "UTF-8", "");
-                        mpMOLPayUI.setVisibility(View.VISIBLE);
+                    if (dataString.length() > 0) {
+                        Log.d(MOLPAY, "MPMainUIWebClient mpopenmolpaywindow success");
+                        if (mpMOLPayUI != null) {
+                            Log.d(MOLPAY, "mpMOLPayUI not NULL update UI");
+                            mpMOLPayUI.loadDataWithBaseURL("", dataString, "text/html", "UTF-8", "");
+                            mpMOLPayUI.setVisibility(View.VISIBLE);
+                        } else {
+                            Log.d(MOLPAY, "mpMOLPayUI NULL avoid crash");
+                        }
                     } else {
-                        Log.d(MOLPAY, "mpMOLPayUI NULL avoid crash");
+                        Log.d(MOLPAY, "MPMainUIWebClient mpopenmolpaywindow empty dataString");
                     }
-                } else {
-                    Log.d(MOLPAY, "MPMainUIWebClient mpopenmolpaywindow empty dataString");
+
                 }
-
-            } else if (url != null && url.startsWith(mpcloseallwindows)) {
-                if (mpBankUI != null) {
-                    mpBankUI.loadUrl("about:blank");
-                    mpBankUI.setVisibility(View.GONE);
-                    mpBankUI.clearCache(true);
-                    mpBankUI.clearHistory();
-                    mpBankUI.removeAllViews();
-                    mpBankUI.destroy();
-                    mpBankUI = null;
+                else if (url.startsWith(mpcloseallwindows)) {
+                    if (mpBankUI != null) {
+                        mpBankUI.loadUrl("about:blank");
+                        mpBankUI.setVisibility(View.GONE);
+                        mpBankUI.clearCache(true);
+                        mpBankUI.clearHistory();
+                        mpBankUI.removeAllViews();
+                        mpBankUI.destroy();
+                        mpBankUI = null;
+                    }
+                    if (mpMOLPayUI != null) {
+                        mpMOLPayUI.loadUrl("about:blank");
+                        mpMOLPayUI.setVisibility(View.GONE);
+                        mpMOLPayUI.clearCache(true);
+                        mpMOLPayUI.clearHistory();
+                        mpMOLPayUI.removeAllViews();
+                        mpMOLPayUI.destroy();
+                        mpMOLPayUI = null;
+                    }
                 }
-                if (mpMOLPayUI != null) {
-                    mpMOLPayUI.loadUrl("about:blank");
-                    mpMOLPayUI.setVisibility(View.GONE);
-                    mpMOLPayUI.clearCache(true);
-                    mpMOLPayUI.clearHistory();
-                    mpMOLPayUI.removeAllViews();
-                    mpMOLPayUI.destroy();
-                    mpMOLPayUI = null;
+                else if (url.startsWith(mptransactionresults)) {
+                    String base64String = url.replace(mptransactionresults, "");
+                    Log.d(MOLPAY, "MPMainUIWebClient mptransactionresults base64String = " + base64String);
+
+                    // Decode base64
+                    byte[] data = Base64.decode(base64String, Base64.DEFAULT);
+                    String dataString = new String(data);
+                    Log.d(MOLPAY, "MPMainUIWebClient mptransactionresults dataString = " + dataString);
+
+                    Intent result = new Intent();
+                    result.putExtra(MOLPayTransactionResult, dataString);
+
+                    if (isJSONValid(dataString)){
+                        Log.d(MOLPAY, "isJSONValid setResult");
+                        setResult(RESULT_OK, result);
+
+                        // Check if mp_request_type is "Receipt", if it is, don't finish()
+                        try {
+                            JSONObject jsonResult = new JSONObject(dataString);
+
+                            Log.d(MOLPAY, "MPMainUIWebClient jsonResult = " + jsonResult);
+
+                            if (!jsonResult.has("mp_request_type") || !jsonResult.getString("mp_request_type").equals("Receipt") || jsonResult.has("error_code")) {
+                                finish();
+                            } else {
+                                // Next close button click will finish() the activity
+                                isClosingReceipt = true;
+                                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+                            }
+                        } catch (Throwable t) {
+                            finish();
+                        }
+                    }
+                    else {
+                        Log.d(MOLPAY, "json not valid dont setResult");
+//                    setResult(RESULT_CANCELED, result);
+                    }
+
                 }
-            } else if (url != null && url.startsWith(mptransactionresults)) {
-                String base64String = url.replace(mptransactionresults, "");
-                Log.d(MOLPAY, "MPMainUIWebClient mptransactionresults base64String = " + base64String);
+                else if (url.startsWith(mprunscriptonpopup)) {
+                    String base64String = url.replace(mprunscriptonpopup, "");
+                    Log.d(MOLPAY, "MPMainUIWebClient mprunscriptonpopup base64String = " + base64String);
 
-                // Decode base64
-                byte[] data = Base64.decode(base64String, Base64.DEFAULT);
-                String dataString = new String(data);
-                Log.d(MOLPAY, "MPMainUIWebClient mptransactionresults dataString = " + dataString);
+                    // Decode base64
+                    byte[] data = Base64.decode(base64String, Base64.DEFAULT);
+                    String jsString = new String(data);
+                    Log.d(MOLPAY, "MPMainUIWebClient mprunscriptonpopup jsString = " + jsString);
 
-                Intent result = new Intent();
-                result.putExtra(MOLPayTransactionResult, dataString);
+                    if (mpBankUI != null) {
+                        mpBankUI.loadUrl("javascript:"+jsString);
+                        Log.d(MOLPAY, "mpBankUI loadUrl = " + "javascript:"+jsString);
+                    }
 
-                if (isJSONValid(dataString)){
-                    Log.d(MOLPAY, "isJSONValid setResult");
-                    setResult(RESULT_OK, result);
+                }
+                else if (url.startsWith(mppinstructioncapture)) {
+                    String base64String = url.replace(mppinstructioncapture, "");
+                    Log.d(MOLPAY, "MPMainUIWebClient mppinstructioncapture base64String = " + base64String);
 
-                    // Check if mp_request_type is "Receipt", if it is, don't finish()
+                    // Decode base64
+                    byte[] data = Base64.decode(base64String, Base64.DEFAULT);
+                    String dataString = new String(data);
+                    Log.d(MOLPAY, "MPMainUIWebClient mppinstructioncapture dataString = " + dataString);
+
                     try {
                         JSONObject jsonResult = new JSONObject(dataString);
 
+                        base64Img = jsonResult.getString("base64ImageUrlData");
+                        filename = jsonResult.getString("filename");
                         Log.d(MOLPAY, "MPMainUIWebClient jsonResult = " + jsonResult);
 
-                        if (!jsonResult.has("mp_request_type") || !jsonResult.getString("mp_request_type").equals("Receipt") || jsonResult.has("error_code")) {
-                            finish();
-                        } else {
-                            // Next close button click will finish() the activity
-                            isClosingReceipt = true;
-                            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
-                        }
+                        byte[] decodedBytes = Base64.decode(base64Img, 0);
+                        imgBitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+
+                        isStoragePermissionGranted();
+
                     } catch (Throwable t) {
-                        finish();
+                        Log.d(MOLPAY, "MPMainUIWebClient jsonResult error = " + t);
                     }
+
                 }
-                else {
-                    Log.d(MOLPAY, "json not valid dont setResult");
-//                    setResult(RESULT_CANCELED, result);
-                }
-
-            } else if (url != null && url.startsWith(mprunscriptonpopup)) {
-                String base64String = url.replace(mprunscriptonpopup, "");
-                Log.d(MOLPAY, "MPMainUIWebClient mprunscriptonpopup base64String = " + base64String);
-
-                // Decode base64
-                byte[] data = Base64.decode(base64String, Base64.DEFAULT);
-                String jsString = new String(data);
-                Log.d(MOLPAY, "MPMainUIWebClient mprunscriptonpopup jsString = " + jsString);
-
-                if (mpBankUI != null) {
-                    mpBankUI.loadUrl("javascript:"+jsString);
-                    Log.d(MOLPAY, "mpBankUI loadUrl = " + "javascript:"+jsString);
-                }
-
-            } else if (url != null && url.startsWith(mppinstructioncapture)) {
-                String base64String = url.replace(mppinstructioncapture, "");
-                Log.d(MOLPAY, "MPMainUIWebClient mppinstructioncapture base64String = " + base64String);
-
-                // Decode base64
-                byte[] data = Base64.decode(base64String, Base64.DEFAULT);
-                String dataString = new String(data);
-                Log.d(MOLPAY, "MPMainUIWebClient mppinstructioncapture dataString = " + dataString);
-
-                try {
-                    JSONObject jsonResult = new JSONObject(dataString);
-
-                    base64Img = jsonResult.getString("base64ImageUrlData");
-                    filename = jsonResult.getString("filename");
-                    Log.d(MOLPAY, "MPMainUIWebClient jsonResult = " + jsonResult);
-
-                    byte[] decodedBytes = Base64.decode(base64Img, 0);
-                    imgBitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
-
-                    isStoragePermissionGranted();
-
-                } catch (Throwable t) {
-                    Log.d(MOLPAY, "MPMainUIWebClient jsonResult error = " + t);
-                }
-
             }
 
             return true;
