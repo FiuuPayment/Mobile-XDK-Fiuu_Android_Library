@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_bill_description, "bill description");
         paymentDetails.put(MOLPayActivity.mp_bill_name, "bill name");
         paymentDetails.put(MOLPayActivity.mp_bill_email, "example@gmail.com");
-        paymentDetails.put(MOLPayActivity.mp_bill_mobile, "01234567888");
+        paymentDetails.put(MOLPayActivity.mp_bill_mobile, "1234567888");
 
         // TODO: Learn more about optional parameters here https://github.com/RazerMS/Mobile-XDK-RazerMS_Android_Studio/wiki/Installation-Guidance#prepare-the-payment-detail-object
 //        paymentDetails.put(MOLPayActivity.mp_channel_editing, false);
