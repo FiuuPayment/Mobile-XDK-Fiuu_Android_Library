@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_bill_description, "Testing Google Pay XDK");
         paymentDetails.put(MOLPayActivity.mp_bill_name, "This is Google Pay");
         paymentDetails.put(MOLPayActivity.mp_bill_email, "googlepay@gmail.com");
-        paymentDetails.put(MOLPayActivity.mp_bill_mobile, "0123456789");
+        paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 
         Intent intent = new Intent(MainActivity.this, ActivityGP.class);
         intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
