@@ -102,7 +102,6 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mptransactionresults = "mptransactionresults://";
     private final static String mprunscriptonpopup = "mprunscriptonpopup://";
     private final static String mppinstructioncapture = "mppinstructioncapture://";
-    private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
     private final static String wrapperVersion = "1";
@@ -201,9 +200,7 @@ public class MOLPayActivity extends AppCompatActivity {
             cookieManager.setAcceptThirdPartyCookies(mpMainUI, true);
             cookieManager.setAcceptThirdPartyCookies(mpMOLPayUI, true);
         }
-//        mpMainUI.loadUrl("https://pay.merchant.razer.com/RMS/API/xdk/");
-//        mpMainUI.loadUrl("https://apps.apis17.net/v5/");
-        mpMainUI.loadUrl("https://apps.apis17.net/ashraf/xdkwebcore/");
+        mpMainUI.loadUrl("https://pay.merchant.razer.com/RMS/API/xdk/");
 
         // Configure MOLPay ui
         mpMOLPayUI.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
