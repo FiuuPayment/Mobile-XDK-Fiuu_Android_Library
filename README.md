@@ -7,7 +7,7 @@ Quick Guides
 
 ### All Channels
 
-Add dependencies
+Add dependencies in build.gradle
 
 `dependencies {
     implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:<latest_version>'
