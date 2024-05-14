@@ -8,19 +8,17 @@ android {
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 34
-        multiDexEnabled true
     }
     buildTypes {
         release {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
         sourceCompatibility(JavaVersion.VERSION_1_8)
         targetCompatibility(JavaVersion.VERSION_1_8)
     }
-    namespace 'com.molpay.molpayxdk'
 
     viewBinding {
         enabled = true
@@ -33,7 +31,6 @@ dependencies {
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.12.0'
-    implementation 'androidx.multidex:multidex:2.0.1'
 
     // Google Pay
     implementation 'com.google.zxing:core:3.5.0'
@@ -49,9 +46,9 @@ afterEvaluate {
         publications {
             release(MavenPublication) {
                 from components.release
-                groupId ='com.rms.mobile'
-                artifactId = 'mobile_xdk'
-                version = '3.34.1'
+                groupId ='com.github.FiuuPayment'
+                artifactId = 'Mobile-XDK-Fiuu_Android_Library'
+                version = '3.34.2'
             }
         }
     }
