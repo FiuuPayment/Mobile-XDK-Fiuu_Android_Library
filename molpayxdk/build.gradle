@@ -8,12 +8,11 @@ android {
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 34
-        multiDexEnabled true
     }
     buildTypes {
         release {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
