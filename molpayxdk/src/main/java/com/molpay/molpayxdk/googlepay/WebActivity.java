@@ -45,6 +45,7 @@ public class WebActivity extends AppCompatActivity {
 
     public static String isSandbox;
 
+    private CountDownTimer countDownTimer;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,7 +102,7 @@ public class WebActivity extends AppCompatActivity {
         final String[] trasactionJsonStr = {null};
 
         // Query Transaction ID for every 6 second in 3 minutes
-        CountDownTimer countDownTimer = new CountDownTimer(minTimeOut, interval) {
+        countDownTimer = new CountDownTimer(minTimeOut, interval) {
 
             // Query Transaction ID for every 6 second in 3 minutes
             @Override
@@ -144,8 +145,8 @@ public class WebActivity extends AppCompatActivity {
 
                             if (statCodeValue.equals("00")) {
                                 if (statCodeValueSuccess) {
-                                    setResult(RESULT_OK, intent);
-                                    finish();
+                                    Log.e("logGooglePay" , "statCodeValueSuccess finish");
+                                    onFinish();
                                 }
                             } else if (statCodeValue.equals("11")) {
                                 cancel();
@@ -195,7 +196,9 @@ public class WebActivity extends AppCompatActivity {
                     JSONObject responseBodyObj = new JSONObject(responseBody);
 
                     Intent intent = new Intent();
-                    intent.putExtra("response", String.valueOf(queryResultStr[0]));
+                    intent.putExtra("response", String.valueOf(responseBodyObj));
+
+                    Log.e("logGooglePay" , "onFinish response = " + String.valueOf(responseBodyObj));
 
                     // If timeout / cancel
                     if (!responseBodyObj.has("StatCode")){
@@ -204,6 +207,7 @@ public class WebActivity extends AppCompatActivity {
                         setResult(RESULT_OK, intent);
                     }
 
+                    countDownTimer.cancel();
                     finish();
 
                 } catch (JSONException e) {

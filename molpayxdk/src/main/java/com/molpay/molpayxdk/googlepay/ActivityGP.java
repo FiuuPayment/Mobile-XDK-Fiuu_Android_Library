@@ -78,6 +78,12 @@ public class ActivityGP extends AppCompatActivity {
                         // The user cancelled the payment attempt
                         finish();
                         break;
+
+                    default:
+                        // If Result = 1 finish with no response
+                        setResult(RESULT_FIRST_USER, null);
+                        finish();
+                        break;
                 }
             });
 
@@ -191,6 +197,13 @@ public class ActivityGP extends AppCompatActivity {
 
         if (paymentDetails != null) {
             try {
+                // Extended VCode setting
+                if (paymentDetails.get("mp_extended_vcode") == null) {
+                    paymentInput.put("extendedVCode", false);
+                } else {
+                    paymentInput.put("extendedVCode", Objects.requireNonNull(paymentDetails.get("mp_extended_vcode")));
+                }
+
                 // TODO: Send the payment info e.g. (all info are compulsory) :
                 paymentInput.put("orderId", Objects.requireNonNull(paymentDetails.get("mp_order_ID")).toString()); // Unique payment order id
                 paymentInput.put("amount", Objects.requireNonNull(paymentDetails.get("mp_amount")).toString()); // Payment amount
@@ -278,9 +291,11 @@ public class ActivityGP extends AppCompatActivity {
                     // Response Error CallBack
                     assert data != null;
                     response = data.getStringExtra("response");
-
-                    Toast toast2 = Toast.makeText(this, response, Toast.LENGTH_LONG);
-                    toast2.show();
+                    Log.e("logGooglePay" , "RESULT_CANCELED response = " + response);
+                    Intent resultCancel = new Intent();
+                    resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
+                    setResult(RESULT_CANCELED, resultCancel);
+                    finish();
                     break;
 
                 case AutoResolveHelper.RESULT_ERROR:

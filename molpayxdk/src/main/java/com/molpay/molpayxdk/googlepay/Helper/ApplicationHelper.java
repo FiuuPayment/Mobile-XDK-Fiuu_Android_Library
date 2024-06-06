@@ -5,6 +5,8 @@
 package com.molpay.molpayxdk.googlepay.Helper;
 
 
+import android.util.Log;
+
 public class ApplicationHelper {
     private static ApplicationHelper single_instance = null;
 
@@ -18,8 +20,16 @@ public class ApplicationHelper {
         return single_instance;
     }
 
-    public String GetVCode(String amount, String merchantID, String orderId, String verifyKey) {
-        byte[] hashData = AlgorithmHelper.md5(amount + merchantID + orderId + verifyKey);
+    public String GetVCode(String amount, String merchantID, String orderId, String verifyKey, String currency, boolean extendedVCode) {
+        byte[] hashData;
+
+        Log.e("logGooglePay" , "extendedVCode = " + extendedVCode);
+
+        if (extendedVCode) {
+            hashData = AlgorithmHelper.md5(amount + merchantID + orderId + verifyKey + currency);
+        } else {
+            hashData = AlgorithmHelper.md5(amount + merchantID + orderId + verifyKey);
+        }
 
         return String.format("%s", UtilityHelper.ByteArrayToHexString(hashData));
     }
