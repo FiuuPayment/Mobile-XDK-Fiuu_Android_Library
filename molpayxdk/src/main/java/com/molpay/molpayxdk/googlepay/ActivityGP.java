@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.IntentSenderRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -115,6 +116,18 @@ public class ActivityGP extends AppCompatActivity {
         // Check Google Pay availability
         model = new ViewModelProvider(this).get(ViewModelGP.class);
         model.canUseGooglePay.observe(this, this::setGooglePayAvailable);
+
+        // Register a callback for handling the back press
+        OnBackPressedCallback callback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Do nothing - prevent user from performing backpress
+                Log.e("logGooglePay" , "ActivityGP backpressed");
+            }
+        };
+
+        // Add the callback to the OnBackPressedDispatcher
+        getOnBackPressedDispatcher().addCallback(this, callback);
     }
 
     private void initializeUi() {
@@ -289,12 +302,16 @@ public class ActivityGP extends AppCompatActivity {
                 case AppCompatActivity.RESULT_CANCELED:
                     // The user cancelled the payment attempt
                     // Response Error CallBack
-                    assert data != null;
-                    response = data.getStringExtra("response");
-                    Log.e("logGooglePay" , "RESULT_CANCELED response = " + response);
-                    Intent resultCancel = new Intent();
-                    resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
-                    setResult(RESULT_CANCELED, resultCancel);
+                    if (data != null) {
+                        response = data.getStringExtra("response");
+                        Log.e("logGooglePay" , "RESULT_CANCELED response = " + response);
+                        Intent resultCancel = new Intent();
+                        resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
+                        setResult(RESULT_CANCELED, resultCancel);
+                    } else {
+                        setResult(RESULT_CANCELED, null);
+                    }
+
                     finish();
                     break;
 

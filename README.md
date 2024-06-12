@@ -66,6 +66,8 @@ Find all mp_channel list here https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Exa
 
 ### Google Pay
 
+Prepare paymentDetails :
+
     HashMap<String, Object> paymentDetails = new HashMap<>();
     
     // TODO: Follow Google’s instructions to request production access for your app: https://developers.google.com/pay/api/android/guides/test-and-deploy/request-prod-access
@@ -87,11 +89,34 @@ Find all mp_channel list here https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Exa
     paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
     paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 
-    paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
+    paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment
     
+Start payment by sending paymentDetails to ActivityGP.class :
+
     Intent intent = new Intent(MainActivity.this, ActivityGP.class); // Used ActivityGP for Google Pay
     intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
     startActivityForResult(intent, MOLPayActivity.MOLPayXDK);
+
+Get payment result in onActivityResult : 
+NOTE : Verify payment using formula VrfKey = md5(Amount+secret_key+Domain+TranID+StatCode). Refer Payment results - Google Pay
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        Log.e("logGooglePay" , "onActivityResult requestCode = " + requestCode);
+        Log.e("logGooglePay" , "onActivityResult resultCode = " + resultCode);
+
+        if (requestCode == MOLPayActivity.MOLPayXDK && data != null){
+            if (data.getStringExtra(MOLPayActivity.MOLPayTransactionResult) != null) {
+                Log.d(MOLPayActivity.MOLPAY, "MOLPay result = " + data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
+                TextView tw = findViewById(R.id.resultTV);
+                tw.setText(data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
+            }
+        }
+
+    }
 
 ## Payment results - Google Pay
 

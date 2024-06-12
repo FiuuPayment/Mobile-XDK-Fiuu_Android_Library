@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Message;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
@@ -128,12 +129,6 @@ public class MOLPayActivity extends AppCompatActivity {
         }
     }
 
-    @SuppressLint("MissingSuperCall")
-    @Override
-    public void onBackPressed() {
-        closemolpay();
-    }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -242,6 +237,17 @@ public class MOLPayActivity extends AppCompatActivity {
             return false;
         });
 
+        // Register a callback for handling the back press
+        OnBackPressedCallback callback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                Log.e("logGooglePay" , "WebCore onBackPressed");
+                closemolpay();
+            }
+        };
+
+        // Add the callback to the OnBackPressedDispatcher
+        getOnBackPressedDispatcher().addCallback(this, callback);
     }
 
     private void nativeWebRequestUrlUpdates(String url) {
