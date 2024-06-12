@@ -302,12 +302,16 @@ public class ActivityGP extends AppCompatActivity {
                 case AppCompatActivity.RESULT_CANCELED:
                     // The user cancelled the payment attempt
                     // Response Error CallBack
-                    assert data != null;
-                    response = data.getStringExtra("response");
-                    Log.e("logGooglePay" , "RESULT_CANCELED response = " + response);
-                    Intent resultCancel = new Intent();
-                    resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
-                    setResult(RESULT_CANCELED, resultCancel);
+                    if (data != null) {
+                        response = data.getStringExtra("response");
+                        Log.e("logGooglePay" , "RESULT_CANCELED response = " + response);
+                        Intent resultCancel = new Intent();
+                        resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
+                        setResult(RESULT_CANCELED, resultCancel);
+                    } else {
+                        setResult(RESULT_CANCELED, null);
+                    }
+
                     finish();
                     break;
 

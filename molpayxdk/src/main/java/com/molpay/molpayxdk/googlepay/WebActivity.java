@@ -141,58 +141,60 @@ public class WebActivity extends AppCompatActivity {
                     thread.join();
                     queryResultStr[0] = queryResultThread.getValue();
 
-                    try {
-                        JSONObject queryResultObj = new JSONObject(queryResultStr[0]);
-                        String responseBody = queryResultObj.getString("responseBody");
-                        JSONObject responseBodyObj = new JSONObject(responseBody);
+                    if (queryResultStr[0] != null) {
+                        try {
+                            JSONObject queryResultObj = new JSONObject(queryResultStr[0]);
+                            String responseBody = queryResultObj.getString("responseBody");
+                            JSONObject responseBodyObj = new JSONObject(responseBody);
 
-                        // If StatCode
-                        if (responseBodyObj.has("StatCode")){
-                            String statCodeValue = responseBodyObj.getString("StatCode");
+                            // If StatCode
+                            if (responseBodyObj.has("StatCode")){
+                                String statCodeValue = responseBodyObj.getString("StatCode");
 
-                            Intent intent = new Intent();
-                            intent.putExtra("response", String.valueOf(responseBodyObj));
+                                Intent intent = new Intent();
+                                intent.putExtra("response", String.valueOf(responseBodyObj));
 
-                            Log.e("logGooglePay" , "statCodeValue " + statCodeValue);
+                                Log.e("logGooglePay" , "statCodeValue " + statCodeValue);
 
-                            if (statCodeValue.equals("00")) {
-                                if (statCodeValueSuccess) {
-                                    Log.e("logGooglePay" , "statCodeValueSuccess finish");
-                                    onFinish();
+                                if (statCodeValue.equals("00")) {
+                                    if (statCodeValueSuccess) {
+                                        Log.e("logGooglePay" , "statCodeValueSuccess finish");
+                                        onFinish();
+                                    }
+                                } else if (statCodeValue.equals("11")) {
+                                    cancel();
+                                    pbLoading.setVisibility(View.GONE);
+                                    tvLoading.setVisibility(View.GONE);
+
+                                    String errorCode = null;
+                                    try {
+                                        errorCode = responseBodyObj.getString("ErrorCode");
+                                    } catch (JSONException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                    String errorDesc = null;
+                                    try {
+                                        errorDesc = responseBodyObj.getString("ErrorDesc");
+                                    } catch (JSONException e) {
+                                        throw new RuntimeException(e);
+                                    }
+
+                                    new AlertDialog.Builder(WebActivity.this)
+                                            .setTitle("Payment Failed")
+                                            .setMessage(errorCode + " : " + errorDesc)
+                                            .setCancelable(false)
+                                            .setPositiveButton("CLOSE", (dialog, which) -> {
+                                                setResult(RESULT_CANCELED, intent);
+                                                finish();
+                                            }).show();
+                                }  else if (statCodeValue.equals("22")) {
+                                    // Do Nothing - It will auto handle
                                 }
-                            } else if (statCodeValue.equals("11")) {
-                                cancel();
-                                pbLoading.setVisibility(View.GONE);
-                                tvLoading.setVisibility(View.GONE);
-
-                                String errorCode = null;
-                                try {
-                                    errorCode = responseBodyObj.getString("ErrorCode");
-                                } catch (JSONException e) {
-                                    throw new RuntimeException(e);
-                                }
-                                String errorDesc = null;
-                                try {
-                                    errorDesc = responseBodyObj.getString("ErrorDesc");
-                                } catch (JSONException e) {
-                                    throw new RuntimeException(e);
-                                }
-
-                                new AlertDialog.Builder(WebActivity.this)
-                                        .setTitle("Payment Failed")
-                                        .setMessage(errorCode + " : " + errorDesc)
-                                        .setCancelable(false)
-                                        .setPositiveButton("CLOSE", (dialog, which) -> {
-                                            setResult(RESULT_CANCELED, intent);
-                                            finish();
-                                        }).show();
-                            }  else if (statCodeValue.equals("22")) {
-                                // Do Nothing - It will auto handle
                             }
-                        }
 
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -402,8 +404,9 @@ public class WebActivity extends AppCompatActivity {
 
                 RMSGooglePay pay = new RMSGooglePay();
                 JSONObject result = (JSONObject) pay.queryPaymentResult(transaction);
-                resp = result.toString();
-
+                if (result != null) {
+                    resp = result.toString();
+                }
         }
     }
 
