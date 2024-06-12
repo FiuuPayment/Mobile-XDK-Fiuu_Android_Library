@@ -21,6 +21,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatTextView;
@@ -92,6 +93,17 @@ public class WebActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+        // Register a callback for handling the back press
+        OnBackPressedCallback callback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Do nothing - prevent user from performing backpress
+                Log.e("logGooglePay" , "WebActivity GP backpressed");
+            }
+        };
+
+        // Add the callback to the OnBackPressedDispatcher
+        getOnBackPressedDispatcher().addCallback(this, callback);
     }
 
     private void onStartTimOut() {
