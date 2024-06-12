@@ -47,6 +47,8 @@ public class WebActivity extends AppCompatActivity {
     public static String isSandbox;
 
     private CountDownTimer countDownTimer;
+    private String requestType = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -79,6 +81,13 @@ public class WebActivity extends AppCompatActivity {
         wvGateway.getSettings().setAllowUniversalAccessFromFileURLs(true);
         wvGateway.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         wvGateway.getSettings().setSupportMultipleWindows(true);
+
+        // Mobile web view settings
+        wvGateway.getSettings().setLoadWithOverviewMode(true);
+        wvGateway.getSettings().setUseWideViewPort(true);
+        wvGateway.getSettings().setSupportZoom(true);
+        wvGateway.getSettings().setBuiltInZoomControls(true);
+        wvGateway.getSettings().setDisplayZoomControls(false);
 
         PaymentThread paymentThread = new PaymentThread();
         paymentThread.setValue(paymentInput, paymentInfo); // set value
@@ -240,11 +249,19 @@ public class WebActivity extends AppCompatActivity {
         tvLoading.setVisibility(View.VISIBLE);
         statCodeValueSuccess = false;
 
+        String encodedHtml = Base64.encodeToString(plainHtml.getBytes(), Base64.NO_PADDING);
+
+        Log.e("logGooglePay" , "plainHtml = " + plainHtml);
+
         if (plainHtml.contains("xdkHTMLRedirection")) {
             xdkHTMLRedirection = StringUtils.substringBetween(plainHtml, "xdkHTMLRedirection' value='", "'");
             wvGateway.loadData(xdkHTMLRedirection, "text/html", "base64");
+        } else if (requestType.equalsIgnoreCase("REDIRECT")) {
+            wvGateway.loadData(encodedHtml, "text/html", "base64");
+            pbLoading.setVisibility(View.GONE);
+            tvLoading.setVisibility(View.GONE);
+            wvGateway.setVisibility(View.VISIBLE);
         } else {
-            String encodedHtml = Base64.encodeToString(plainHtml.getBytes(), Base64.NO_PADDING);
             wvGateway.loadData(encodedHtml, "text/html", "base64");
         }
 
@@ -254,6 +271,9 @@ public class WebActivity extends AppCompatActivity {
 
                 if (request.getUrl().toString().contains("result.php")) {
                     statCodeValueSuccess = true;
+                    pbLoading.setVisibility(View.VISIBLE);
+                    tvLoading.setVisibility(View.VISIBLE);
+                    wvGateway.setVisibility(View.GONE);
                 }
 
                 return super.shouldOverrideUrlLoading(view, request);
@@ -313,6 +333,9 @@ public class WebActivity extends AppCompatActivity {
                     );
                     if (txnData.has("AppDeepLinkURL")) {
 //                        AppData.getInstance().setRedirectAppUrl(txnData.getString("AppDeepLinkURL"));
+                    }
+                    if (txnData.has("RequestType")) {
+                        requestType = txnData.getString("RequestType");
                     }
                     if (txnData.has("RequestData")) {
 
