@@ -4,12 +4,10 @@ plugins {
 }
 
 android {
-    compileSdkVersion 31
+    compileSdk 34
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 31
-        versionCode 1
-        versionName "1.0"
+        minSdkVersion 21
+        targetSdkVersion 34
     }
     buildTypes {
         release {
@@ -21,14 +19,26 @@ android {
         sourceCompatibility(JavaVersion.VERSION_1_8)
         targetCompatibility(JavaVersion.VERSION_1_8)
     }
+
+    viewBinding {
+        enabled = true
+    }
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.2'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'androidx.appcompat:appcompat:1.4.1'
-    implementation 'com.google.android.material:material:1.5.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.12.0'
+
+    // Google Pay
+    implementation 'com.google.zxing:core:3.5.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation "androidx.lifecycle:lifecycle-viewmodel:2.7.0"
+    implementation "com.google.android.gms:play-services-pay:16.4.0"
+    implementation "com.google.android.gms:play-services-wallet:19.3.0"
+    implementation 'org.apache.commons:commons-lang3:3.4'
 }
 
 afterEvaluate {
@@ -36,9 +46,9 @@ afterEvaluate {
         publications {
             release(MavenPublication) {
                 from components.release
-                groupId ='com.rms.mobile'
-                artifactId = 'mobile_xdk'
-                version = '3.34.0'
+                groupId ='com.github.FiuuPayment'
+                artifactId = 'Mobile-XDK-Fiuu_Android_Library'
+                version = '3.34.2'
             }
         }
     }
