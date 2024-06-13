@@ -286,14 +286,18 @@ public class ActivityGP extends AppCompatActivity {
                 case AppCompatActivity.RESULT_OK:
 
                     // Response Success CallBack
-                    assert data != null;
-                    response = data.getStringExtra("response");
+                    if (data != null) {
+                        response = data.getStringExtra("response");
 
-                    Log.e("logGooglePay" , "RESULT_OK response = " + response);
+                        Log.e("logGooglePay" , "RESULT_OK response = " + response);
 
-                    Intent result = new Intent();
-                    result.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
-                    setResult(RESULT_OK, result);
+                        Intent result = new Intent();
+                        result.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
+                        setResult(RESULT_OK, result);
+                    } else {
+                        Log.e("logGooglePay" , "RESULT_OK data = null");
+                        setResult(RESULT_OK, null);
+                    }
 
                     finish();
 
@@ -309,6 +313,7 @@ public class ActivityGP extends AppCompatActivity {
                         resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
                         setResult(RESULT_CANCELED, resultCancel);
                     } else {
+                        Log.e("logGooglePay" , "RESULT_CANCELED data = null");
                         setResult(RESULT_CANCELED, null);
                     }
 
@@ -317,8 +322,12 @@ public class ActivityGP extends AppCompatActivity {
 
                 case AutoResolveHelper.RESULT_ERROR:
                     Status status = AutoResolveHelper.getStatusFromIntent(data);
-                    assert status != null;
-                    handleError(status.getStatusCode() , status.getStatusMessage());
+                    if (status != null) {
+                        handleError(status.getStatusCode() , status.getStatusMessage());
+                    } else {
+                        Log.e("logGooglePay" , "RESULT_ERROR status = null");
+                        handleError(0 , "");
+                    }
                     break;
             }
         }
