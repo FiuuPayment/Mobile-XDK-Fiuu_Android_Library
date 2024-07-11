@@ -77,6 +77,7 @@ public class ActivityGP extends AppCompatActivity {
 
                     case Activity.RESULT_CANCELED:
                         // The user cancelled the payment attempt
+                        setResult(RESULT_CANCELED, null);
                         finish();
                         break;
 
