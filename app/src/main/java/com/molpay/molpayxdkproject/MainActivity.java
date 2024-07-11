@@ -104,6 +104,10 @@ public class MainActivity extends AppCompatActivity {
                 TextView tw = findViewById(R.id.resultTV);
                 tw.setText(data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
             }
+        } else if (requestCode == MOLPayActivity.MOLPayXDK && resultCode == MainActivity.RESULT_CANCELED && data == null) {
+            Log.e("logGooglePay" , "RESULT_CANCELED data == null");
+            TextView tw = findViewById(R.id.resultTV);
+            tw.setText("data == null");
         }
 
     }
