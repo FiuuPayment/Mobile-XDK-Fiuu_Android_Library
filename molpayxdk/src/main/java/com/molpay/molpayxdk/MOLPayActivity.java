@@ -109,7 +109,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "1";
+    private final static String wrapperVersion = "5";
 
     private String base64Img;
     private String filename;
@@ -202,8 +202,6 @@ public class MOLPayActivity extends AppCompatActivity {
             cookieManager.setAcceptThirdPartyCookies(mpMOLPayUI, true);
         }
         mpMainUI.loadUrl("https://pay.merchant.razer.com/RMS/API/xdk/");
-//        mpMainUI.loadUrl("https://uat.onlinepayment.com.my/RMS/API/xdk/");
-//        mpMainUI.loadUrl("https://uat.onlinepayment.com.my/RMS/API/xdk/index.html");
 
         // Configure MOLPay ui
         mpMOLPayUI.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
