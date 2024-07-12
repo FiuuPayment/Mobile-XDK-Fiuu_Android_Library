@@ -53,7 +53,7 @@ public class WebActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Log.e("logGooglePay" , "WebActivity");
+        // Log.e("logGooglePay" , "WebActivity");
 
         setContentView(R.layout.activity_web);
 
@@ -67,7 +67,7 @@ public class WebActivity extends AppCompatActivity {
             paymentInputObj = new JSONObject(paymentInput);
             transaction.setVkey(paymentInputObj.getString("verificationKey"));
             isSandbox = paymentInputObj.getString("isSandbox");
-            Log.e("logGooglePay" , "WebActivity isSandbox = " + isSandbox);
+            // Log.e("logGooglePay" , "WebActivity isSandbox = " + isSandbox);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -107,7 +107,7 @@ public class WebActivity extends AppCompatActivity {
             @Override
             public void handleOnBackPressed() {
                 // Do nothing - prevent user from performing backpress
-                Log.e("logGooglePay" , "WebActivity GP backpressed");
+                // Log.e("logGooglePay" , "WebActivity GP backpressed");
             }
         };
 
@@ -163,11 +163,11 @@ public class WebActivity extends AppCompatActivity {
                                 Intent intent = new Intent();
                                 intent.putExtra("response", String.valueOf(responseBodyObj));
 
-                                Log.e("logGooglePay" , "statCodeValue " + statCodeValue);
+                                // Log.e("logGooglePay" , "statCodeValue " + statCodeValue);
 
                                 if (statCodeValue.equals("00")) {
                                     if (statCodeValueSuccess) {
-                                        Log.e("logGooglePay" , "statCodeValueSuccess finish");
+                                        // Log.e("logGooglePay" , "statCodeValueSuccess finish");
                                         onFinish();
                                     }
                                 } else if (statCodeValue.equals("11")) {
@@ -221,7 +221,7 @@ public class WebActivity extends AppCompatActivity {
                     Intent intent = new Intent();
                     intent.putExtra("response", String.valueOf(responseBodyObj));
 
-                    Log.e("logGooglePay" , "onFinish response = " + String.valueOf(responseBodyObj));
+                    // Log.e("logGooglePay" , "onFinish response = " + String.valueOf(responseBodyObj));
 
                     // If timeout / cancel
                     if (!responseBodyObj.has("StatCode")){
@@ -251,7 +251,7 @@ public class WebActivity extends AppCompatActivity {
 
         String encodedHtml = Base64.encodeToString(plainHtml.getBytes(), Base64.NO_PADDING);
 
-        Log.e("logGooglePay" , "plainHtml = " + plainHtml);
+        // Log.e("logGooglePay" , "plainHtml = " + plainHtml);
 
         if (plainHtml.contains("xdkHTMLRedirection")) {
             xdkHTMLRedirection = StringUtils.substringBetween(plainHtml, "xdkHTMLRedirection' value='", "'");
