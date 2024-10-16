@@ -109,7 +109,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "5";
+    private final static String wrapperVersion = "7a";
 
     private String base64Img;
     private String filename;
@@ -325,10 +325,13 @@ public class MOLPayActivity extends AppCompatActivity {
                         }
                     });
                     return true;
-                } else if (url.contains("atome-my.onelink.me") ||
+                }
+                else if (url.contains("atome-my.onelink.me") ||
                         url.contains("myboost.app") ||
                         url.contains("market://") ||
-                        url.contains("intent://")) {
+                        url.contains("intent://") ||
+                        url.contains("alipays://") ||
+                        url.contains("https://app.shopback.com/pay")) {
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                         startActivity(intent);
@@ -337,16 +340,7 @@ public class MOLPayActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                     return true;
-                }else if (url.contains("alipays://")) {
-                try {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    startActivity(intent);
-                } catch (ActivityNotFoundException e) {
-                    // Define what your app should do if no activity can handle the intent.
-                    e.printStackTrace();
                 }
-                return true;
-            }
             }
             return false;
         }

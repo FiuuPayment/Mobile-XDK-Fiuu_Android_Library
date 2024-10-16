@@ -1,4 +1,4 @@
-package com.molpay.molpayxdkproject;
+package com.fiuu.xdkandroid;
 
 import org.junit.Test;
 
