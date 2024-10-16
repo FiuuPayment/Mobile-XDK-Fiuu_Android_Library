@@ -36,19 +36,22 @@ dependencies {
     implementation 'com.google.zxing:core:3.5.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation "androidx.lifecycle:lifecycle-viewmodel:2.7.0"
-    implementation "com.google.android.gms:play-services-pay:16.4.0"
-    implementation "com.google.android.gms:play-services-wallet:19.3.0"
+    implementation "com.google.android.gms:play-services-pay:16.5.0"
+    implementation "com.google.android.gms:play-services-wallet:19.4.0"
     implementation 'org.apache.commons:commons-lang3:3.4'
 }
 
 afterEvaluate {
     publishing {
+//        mavenAndroid(MavenPublication) {
+//            from components.release  // Use the release build of your Android library
+//        }
         publications {
             release(MavenPublication) {
                 from components.release
                 groupId ='com.github.FiuuPayment'
                 artifactId = 'Mobile-XDK-Fiuu_Android_Library'
-                version = '3.34.2'
+                version = '3.34.7a'
             }
         }
     }
