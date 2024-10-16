@@ -1,4 +1,4 @@
-package com.molpay.molpayxdkproject;
+package com.fiuu.xdkandroid;
 
 import android.app.Activity;
 import android.content.Intent;
