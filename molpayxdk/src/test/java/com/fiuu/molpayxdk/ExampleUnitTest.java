@@ -1,4 +1,4 @@
-package com.molpay.molpayxdk;
+package com.fiuu.molpayxdk;
 
 import org.junit.Test;
 

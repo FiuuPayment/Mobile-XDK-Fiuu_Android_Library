@@ -1,10 +1,9 @@
-package com.molpay.molpayxdk.googlepay;
+package com.fiuu.molpayxdk.googlepay;
 
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -25,9 +24,9 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.wallet.AutoResolveHelper;
 import com.google.android.gms.wallet.PaymentData;
 import com.google.android.gms.wallet.WalletConstants;
-import com.molpay.molpayxdk.MOLPayActivity;
-import com.molpay.molpayxdk.R;
-import com.molpay.molpayxdk.databinding.ActivityGooglepayBinding;
+import com.fiuu.molpayxdk.MOLPayActivity;
+import com.fiuu.molpayxdk.R;
+import com.fiuu.molpayxdk.databinding.ActivityGooglepayBinding;
 
 import org.json.JSONException;
 import org.json.JSONObject;

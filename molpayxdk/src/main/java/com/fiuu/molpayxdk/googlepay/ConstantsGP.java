@@ -1,4 +1,4 @@
-package com.molpay.molpayxdk.googlepay;
+package com.fiuu.molpayxdk.googlepay;
 
 import com.google.android.gms.wallet.WalletConstants;
 

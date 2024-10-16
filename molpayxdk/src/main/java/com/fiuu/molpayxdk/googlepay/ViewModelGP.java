@@ -1,7 +1,6 @@
-package com.molpay.molpayxdk.googlepay;
+package com.fiuu.molpayxdk.googlepay;
 
 import android.app.Application;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;

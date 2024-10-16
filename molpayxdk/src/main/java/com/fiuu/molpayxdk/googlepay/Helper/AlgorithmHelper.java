@@ -2,7 +2,7 @@
  * Copyright 2023 Razer Merchant Services.
  */
 
-package com.molpay.molpayxdk.googlepay.Helper;
+package com.fiuu.molpayxdk.googlepay.Helper;
 
 import android.util.Base64;
 

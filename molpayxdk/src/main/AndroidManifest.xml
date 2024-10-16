@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.molpay.molpayxdk">
+    package="com.fiuu.molpayxdk">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application>
-        <activity android:name=".MOLPayActivity"
+        <activity android:name="com.fiuu.molpayxdk.MOLPayActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".googlepay.ActivityGP"
+        <activity android:name="com.fiuu.molpayxdk.googlepay.ActivityGP"
             android:configChanges="orientation|screenSize" />
         <activity
-            android:name=".googlepay.WebActivity"
+            android:name="com.fiuu.molpayxdk.googlepay.WebActivity"
             android:exported="false" />
 
         <!-- Enabling this flag is required in order to use the PaymentsClient -->

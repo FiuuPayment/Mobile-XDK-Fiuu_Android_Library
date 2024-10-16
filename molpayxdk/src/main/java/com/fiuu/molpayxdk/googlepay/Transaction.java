@@ -2,7 +2,7 @@
  * Copyright 2023 Razer Merchant Services.
  */
 
-package com.molpay.molpayxdk.googlepay;
+package com.fiuu.molpayxdk.googlepay;
 
 
 import java.io.Serializable;

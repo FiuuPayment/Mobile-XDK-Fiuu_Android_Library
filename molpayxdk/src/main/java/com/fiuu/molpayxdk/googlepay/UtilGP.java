@@ -1,4 +1,4 @@
-package com.molpay.molpayxdk.googlepay;
+package com.fiuu.molpayxdk.googlepay;
 
 import android.content.Context;
 
