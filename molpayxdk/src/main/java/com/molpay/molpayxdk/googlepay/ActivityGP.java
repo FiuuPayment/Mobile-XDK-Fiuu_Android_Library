@@ -1,4 +1,4 @@
-package com.fiuu.molpayxdk.googlepay;
+package com.molpay.molpayxdk.googlepay;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -24,9 +24,9 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.wallet.AutoResolveHelper;
 import com.google.android.gms.wallet.PaymentData;
 import com.google.android.gms.wallet.WalletConstants;
-import com.fiuu.molpayxdk.MOLPayActivity;
-import com.fiuu.molpayxdk.R;
-import com.fiuu.molpayxdk.databinding.ActivityGooglepayBinding;
+import com.molpay.molpayxdk.MOLPayActivity;
+import com.molpay.molpayxdk.R;
+import com.molpay.molpayxdk.databinding.ActivityGooglepayBinding;
 
 import org.json.JSONException;
 import org.json.JSONObject;

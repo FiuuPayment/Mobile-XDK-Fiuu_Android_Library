@@ -37,7 +37,7 @@
                     android:scheme="testappurl" />
             </intent-filter>
         </activity>
-        <activity android:name="com.fiuu.molpayxdk.MOLPayActivity"
+        <activity android:name="com.molpay.molpayxdk.MOLPayActivity"
             android:label=""/>
 
         <!-- Enabling this flag is required in order to use the PaymentsClient -->

@@ -12,9 +12,9 @@ import android.widget.TextView;
 import com.google.android.gms.wallet.button.ButtonConstants;
 import com.google.android.gms.wallet.button.ButtonOptions;
 import com.google.android.gms.wallet.button.PayButton;
-import com.fiuu.molpayxdk.MOLPayActivity;
-import com.fiuu.molpayxdk.googlepay.ActivityGP;
-import com.fiuu.molpayxdk.googlepay.UtilGP;
+import com.molpay.molpayxdk.MOLPayActivity;
+import com.molpay.molpayxdk.googlepay.ActivityGP;
+import com.molpay.molpayxdk.googlepay.UtilGP;
 
 import org.json.JSONException;
 

@@ -2,13 +2,13 @@
  * Copyright 2023 Razer Merchant Services.
  */
 
-package com.fiuu.molpayxdk.googlepay.Helper;
+package com.molpay.molpayxdk.googlepay.Helper;
 
 import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
-import com.fiuu.molpayxdk.googlepay.ApiRequestService;
+import com.molpay.molpayxdk.googlepay.ApiRequestService;
 
 import org.json.JSONException;
 import org.json.JSONObject;

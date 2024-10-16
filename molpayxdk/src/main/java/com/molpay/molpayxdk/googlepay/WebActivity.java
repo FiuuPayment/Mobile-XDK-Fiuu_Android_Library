@@ -2,7 +2,7 @@
  * Copyright 2023 Razer Merchant Services.
  */
 
-package com.fiuu.molpayxdk.googlepay;
+package com.molpay.molpayxdk.googlepay;
 
 import android.content.Intent;
 import android.graphics.Color;
@@ -25,8 +25,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatTextView;
 
-import com.fiuu.molpayxdk.R;
-import com.fiuu.molpayxdk.googlepay.Helper.RMSGooglePay;
+import com.molpay.molpayxdk.R;
+import com.molpay.molpayxdk.googlepay.Helper.RMSGooglePay;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONException;
