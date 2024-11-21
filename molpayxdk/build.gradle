@@ -43,9 +43,6 @@ dependencies {
 
 afterEvaluate {
     publishing {
-//        mavenAndroid(MavenPublication) {
-//            from components.release  // Use the release build of your Android library
-//        }
         publications {
             release(MavenPublication) {
                 from components.release
