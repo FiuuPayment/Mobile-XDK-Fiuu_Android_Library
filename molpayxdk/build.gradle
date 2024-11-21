@@ -48,7 +48,7 @@ afterEvaluate {
                 from components.release
                 groupId ='com.github.FiuuPayment'
                 artifactId = 'Mobile-XDK-Fiuu_Android_Library'
-                version = '3.34.7a'
+                version = '3.34.8a'
             }
         }
     }
