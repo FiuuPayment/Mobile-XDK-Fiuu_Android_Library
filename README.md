@@ -23,8 +23,7 @@ Add dependencies in build.gradle
         // TODO: Enter your merchant account credentials before test run
         paymentDetails.put(MOLPayActivity.mp_username, "");
         paymentDetails.put(MOLPayActivity.mp_password, "");
-        paymentDetails.put(MOLPayActivity.mp_
-merchant_ID, "");
+        paymentDetails.put(MOLPayActivity.mp_merchant_ID, "");
         paymentDetails.put(MOLPayActivity.mp_app_name, "");
         paymentDetails.put(MOLPayActivity.mp_verification_key, "");
 
