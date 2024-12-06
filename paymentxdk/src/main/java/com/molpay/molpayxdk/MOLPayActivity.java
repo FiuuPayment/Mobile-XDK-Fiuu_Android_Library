@@ -343,13 +343,15 @@ public class MOLPayActivity extends AppCompatActivity {
                         url.contains("market://") ||
                         url.contains("intent://") ||
                         url.contains("alipays://") ||
-                        url.contains("https://app.shopback.com/pay") ) {
+                        url.contains("https://app.shopback.com/pay") ||
+                        url.contains("m.tngdigital.com.my")) {
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                         startActivity(intent);
                     } catch (ActivityNotFoundException e) {
                         // Define what your app should do if no activity can handle the intent.
-                        e.printStackTrace();
+                        //TODO implement logger
+//                        e.printStackTrace();
                     }
                     return true;
                 }
