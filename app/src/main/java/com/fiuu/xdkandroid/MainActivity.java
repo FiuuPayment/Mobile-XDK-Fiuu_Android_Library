@@ -27,10 +27,9 @@ import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
 
+    HashMap<Object, Object> paymentDetails = new HashMap<>();
 
     private void restartmolpay() {
-        HashMap<Object, Object> paymentDetails = new HashMap<>();
-
         paymentDetails.put(MOLPayActivity.mp_amount, "1.10");
 
         // TODO: Enter your merchant account credentials before test run
@@ -51,10 +50,10 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 //        paymentDetails.put(MOLPayActivity.mp_express_mode, false);
 
-//        paymentDetails.put(MOLPayActivity.mp_credit_card_no, "5391720044130101");
-//        paymentDetails.put(MOLPayActivity.mp_credit_card_expiry, "0429");
-//        paymentDetails.put(MOLPayActivity.mp_credit_card_cvv, "691");
-//        paymentDetails.put(MOLPayActivity.mp_credit_card_bank, "Public Bank Berhad");
+//        paymentDetails.put(MOLPayActivity.mp_credit_card_no, "");
+//        paymentDetails.put(MOLPayActivity.mp_credit_card_expiry, "");
+//        paymentDetails.put(MOLPayActivity.mp_credit_card_cvv, "");
+//        paymentDetails.put(MOLPayActivity.mp_credit_card_bank, "");
 
         // TODO: Learn more about optional parameters here https://github.com/RazerMS/Mobile-XDK-RazerMS_Android_Studio/wiki/Installation-Guidance#prepare-the-payment-detail-object
 //        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // For Google Pay Only - Set true if your account enabled extended Verify Payment
@@ -66,10 +65,10 @@ public class MainActivity extends AppCompatActivity {
 //        paymentDetails.put(MOLPayActivity.mp_preferred_token, "new");
         paymentDetails.put(MOLPayActivity.mp_closebutton_display, false);
 
-        openStartActivityResult(paymentDetails);
+        openStartActivityResult();
     }
 
-    private void openStartActivityResult(HashMap<Object, Object> paymentDetails){
+    private void openStartActivityResult(){
         Intent intent = new Intent(MainActivity.this, MOLPayActivity.class);
         intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
         paymentActivityResultLauncher.launch(intent);
@@ -78,8 +77,11 @@ public class MainActivity extends AppCompatActivity {
     ActivityResultLauncher<Intent> paymentActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-
+                Log.d("MOLPAYXDKLibrary", "result: "+result);
+                Log.d("MOLPAYXDKLibrary", "result: "+result.getResultCode());
                 if (result.getResultCode() == MOLPayActivity.RESULT_OK) {
+                    Log.d("MOLPAYXDKLibrary", "result: "+ result.getData().getStringExtra(MOLPayActivity.MOLPayTransactionResult));
+
                     TextView tw = findViewById(R.id.resultTV);
                     tw.setText(result.getData().getStringExtra(MOLPayActivity.MOLPayTransactionResult));
                 }
@@ -114,10 +116,10 @@ public class MainActivity extends AppCompatActivity {
 
         paymentDetails.put(MOLPayActivity.mp_extended_vcode, false);
         // Optional : Set true if your account enabled extended Verify Payment
-        openGPActivityWithResult(paymentDetails);
+        openGPActivityWithResult();
     }
 
-    private void openGPActivityWithResult(HashMap<String, Object> paymentDetails) {
+    private void openGPActivityWithResult() {
         Intent intent = new Intent(MainActivity.this, ActivityGP.class); // Used ActivityGP for Google Pay
         intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
         gpActivityResultLauncher.launch(intent);
@@ -126,6 +128,9 @@ public class MainActivity extends AppCompatActivity {
     ActivityResultLauncher<Intent> gpActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
+                Log.d("MOLPAYXDKLibrary", "result: "+result);
+                Log.d("MOLPAYXDKLibrary", "result: "+result.getResultCode());
+
                 if (result.getResultCode() == MOLPayActivity.RESULT_OK && result.getData() != null) {
                     Intent data = result.getData();
                     String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
@@ -163,9 +168,9 @@ public class MainActivity extends AppCompatActivity {
                             .setAllowedPaymentMethods(UtilGP.getAllowedPaymentMethods().toString())
                             .build()
             );
-            googlePayButton.setOnClickListener(view ->
-                googlePayPayment()
-            );
+            googlePayButton.setOnClickListener(view -> {
+                googlePayPayment();
+            });
         } catch (JSONException e) {
             // Keep Google Pay button hidden (consider logging this to your app analytics service)
         }
