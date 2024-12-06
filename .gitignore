@@ -3,3 +3,4 @@ local.properties
 .idea/*
 molpayxdk/build/*
 molpayxdk/.idea/*
+/paymentxdk/build/
