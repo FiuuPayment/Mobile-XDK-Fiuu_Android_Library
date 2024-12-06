@@ -27,9 +27,10 @@ import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
 
-    HashMap<Object, Object> paymentDetails = new HashMap<>();
 
     private void restartmolpay() {
+        HashMap<Object, Object> paymentDetails = new HashMap<>();
+
         paymentDetails.put(MOLPayActivity.mp_amount, "1.10");
 
         // TODO: Enter your merchant account credentials before test run
@@ -65,10 +66,10 @@ public class MainActivity extends AppCompatActivity {
 //        paymentDetails.put(MOLPayActivity.mp_preferred_token, "new");
         paymentDetails.put(MOLPayActivity.mp_closebutton_display, false);
 
-        openStartActivityResult();
+        openStartActivityResult(paymentDetails);
     }
 
-    private void openStartActivityResult(){
+    private void openStartActivityResult(HashMap<Object, Object> paymentDetails){
         Intent intent = new Intent(MainActivity.this, MOLPayActivity.class);
         intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
         paymentActivityResultLauncher.launch(intent);
@@ -116,10 +117,10 @@ public class MainActivity extends AppCompatActivity {
 
         paymentDetails.put(MOLPayActivity.mp_extended_vcode, false);
         // Optional : Set true if your account enabled extended Verify Payment
-        openGPActivityWithResult();
+        openGPActivityWithResult(paymentDetails);
     }
 
-    private void openGPActivityWithResult() {
+    private void openGPActivityWithResult(HashMap<String, Object> paymentDetails) {
         Intent intent = new Intent(MainActivity.this, ActivityGP.class); // Used ActivityGP for Google Pay
         intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
         gpActivityResultLauncher.launch(intent);
@@ -168,9 +169,9 @@ public class MainActivity extends AppCompatActivity {
                             .setAllowedPaymentMethods(UtilGP.getAllowedPaymentMethods().toString())
                             .build()
             );
-            googlePayButton.setOnClickListener(view -> {
-                googlePayPayment();
-            });
+            googlePayButton.setOnClickListener(view ->
+                googlePayPayment()
+            );
         } catch (JSONException e) {
             // Keep Google Pay button hidden (consider logging this to your app analytics service)
         }
