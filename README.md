@@ -1,6 +1,6 @@
 # [Mobile XDK] – Fiuu Android Library
 
-<alt="" img src="https://user-images.githubusercontent.com/38641542/74424311-a9d64000-4e8c-11ea-8d80-d811cfe66972.jpg">
+<img alt="" src="https://user-images.githubusercontent.com/38641542/74424311-a9d64000-4e8c-11ea-8d80-d811cfe66972.jpg">
 
 Quick Guides
 ------------
@@ -23,7 +23,8 @@ Add dependencies in build.gradle
         // TODO: Enter your merchant account credentials before test run
         paymentDetails.put(MOLPayActivity.mp_username, "");
         paymentDetails.put(MOLPayActivity.mp_password, "");
-        paymentDetails.put(MOLPayActivity.mp_merchant_ID, "");
+        paymentDetails.put(MOLPayActivity.mp_
+merchant_ID, "");
         paymentDetails.put(MOLPayActivity.mp_app_name, "");
         paymentDetails.put(MOLPayActivity.mp_verification_key, "");
 
