@@ -1,6 +1,6 @@
-# [Mobile XDK] – RazerMS Android Library
+# [Mobile XDK] – Fiuu Android Library
 
-<img src="https://user-images.githubusercontent.com/38641542/74424311-a9d64000-4e8c-11ea-8d80-d811cfe66972.jpg">
+<alt="" img src="https://user-images.githubusercontent.com/38641542/74424311-a9d64000-4e8c-11ea-8d80-d811cfe66972.jpg">
 
 Quick Guides
 ------------
@@ -50,7 +50,7 @@ Add dependencies in build.gradle
 
 ### Express Mode
 
-Just add mp_express_mode & set single channel. 
+Just add mp_express_mode & set single channel.
 
 e.g. Express Mode to https://www.maybank2u.com.my/home/m2u/common/login.do
 
@@ -90,14 +90,14 @@ Prepare paymentDetails :
     paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 
     paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment
-    
+
 Start payment by sending paymentDetails to ActivityGP.class :
 
     Intent intent = new Intent(MainActivity.this, ActivityGP.class); // Used ActivityGP for Google Pay
     intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
     startActivityForResult(intent, MOLPayActivity.MOLPayXDK);
 
-Get payment result in onActivityResult : 
+Get payment result in onActivityResult :
 NOTE : Verify payment using formula VrfKey = md5(Amount+secret_key+Domain+TranID+StatCode). Refer Payment results - Google Pay
 
     @Override

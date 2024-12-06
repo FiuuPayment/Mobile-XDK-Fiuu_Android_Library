@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.molpay.molpayxdk">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application>
+        <activity android:name=".MOLPayActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".googlepay.ActivityGP"
+            android:configChanges="orientation|screenSize" />
+        <activity
+            android:name=".googlepay.WebActivity"
+            android:exported="false" />
+
+        <!-- Enabling this flag is required in order to use the PaymentsClient -->
+        <meta-data
+            android:name="com.google.android.gms.wallet.api.enabled"
+            android:value="true" />
+    </application>
+
+</manifest>
