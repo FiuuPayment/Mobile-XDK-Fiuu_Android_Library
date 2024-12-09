@@ -47,7 +47,6 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_bill_email, "example@gmail.com");
         paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 
-        // TODO: Learn more about optional parameters here https://github.com/RazerMS/Mobile-XDK-RazerMS_Android_Studio/wiki/Installation-Guidance#prepare-the-payment-detail-object
 //        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // For Google Pay Only - Set true if your account enabled extended Verify Payment
 //        paymentDetails.put(MOLPayActivity.mp_channel_editing, false);
 //        paymentDetails.put(MOLPayActivity.mp_editing_enabled, true);
@@ -161,9 +160,7 @@ public class MainActivity extends AppCompatActivity {
                             .setAllowedPaymentMethods(UtilGP.getAllowedPaymentMethods().toString())
                             .build()
             );
-            googlePayButton.setOnClickListener(view -> {
-                googlePayPayment();
-            });
+            googlePayButton.setOnClickListener(view -> googlePayPayment());
         } catch (JSONException e) {
             // Keep Google Pay button hidden (consider logging this to your app analytics service)
         }
