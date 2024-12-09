@@ -1,0 +1,7 @@
+Android Studio AAR Maven/JCenter publishing workflow
+====================================================
+
+1) Update version numbers at molpayxdk build.gradle
+2) ./gradlew clean build generateRelease
+3) Go to https://bintray.com/ and create a new version
+4) Upload release-zip to the new version and publish.
