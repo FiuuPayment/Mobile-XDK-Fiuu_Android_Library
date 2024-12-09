@@ -93,11 +93,7 @@ Add dependencies in build.gradle
     ActivityResultLauncher<Intent> paymentActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                Log.d("MOLPAYXDKLibrary", "result: " + result);
-                Log.d("MOLPAYXDKLibrary", "result: " + result.getResultCode());
                 if (result.getResultCode() == MOLPayActivity.RESULT_OK) {
-                    Log.d("MOLPAYXDKLibrary", "result: " + result.getData().getStringExtra(MOLPayActivity.MOLPayTransactionResult));
-
                     TextView tw = findViewById(R.id.resultTV);
                     tw.setText(result.getData().getStringExtra(MOLPayActivity.MOLPayTransactionResult));
                 }
@@ -166,20 +162,15 @@ Start payment by sending paymentDetails to ActivityGP.class :
     ActivityResultLauncher<Intent> gpActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                Log.d("MOLPAYXDKLibrary", "result: " + result);
-                Log.d("MOLPAYXDKLibrary", "result: " + result.getResultCode());
-
                 if (result.getResultCode() == MOLPayActivity.RESULT_OK && result.getData() != null) {
                     Intent data = result.getData();
                     String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
 
                     if (data.getData() != null && transactionResult != null) {
-                        Log.d(MOLPayActivity.MOLPAY, "MOLPay result = " + data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
                         TextView tw = findViewById(R.id.resultTV);
                         tw.setText(data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
                     }
                 } else {
-                    Log.e("logGooglePay", "RESULT_CANCELED data == null");
                     TextView tw = findViewById(R.id.resultTV);
                     tw.setText("result = null");
                 }
@@ -251,7 +242,7 @@ Start payment by sending paymentDetails to ActivityGP.class :
 ## Resources
 
 - GitHub:     https://github.com/FiuuPayment
-- Website:    https://fiuu.com
+- Website:    https://fiuu.com/
 - Twitter:    https://twitter.com/FiuuPayment
 - YouTube:    https://www.youtube.com/FiuuPayment
 - Facebook:   https://www.facebook.com/FiuuPayment/
