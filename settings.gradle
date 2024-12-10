@@ -1,1 +1,1 @@
-include ':app', ':molpayxdk'
+include ':app', ':paymentxdk'

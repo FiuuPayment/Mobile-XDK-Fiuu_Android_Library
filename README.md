@@ -1,9 +1,48 @@
-# [Mobile XDK] – RazerMS Android Library
+# [Mobile XDK] – Fiuu Android Java
 
-<img src="https://user-images.githubusercontent.com/38641542/74424311-a9d64000-4e8c-11ea-8d80-d811cfe66972.jpg">
+<img alt="" src="https://user-images.githubusercontent.com/38641542/74424311-a9d64000-4e8c-11ea-8d80-d811cfe66972.jpg">
 
-Quick Guides
-------------
+This is a fully functional Fiuu Android payment module. It can be seamlessly integrated into Android Studio as a MOLPayXDK module using Gradle integration from the JCenter/Maven repository. For
+reference, we’ve included an example application project called fiuuxdkproject, which demonstrates the integration with the MOLPayXDK framework.
+
+# How does it work ?
+
+1. User Selection:
+   <br>  a. User chooses their preferred payment option or bank.
+   <br>  b. Then press “Proceed.”
+
+3. Bank Credentials:
+   <br> a. User inputs their bank credentials to complete the payment process.
+
+4. Transaction Completion:
+   <br> a. Once the necessary steps are followed, the transaction is successfully completed.
+
+#### Important Note :
+
+To utilize this module, you must be a registered Fiuu merchant. Contact us at sales-sa@fiuu.com to obtain your own credentials for testing or production use.
+
+
+## Getting Started
+
+: Follow the “get started” guide to install Android
+Studio : (https://developer.android.com/studio?gad_source=1&gclid=CjwKCAiAivGuBhBEEiwAWiFmYcRftsvawKYGV68bhK2IluVModqwUchdEU_wli2H39oLU1EdkBiGjxoC3RkQAvD_BwE&gclsrc=aw.ds)
+
+For additional assistance with Android Studio, refer to our [online documentation](https://developer.android.com/studio/intro), which includes tutorials, samples, mobile development guidance, and a
+comprehensive API reference.
+
+## Recommended configurations
+
+When implementing Payment XDK into your project, consider the following:
+
+- Android SDK Version: 33
+
+- Android API Level: 26
+
+- Android target version: Android 8.0
+
+- Android Studio Gradle: 7.4.2
+
+## Installation Guidance
 
 ### All Channels
 
@@ -15,42 +54,56 @@ Add dependencies in build.gradle
 
 ### All Channels / Single Channel
 
-    HashMap<String, Object> paymentDetails = new HashMap<>();
-    
-    // TODO: Enter your merchant account credentials before test run
-    paymentDetails.put(MOLPayActivity.mp_username, "");
-    paymentDetails.put(MOLPayActivity.mp_password, "");
-    paymentDetails.put(MOLPayActivity.mp_merchant_ID, "");
-    paymentDetails.put(MOLPayActivity.mp_app_name, "");
-    paymentDetails.put(MOLPayActivity.mp_verification_key, "");
-    
-    // Use 'multi' for all available channels option. For individual channel seletion, please refer to https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Examples/blob/master/channel-list.md
-    paymentDetails.put(MOLPayActivity.mp_channel, "multi");
-    paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis());
-    paymentDetails.put(MOLPayActivity.mp_currency, "MYR");
-    paymentDetails.put(MOLPayActivity.mp_country, "MY");
-    paymentDetails.put(MOLPayActivity.mp_amount, "1.10");
-    paymentDetails.put(MOLPayActivity.mp_bill_description, "bill description");
-    paymentDetails.put(MOLPayActivity.mp_bill_name, "bill name");
-    paymentDetails.put(MOLPayActivity.mp_bill_email, "example@gmail.com");
-    paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
-    
-    Intent intent = new Intent(MainActivity.this, MOLPayActivity.class);
-    intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
-    startActivityForResult(intent, MOLPayActivity.MOLPayXDK);
-    
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data)
-    {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == MOLPayActivity.MOLPayXDK && resultCode == RESULT_OK){
-            String result = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
-        }
+    private void restartmolpay() {
+        paymentDetails.put(MOLPayActivity.mp_amount, "0.10");
+
+        // TODO: Enter your merchant account credentials before test run
+        paymentDetails.put(MOLPayActivity.mp_username, "");
+        paymentDetails.put(MOLPayActivity.mp_password, "");
+        paymentDetails.put(MOLPayActivity.mp_merchant_ID, "");
+        paymentDetails.put(MOLPayActivity.mp_app_name, "");
+        paymentDetails.put(MOLPayActivity.mp_verification_key, "");
+
+        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis());
+        paymentDetails.put(MOLPayActivity.mp_currency, "MYR");
+        paymentDetails.put(MOLPayActivity.mp_country, "MY");
+        paymentDetails.put(MOLPayActivity.mp_channel, "multi");
+        paymentDetails.put(MOLPayActivity.mp_bill_description, "bill description");
+        paymentDetails.put(MOLPayActivity.mp_bill_name, "bill name");
+        paymentDetails.put(MOLPayActivity.mp_bill_email, "example@gmail.com");
+        paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
+
+      //        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // For Google Pay Only - Set true if your account enabled extended Verify Payment
+      //        paymentDetails.put(MOLPayActivity.mp_channel_editing, false);
+      //        paymentDetails.put(MOLPayActivity.mp_editing_enabled, true);
+      paymentDetails.put(MOLPayActivity.mp_express_mode, false);
+      paymentDetails.put(MOLPayActivity.mp_dev_mode, false);
+      //        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
+      //        paymentDetails.put(MOLPayActivity.mp_preferred_token, "new");
+
+        openStartActivityResult();
     }
+
+      private void openStartActivityResult() {
+            Intent intent = new Intent(MainActivity.this, MOLPayActivity.class);
+            intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
+            paymentActivityResultLauncher.launch(intent);
+      }
+
+    ActivityResultLauncher<Intent> paymentActivityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == MOLPayActivity.RESULT_OK) {
+                    TextView tw = findViewById(R.id.resultTV);
+                    tw.setText(result.getData().getStringExtra(MOLPayActivity.MOLPayTransactionResult));
+                }
+
+            }
+    );
 
 ### Express Mode
 
-Just add mp_express_mode & set single channel. 
+Just add mp_express_mode & set single channel.
 
 e.g. Express Mode to https://www.maybank2u.com.my/home/m2u/common/login.do
 
@@ -68,55 +121,61 @@ Find all mp_channel list here https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Exa
 
 Prepare paymentDetails :
 
-    HashMap<String, Object> paymentDetails = new HashMap<>();
-    
-    // TODO: Follow Google’s instructions to request production access for your app: https://developers.google.com/pay/api/android/guides/test-and-deploy/request-prod-access
-    // Choose the integration type Gateway when prompted, and provide screenshots of your app for review.
-    // After your app has been approved, test your integration in production by set mp_sandbox_mode = false & use production mp_verification_key & mp_merchant_ID.
-    // Then launching Google Pay from a signed, release build of your app.
-    paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // Only set to false once you have request production access for your app
-    
-    // TODO: Enter your merchant account credentials before test run
-    paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Your sandbox / production merchant ID
-    paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Your sandbox / production verification key
-    
-    paymentDetails.put(MOLPayActivity.mp_amount, "1.11"); // Must be in 2 decimal points format
-    paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Must be unique
-    paymentDetails.put(MOLPayActivity.mp_currency, "MYR"); // Must matched mp_country
-    paymentDetails.put(MOLPayActivity.mp_country, "MY"); // Must matched mp_currency
-    paymentDetails.put(MOLPayActivity.mp_bill_description, "The bill description");
-    paymentDetails.put(MOLPayActivity.mp_bill_name, "The bill name");
-    paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
-    paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
+    private void googlePayPayment() {
+        paymentDetails = new HashMap<>();
 
-    paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment
-    
-Start payment by sending paymentDetails to ActivityGP.class :
+        /*
+            TODO: Follow Google’s instructions to request production access for your app: https://developers.google.com/pay/api/android/guides/test-and-deploy/request-prod-access
+            *
+             Choose the integration type Gateway when prompted, and provide screenshots of your app for review.
+             After your app has been approved, test your integration in production by set mp_sandbox_mode = false & use production mp_verification_key & mp_merchant_ID.
+             Then launching Google Pay from a signed, release build of your app.
+             */
+        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // Only set to false once you have request production access for your app
 
-    Intent intent = new Intent(MainActivity.this, ActivityGP.class); // Used ActivityGP for Google Pay
-    intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
-    startActivityForResult(intent, MOLPayActivity.MOLPayXDK);
+        // TODO: Enter your merchant account credentials before test run
+        paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Your sandbox / production merchant ID
+        paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Your sandbox / production verification key
 
-Get payment result in onActivityResult : 
-NOTE : Verify payment using formula VrfKey = md5(Amount+secret_key+Domain+TranID+StatCode). Refer Payment results - Google Pay
+        paymentDetails.put(MOLPayActivity.mp_amount, "1.01"); // Must be in 2 decimal points format
+        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Must be unique
+        paymentDetails.put(MOLPayActivity.mp_currency, "MYR"); // Must matched mp_country
+        paymentDetails.put(MOLPayActivity.mp_country, "MY"); // Must matched mp_currency
+        paymentDetails.put(MOLPayActivity.mp_bill_description, "The bill description");
+        paymentDetails.put(MOLPayActivity.mp_bill_name, "The bill name");
+        paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
+        paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data)
-    {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        Log.e("logGooglePay" , "onActivityResult requestCode = " + requestCode);
-        Log.e("logGooglePay" , "onActivityResult resultCode = " + resultCode);
-
-        if (requestCode == MOLPayActivity.MOLPayXDK && data != null){
-            if (data.getStringExtra(MOLPayActivity.MOLPayTransactionResult) != null) {
-                Log.d(MOLPayActivity.MOLPAY, "MOLPay result = " + data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
-                TextView tw = findViewById(R.id.resultTV);
-                tw.setText(data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
-            }
-        }
+        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment
+        openGPActivityWithResult();
 
     }
+
+Start payment by sending paymentDetails to ActivityGP.class :
+
+      private void openGPActivityWithResult() {
+            Intent intent = new Intent(MainActivity.this, ActivityGP.class); // Used ActivityGP for Google Pay
+            intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
+            gpActivityResultLauncher.launch(intent);
+      }
+
+    ActivityResultLauncher<Intent> gpActivityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == MOLPayActivity.RESULT_OK && result.getData() != null) {
+                    Intent data = result.getData();
+                    String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
+
+                    if (data.getData() != null && transactionResult != null) {
+                        TextView tw = findViewById(R.id.resultTV);
+                        tw.setText(data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
+                    }
+                } else {
+                    TextView tw = findViewById(R.id.resultTV);
+                    tw.setText("result = null");
+                }
+            }
+    );
 
 ## Payment results - Google Pay
 
@@ -175,32 +234,28 @@ NOTE : Verify payment using formula VrfKey = md5(Amount+secret_key+Domain+TranID
     1) Need makesure all required parameters filled correctly.
     2) Need set mp_extended_vcode = true if enabled extended Verify Payment.
 
-    Error A01 - "Fail to detokenize Google Pay Token given" - Error starting a payment process due to several possible reasons, please contact Razer Merchant Services support should the error persists.
+    Error A01 - "Fail to detokenize Google Pay Token given" - Error starting a payment process due to several possible reasons, please contact Fiuu support should the error persists.
     1) Misconfigure GooglePay setup
     2) API credentials (username, password, merchant id, verify key)
-    3) Razer Merchant Services server offline.
+    3) Payment Server Offline.
 
 ## Resources
 
 - GitHub:     https://github.com/FiuuPayment
-- Website:    https://fiuu.com
-- Twitter:    https://twitter.com/Fiuu_Payment
-- YouTube:    https://www.youtube.com/@FiuuPayment
-- Facebook:   https://www.facebook.com/FiuuPayment
-- Instagram:  https://www.instagram.com/RazerMerchantServices
+- Website:    https://fiuu.com/
+- Twitter:    https://twitter.com/FiuuPayment
+- YouTube:    https://www.youtube.com/FiuuPayment
+- Facebook:   https://www.facebook.com/FiuuPayment/
+- Instagram:  https://www.instagram.com/FiuuPayment/
 
-Issues
-------------
+## Support
 
-Submit issue to this repository or email to our support-sa@razer.com
+Submit issue to this repository or email to our support-sa@fiuu.com
 
-Support
--------
-
-Merchant Technical Support / Customer Care : support-sa@razer.com <br>
-Sales/Reseller Enquiry : sales-sa@razer.com <br>
-Marketing Campaign : marketing-sa@razer.com <br>
-Channel/Partner Enquiry : channel-sa@razer.com <br>
-Media Contact : media-sa@razer.com <br>
-R&D and Tech-related Suggestion : technical-sa@razer.com <br>
-Abuse Reporting : abuse-sa@razer.com
+Merchant Technical Support / Customer Care : support-sa@fiuu.com<br>
+Sales/Reseller Enquiry : sales-sa@fiuu.com<br>
+Marketing Campaign : marketing-sa@fiuu.com<br>
+Channel/Partner Enquiry : channel-sa@fiuu.com<br>
+Media Contact : media-sa@fiuu.com<br>
+R&D and Tech-related Suggestion : technical-sa@fiuu.com<br>
+Abuse Reporting : abuse-sa@fiuu.com
