@@ -53,56 +53,47 @@ public class RMSGooglePay {
                 error.put("error", "400");
                 error.put("message", "Invalid Order Id");
                 return error;
-            }
-            else if (!AMOUNT.matcher(amount).matches()) {
+            } else if (!AMOUNT.matcher(amount).matches()) {
                 //throw new IllegalArgumentException("Invalid String");
                 error.put("error", "400");
                 error.put("message", "Invalid Amount");
                 return error;
-            }
-            else if (!CURRENCY.matcher(currency).matches()) {
+            } else if (!CURRENCY.matcher(currency).matches()) {
                 //throw new IllegalArgumentException("Invalid String");
                 error.put("error", "400");
                 error.put("message", "Invalid Currency");
                 return error;
-            }
-            else if (!BILLNAME.matcher(billName).matches()) {
+            } else if (!BILLNAME.matcher(billName).matches()) {
                 //throw new IllegalArgumentException("Invalid String");
                 error.put("error", "400");
                 error.put("message", "Invalid Billing Name");
                 return error;
-            }
-            else if (!BILLEMAIL.matcher(billEmail).matches()) {
+            } else if (!BILLEMAIL.matcher(billEmail).matches()) {
                 //throw new IllegalArgumentException("Invalid String");
                 error.put("error", "400");
                 error.put("message", "Invalid Billing Email");
                 return error;
-            }
-            else if (!BILLPHONE.matcher(billPhone).matches()) {
+            } else if (!BILLPHONE.matcher(billPhone).matches()) {
                 //throw new IllegalArgumentException("Invalid String");
                 error.put("error", "400");
                 error.put("message", "Invalid Billing Phone");
                 return error;
-            }
-            else if (!BILLDESC.matcher(billDesc).matches()) {
+            } else if (!BILLDESC.matcher(billDesc).matches()) {
                 //throw new IllegalArgumentException("Invalid String");
                 error.put("error", "400");
                 error.put("message", "Invalid Billing Description");
                 return error;
-            }
-            else if (!MERCHANTID.matcher(merchantId).matches()) {
+            } else if (!MERCHANTID.matcher(merchantId).matches()) {
                 //throw new IllegalArgumentException("Invalid String");
                 error.put("error", "400");
                 error.put("message", "Invalid Merchant Id");
                 return error;
-            }
-            else if (!VERFICATIONKEY.matcher(verificationKey).matches()) {
+            } else if (!VERFICATIONKEY.matcher(verificationKey).matches()) {
                 //throw new IllegalArgumentException("Invalid String");
                 error.put("error", "400");
                 error.put("message", "Invalid Verification Key");
                 return error;
-            }
-            else if (!ENV.matcher(isSandbox).matches()) {
+            } else if (!ENV.matcher(isSandbox).matches()) {
                 //throw new IllegalArgumentException("Invalid String");
                 error.put("error", "400");
                 error.put("message", "Invalid Input Sandbox");

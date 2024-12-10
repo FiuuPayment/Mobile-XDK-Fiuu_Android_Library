@@ -53,7 +53,7 @@ public class WebActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Log.e("logGooglePay" , "WebActivity");
+        Log.e("logGooglePay", "WebActivity");
 
         setContentView(R.layout.activity_web);
 
@@ -67,7 +67,7 @@ public class WebActivity extends AppCompatActivity {
             paymentInputObj = new JSONObject(paymentInput);
             transaction.setVkey(paymentInputObj.getString("verificationKey"));
             isSandbox = paymentInputObj.getString("isSandbox");
-            // Log.e("logGooglePay" , "WebActivity isSandbox = " + isSandbox);
+            Log.e("logGooglePay", "WebActivity isSandbox = " + isSandbox);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -107,7 +107,7 @@ public class WebActivity extends AppCompatActivity {
             @Override
             public void handleOnBackPressed() {
                 // Do nothing - prevent user from performing backpress
-                // Log.e("logGooglePay" , "WebActivity GP backpressed");
+                Log.e("logGooglePay", "WebActivity GP backpressed");
             }
         };
 
@@ -157,17 +157,17 @@ public class WebActivity extends AppCompatActivity {
                             JSONObject responseBodyObj = new JSONObject(responseBody);
 
                             // If StatCode
-                            if (responseBodyObj.has("StatCode")){
+                            if (responseBodyObj.has("StatCode")) {
                                 String statCodeValue = responseBodyObj.getString("StatCode");
 
                                 Intent intent = new Intent();
                                 intent.putExtra("response", String.valueOf(responseBodyObj));
 
-                                // Log.e("logGooglePay" , "statCodeValue " + statCodeValue);
+                                Log.e("logGooglePay", "statCodeValue " + statCodeValue);
 
                                 if (statCodeValue.equals("00")) {
                                     if (statCodeValueSuccess) {
-                                        // Log.e("logGooglePay" , "statCodeValueSuccess finish");
+                                        Log.e("logGooglePay", "statCodeValueSuccess finish");
                                         onFinish();
                                     }
                                 } else if (statCodeValue.equals("11")) {
@@ -196,7 +196,7 @@ public class WebActivity extends AppCompatActivity {
                                                 setResult(RESULT_CANCELED, intent);
                                                 finish();
                                             }).show();
-                                }  else if (statCodeValue.equals("22")) {
+                                } else if (statCodeValue.equals("22")) {
                                     // Do Nothing - It will auto handle
                                 }
                             }
@@ -221,10 +221,10 @@ public class WebActivity extends AppCompatActivity {
                     Intent intent = new Intent();
                     intent.putExtra("response", String.valueOf(responseBodyObj));
 
-                    // Log.e("logGooglePay" , "onFinish response = " + String.valueOf(responseBodyObj));
+                    Log.e("logGooglePay", "onFinish response = " + String.valueOf(responseBodyObj));
 
                     // If timeout / cancel
-                    if (!responseBodyObj.has("StatCode")){
+                    if (!responseBodyObj.has("StatCode")) {
                         setResult(RESULT_CANCELED, intent);
                     } else {
                         setResult(RESULT_OK, intent);
@@ -242,6 +242,7 @@ public class WebActivity extends AppCompatActivity {
     }
 
     private String xdkHTMLRedirection = "";
+
     private void onLoadHtmlWebView(String plainHtml) {
 
 //        wvGateway.setVisibility(View.VISIBLE);
@@ -251,7 +252,7 @@ public class WebActivity extends AppCompatActivity {
 
         String encodedHtml = Base64.encodeToString(plainHtml.getBytes(), Base64.NO_PADDING);
 
-        // Log.e("logGooglePay" , "plainHtml = " + plainHtml);
+        Log.e("logGooglePay", "plainHtml = " + plainHtml);
 
         if (plainHtml.contains("xdkHTMLRedirection")) {
             xdkHTMLRedirection = StringUtils.substringBetween(plainHtml, "xdkHTMLRedirection' value='", "'");
@@ -384,13 +385,13 @@ public class WebActivity extends AppCompatActivity {
     public class PaymentThread implements Runnable {
         private volatile String resp;
         private String paymentInput;
-        private String  paymentInfo;
+        private String paymentInfo;
 
         public String getValue() {
             return resp;
         }
 
-        public void setValue(String paymentInput, String  paymentInfo) {
+        public void setValue(String paymentInput, String paymentInfo) {
             this.paymentInput = paymentInput;
             this.paymentInfo = paymentInfo;
         }
@@ -398,14 +399,14 @@ public class WebActivity extends AppCompatActivity {
         @Override
         public void run() {
 
-                RMSGooglePay pay = new RMSGooglePay();
-                JSONObject result = null;
+            RMSGooglePay pay = new RMSGooglePay();
+            JSONObject result = null;
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    result = (JSONObject) pay.requestPayment(paymentInput, paymentInfo);
-                }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                result = (JSONObject) pay.requestPayment(paymentInput, paymentInfo);
+            }
 
-                resp = result.toString();
+            resp = result.toString();
 
         }
     }
@@ -425,11 +426,11 @@ public class WebActivity extends AppCompatActivity {
         @Override
         public void run() {
 
-                RMSGooglePay pay = new RMSGooglePay();
-                JSONObject result = (JSONObject) pay.queryPaymentResult(transaction);
-                if (result != null) {
-                    resp = result.toString();
-                }
+            RMSGooglePay pay = new RMSGooglePay();
+            JSONObject result = (JSONObject) pay.queryPaymentResult(transaction);
+            if (result != null) {
+                resp = result.toString();
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 local.properties
 .gradle/*
 .idea/*
-molpayxdk/build/*
-molpayxdk/.idea/*
+paymentxdk/build/*
+paymentxdk/.idea/*

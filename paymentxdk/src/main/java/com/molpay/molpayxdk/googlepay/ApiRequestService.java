@@ -40,7 +40,7 @@ public class ApiRequestService {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public Object GetPaymentRequest(JSONObject paymentInput, String paymentInfo ) {
+    public Object GetPaymentRequest(JSONObject paymentInput, String paymentInfo) {
 
         try {
             String endPoint = "";
@@ -68,16 +68,16 @@ public class ApiRequestService {
 
             //"Signature": "<MD5(amount+merchantID+referenceNo+Vkey)>",
             String vCode = ApplicationHelper.getInstance().GetVCode(
-                amount,
-                merchantId,
-                orderId,
-                verificationKey,
-                currency,
-                extendedVCode
+                    amount,
+                    merchantId,
+                    orderId,
+                    verificationKey,
+                    currency,
+                    extendedVCode
             );
 
             String GooglePayBase64 = Base64.getEncoder()
-                                    .encodeToString(paymentInfo.getBytes());
+                    .encodeToString(paymentInfo.getBytes());
 
             Uri.Builder builder = new Uri.Builder()
                     .appendQueryParameter("MerchantID", merchantId)
@@ -93,14 +93,14 @@ public class ApiRequestService {
                     .appendQueryParameter("mpsl_version", "2")
                     .appendQueryParameter("GooglePay", GooglePayBase64);
 
-                return postRequest(uri, builder);
+            return postRequest(uri, builder);
         } catch (JSONException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    public Object GetPaymentResult(JSONObject transaction ) {
+    public Object GetPaymentResult(JSONObject transaction) {
         try {
             String endPoint = "";
 

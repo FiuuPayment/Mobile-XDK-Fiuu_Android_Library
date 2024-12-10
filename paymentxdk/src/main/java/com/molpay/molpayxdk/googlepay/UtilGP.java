@@ -81,7 +81,7 @@ public class UtilGP {
 
     /**
      * Card authentication methods supported by your app and your gateway.
-     *
+     * <p>
      * and make updates in Constants.java.
      *
      * @return Allowed card authentication methods.
@@ -139,6 +139,7 @@ public class UtilGP {
 
     /**
      * Return a collection of payment methods allowed to complete the operation with Google Pay.
+     *
      * @return A JSONArray object with the list of payment methods.
      * @throws JSONException
      */

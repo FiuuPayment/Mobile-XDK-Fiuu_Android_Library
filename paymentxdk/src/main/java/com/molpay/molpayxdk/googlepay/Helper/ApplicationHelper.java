@@ -23,7 +23,7 @@ public class ApplicationHelper {
     public String GetVCode(String amount, String merchantID, String orderId, String verifyKey, String currency, boolean extendedVCode) {
         byte[] hashData;
 
-        // Log.e("logGooglePay" , "extendedVCode = " + extendedVCode);
+        Log.e("logGooglePay", "extendedVCode = " + extendedVCode);
 
         if (extendedVCode) {
             hashData = AlgorithmHelper.md5(amount + merchantID + orderId + verifyKey + currency);
