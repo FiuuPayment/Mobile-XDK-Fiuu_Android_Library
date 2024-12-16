@@ -51,7 +51,7 @@ import java.util.Objects;
 
 public class MOLPayActivity extends AppCompatActivity {
 
-    //    public final static int MOLPayXDK = 9999;
+    public final static int MOLPayXDK = 9999;
     public final static String MOLPayPaymentDetails = "paymentDetails";
     public final static String MOLPayTransactionResult = "transactionResult";
     public final static String mp_amount = "mp_amount";
