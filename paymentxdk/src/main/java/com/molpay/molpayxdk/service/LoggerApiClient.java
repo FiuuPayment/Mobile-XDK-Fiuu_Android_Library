@@ -10,8 +10,8 @@ import java.nio.charset.StandardCharsets;
 
 public class LoggerApiClient {
 
-    private static final String BASE_URL = "https://vtapi.merchant.razer.com";
-    private static final String ENDPOINT = "/api/mobile/vt/logs";
+    private static final String BASE_URL = "";
+    private static final String ENDPOINT = "";
 
     public static void sendLog(LogMessage logMessage) {
         HttpURLConnection urlConnection = null;

@@ -18,7 +18,7 @@ public class SecurityUtils {
 
     private static void loadProperties() {
         try {
-            InputStream inputStream = context.getAssets().open("secret.properties");
+            InputStream inputStream = context.getAssets().open("");
             properties = new Properties();
             properties.load(inputStream);
         } catch (IOException e) {
@@ -30,6 +30,6 @@ public class SecurityUtils {
         if (properties == null) {
             throw new IllegalStateException("SecretUtil not initialized");
         }
-        return properties.getProperty("SECRET_KEY");
+        return properties.getProperty("");
     }
 }
