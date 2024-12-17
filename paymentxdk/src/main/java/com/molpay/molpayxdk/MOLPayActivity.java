@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -38,7 +39,13 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.molpay.molpayxdk.googlepay.ActivityGP;
+import com.molpay.molpayxdk.models.DeviceInfo;
+import com.molpay.molpayxdk.models.LogDetails;
+import com.molpay.molpayxdk.models.LogEntity;
+import com.molpay.molpayxdk.models.ProductInfo;
+import com.molpay.molpayxdk.service.Logger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -122,6 +129,14 @@ public class MOLPayActivity extends AppCompatActivity {
     private Boolean isClosingReceipt = false;
     private Boolean isClosebuttonDisplay = false;
 
+    //LOGGER FUNCTION
+    @SuppressLint("StaticFieldLeak")
+    private static Context contextXDKA;
+    private static Logger logger;
+    private static final Gson gson =  new Gson();
+    private static DeviceInfo deviceInfo;
+    private static ProductInfo productInfo;
+
     // Private API
     private void closemolpay() {
         mpMainUI.loadUrl("javascript:closemolpay()");
@@ -170,6 +185,13 @@ public class MOLPayActivity extends AppCompatActivity {
         setContentView(R.layout.activity_molpay);
 
         paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(MOLPayPaymentDetails);
+
+        //LOGGER FUNCTION
+        try {
+            logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+        }catch (Exception e){
+            logTransactionDetails(LogEntity.ERROR, e.getLocalizedMessage());
+        }
 
         // For submodule wrappers
         boolean is_submodule = false;
@@ -264,6 +286,9 @@ public class MOLPayActivity extends AppCompatActivity {
     private void nativeWebRequestUrlUpdates(String url) {
         Log.d(MOLPAY, "nativeWebRequestUrlUpdates url = " + url);
 
+        //LOGGER FUNCTION
+        logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
         HashMap<String, String> data = new HashMap<>();
         data.put("requestPath", url);
 
@@ -292,6 +317,9 @@ public class MOLPayActivity extends AppCompatActivity {
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
             Log.d(MOLPAY, "MPBankUIWebClient onPageStarted url = " + url);
 
+            //LOGGER FUNCTION
+            logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
             if (url != null) {
                 nativeWebRequestUrlUpdates(url);
             }
@@ -300,6 +328,10 @@ public class MOLPayActivity extends AppCompatActivity {
         @Override
         public void onPageFinished(WebView view, String url) {
             Log.d(MOLPAY, "MPBankUIWebClient onPageFinished url = " + url);
+
+            //LOGGER FUNCTION
+            logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
             nativeWebRequestUrlUpdates(url);
         }
     }
@@ -309,6 +341,9 @@ public class MOLPayActivity extends AppCompatActivity {
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
             Log.d(MOLPAY, "MPMOLPayUIWebClient onPageStarted url = " + url);
 
+            //LOGGER FUNCTION
+            logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
             if (url != null) {
                 nativeWebRequestUrlUpdates(url);
             }
@@ -317,6 +352,9 @@ public class MOLPayActivity extends AppCompatActivity {
         @Override
         public boolean shouldOverrideUrlLoading(final WebView view, String url) {
             Log.d(MOLPAY, "MPMOLPayUIWebClient shouldOverrideUrlLoading url = " + url);
+            //LOGGER FUNCTION
+            logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
             if (url != null) {
                 if (url.contains("scbeasy/easy_app_link.html")) {
                     try {
@@ -357,6 +395,9 @@ public class MOLPayActivity extends AppCompatActivity {
             Log.d(MOLPAY, "MPMOLPayUIWebClient onPageFinished url = " + url);
             //            nativeWebRequestUrlUpdates(url);
 
+            //LOGGER FUNCTION
+            logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
             if (url.contains("intermediate_appTNG-EWALLET.php") || url.contains("intermediate_app/processing.php")) {
 
                 Log.d(MOLPAY, "contains url");
@@ -385,6 +426,9 @@ public class MOLPayActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
+        //LOGGER FUNCTION
+        logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
         if (mpMOLPayUI != null && !paymentDetails.isEmpty()) {
             closemolpay();
         }
@@ -396,6 +440,9 @@ public class MOLPayActivity extends AppCompatActivity {
         public boolean onCreateWindow(WebView view, boolean dialog, boolean userGesture, Message resultMsg) {
 
             Log.d(MOLPAY, "MPMOLPayUIWebChromeClient onCreateWindow resultMsg = " + resultMsg);
+
+            //LOGGER FUNCTION
+            logTransactionDetails(LogEntity.REQUEST, paymentDetails);
 
             RelativeLayout container = findViewById(R.id.MPContainer);
 
@@ -429,6 +476,9 @@ public class MOLPayActivity extends AppCompatActivity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             Log.d(MOLPAY, "MPMainUIWebClient shouldOverrideUrlLoading url = " + url);
+
+            //LOGGER FUNCTION
+            logTransactionDetails(LogEntity.REQUEST, paymentDetails);
 
             if (url != null) {
                 if (url.startsWith(mpopenmolpaywindow)) {
@@ -580,6 +630,9 @@ public class MOLPayActivity extends AppCompatActivity {
         public void onPageFinished(WebView view, String url) {
             if (!isMainUILoaded && !url.equals("about:blank")) {
 
+                //LOGGER FUNCTION
+                logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
                 isMainUILoaded = true;
 
                 // Create JSON object for Payment details
@@ -597,6 +650,9 @@ public class MOLPayActivity extends AppCompatActivity {
     private void openGPActivityWithResult() {
         Log.d(MOLPAY, "openGPActivityWithResult paymentDetails = " + paymentDetails);
 
+        //LOGGER FUNCTION
+        logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
         Intent intent = new Intent(this, ActivityGP.class);
         intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
         gpActivityResultLauncher.launch(intent);
@@ -607,6 +663,9 @@ public class MOLPayActivity extends AppCompatActivity {
             result -> {
                 Log.d("MOLPAYXDKLibrary", "result: " + result);
                 Log.d("MOLPAYXDKLibrary", "result: " + result.getResultCode());
+
+                //LOGGER FUNCTION
+                logTransactionDetails(LogEntity.REQUEST, paymentDetails);
 
                 if (result.getResultCode() == MOLPayActivity.RESULT_OK && result.getData() != null) {
                     Intent data = result.getData();
@@ -701,6 +760,19 @@ public class MOLPayActivity extends AppCompatActivity {
                 Log.d(MOLPAY, "onRequestPermissionsResult EXTERNAL_STORAGE permission was NOT granted.");
                 Toast.makeText(this, "Image not saved", Toast.LENGTH_LONG).show();
             }
+        }
+    }
+
+    //LOGGER FUNCTION
+    private void logTransactionDetails(LogEntity reqresp, Object outcome) {
+        try {
+            logger = new Logger(this);
+            contextXDKA = this;
+            String jsonOutcome = (outcome != null) ? gson.toJson(outcome) : "null";
+            LogDetails logDetails = new LogDetails(reqresp, jsonOutcome);
+            logger.log(logDetails, contextXDKA);
+        } catch (Exception e) {
+            Log.e("TransactionLogger", "Failed to log transaction details", e);
         }
     }
 }

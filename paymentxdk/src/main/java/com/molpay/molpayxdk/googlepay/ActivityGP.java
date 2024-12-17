@@ -1,7 +1,9 @@
 package com.molpay.molpayxdk.googlepay;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -25,9 +27,15 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.wallet.AutoResolveHelper;
 import com.google.android.gms.wallet.PaymentData;
 import com.google.android.gms.wallet.WalletConstants;
+import com.google.gson.Gson;
 import com.molpay.molpayxdk.MOLPayActivity;
 import com.molpay.molpayxdk.R;
 import com.molpay.molpayxdk.databinding.ActivityGooglepayBinding;
+import com.molpay.molpayxdk.models.DeviceInfo;
+import com.molpay.molpayxdk.models.LogDetails;
+import com.molpay.molpayxdk.models.LogEntity;
+import com.molpay.molpayxdk.models.ProductInfo;
+import com.molpay.molpayxdk.service.Logger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -57,6 +65,14 @@ public class ActivityGP extends AppCompatActivity {
     public static String COUNTRY_CODE = "MY";
     public static String CURRENCY_CODE = "MYR";
     public static int PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_TEST; // 3 = TEST & 1 = PRODUCTION
+
+    //LOGGER FUNCTION
+    @SuppressLint("StaticFieldLeak")
+    private static Context contextXDKA;
+    private static Logger logger;
+    private static final Gson gson =  new Gson();
+    private static DeviceInfo deviceInfo;
+    private static ProductInfo productInfo;
 
     // Handle potential conflict from calling loadPaymentData.
     ActivityResultLauncher<IntentSenderRequest> resolvePaymentForResult = registerForActivityResult(
@@ -99,6 +115,13 @@ public class ActivityGP extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(MOLPayPaymentDetails);
+
+        //LOGGER FUNCTION
+        try {
+            logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+        }catch (Exception e){
+            logTransactionDetails(LogEntity.ERROR, e.getLocalizedMessage());
+        }
 
         if (paymentDetails != null) {
             COUNTRY_CODE = Objects.requireNonNull(paymentDetails.get("mp_country")).toString();
@@ -162,6 +185,9 @@ public class ActivityGP extends AppCompatActivity {
         Log.e("logGooglePay", "mp_amount = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString());
         Log.e("logGooglePay", "totalPriceCents = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
 
+        //LOGGER FUNCTION
+        logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
         // The price provided to the API should include taxes and shipping.
         // This price is not displayed to the user.
         long totalPriceCents = Long.parseLong(Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
@@ -204,6 +230,9 @@ public class ActivityGP extends AppCompatActivity {
 
         pbLoading.setVisibility(View.VISIBLE);
         Log.e("logGooglePay", "handlePaymentSuccess");
+
+        //LOGGER FUNCTION
+        logTransactionDetails(LogEntity.REQUEST, paymentDetails);
 
         final String paymentInfo = paymentData.toJson();
 
@@ -275,6 +304,9 @@ public class ActivityGP extends AppCompatActivity {
 
         super.onActivityResult(requestCode, resultCode, data);
 
+        //LOGGER FUNCTION
+        logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
 //        CharSequence response;
         String response = "";
 
@@ -331,6 +363,19 @@ public class ActivityGP extends AppCompatActivity {
                     }
                     break;
             }
+        }
+    }
+
+    //LOGGER FUNCTION
+    private void logTransactionDetails(LogEntity reqresp, Object outcome) {
+        try {
+            logger = new Logger(this);
+            contextXDKA = this;
+            String jsonOutcome = (outcome != null) ? gson.toJson(outcome) : "null";
+            LogDetails logDetails = new LogDetails(reqresp, jsonOutcome);
+            logger.log(logDetails, contextXDKA);
+        } catch (Exception e) {
+            Log.e("TransactionLogger", "Failed to log transaction details", e);
         }
     }
 
