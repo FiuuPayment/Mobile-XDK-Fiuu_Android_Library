@@ -80,6 +80,10 @@ public class ActivityGP extends AppCompatActivity {
             result -> {
                 Log.e("logGooglePay", "resolvePaymentForResult");
                 Log.e("logGooglePay", "result.getResultCode() = " + result.getResultCode());
+
+                //LOGGER FUNCTION
+                logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
                 switch (result.getResultCode()) {
                     case Activity.RESULT_OK:
                         Intent resultData = result.getData();
@@ -324,6 +328,9 @@ public class ActivityGP extends AppCompatActivity {
 
                         Log.e("logGooglePay", "RESULT_OK response = " + response);
 
+                        //LOGGER FUNCTION
+                        logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
                         Intent result = new Intent();
                         result.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
                         setResult(RESULT_OK, result);
@@ -342,12 +349,19 @@ public class ActivityGP extends AppCompatActivity {
                     if (data != null) {
                         response = data.getStringExtra("response");
                         Log.e("logGooglePay", "RESULT_CANCELED response = " + response);
+
+                        //LOGGER FUNCTION
+                        logTransactionDetails(LogEntity.ERROR, paymentDetails);
+
                         Intent resultCancel = new Intent();
                         resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
                         setResult(RESULT_CANCELED, resultCancel);
                     } else {
                         Log.e("logGooglePay", "RESULT_CANCELED data = null");
                         setResult(RESULT_CANCELED, null);
+
+                        //LOGGER FUNCTION
+                        logTransactionDetails(LogEntity.ERROR, paymentDetails);
                     }
 
                     finish();
@@ -360,6 +374,9 @@ public class ActivityGP extends AppCompatActivity {
                     } else {
                         Log.e("logGooglePay", "RESULT_ERROR status = null");
                         handleError(0, "");
+
+                        //LOGGER FUNCTION
+                        logTransactionDetails(LogEntity.ERROR, paymentDetails);
                     }
                     break;
             }

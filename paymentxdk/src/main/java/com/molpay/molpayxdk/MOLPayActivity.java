@@ -151,6 +151,9 @@ public class MOLPayActivity extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         JSONObject json = new JSONObject(paymentDetails);
 
+        //LOGGER FUNCTION
+        logTransactionDetails(LogEntity.REQUEST, paymentDetails);
+
         try {
             if (json.has("mp_closebutton_display")) {
                 isClosebuttonDisplay = json.getBoolean("mp_closebutton_display");
@@ -174,6 +177,9 @@ public class MOLPayActivity extends AppCompatActivity {
         if (id == R.id.closeBtn) {
             closemolpay();
         }
+
+        //LOGGER FUNCTION
+        logTransactionDetails(LogEntity.REQUEST, paymentDetails);
 
         return super.onOptionsItemSelected(item);
     }
