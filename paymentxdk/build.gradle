@@ -6,8 +6,9 @@ plugins {
 android {
     compileSdk 34
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 26
         targetSdkVersion 34
+        buildConfigField "String", "XDKAVersion", "\"${XDKAVersion}\""
     }
     buildTypes {
         release {
@@ -39,6 +40,8 @@ dependencies {
     implementation "com.google.android.gms:play-services-pay:16.5.0"
     implementation "com.google.android.gms:play-services-wallet:19.4.0"
     implementation 'org.apache.commons:commons-lang3:3.4'
+
+    implementation 'com.google.code.gson:gson:2.11.0'
 }
 
 afterEvaluate {

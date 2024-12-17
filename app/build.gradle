@@ -5,7 +5,7 @@ android {
 
     defaultConfig {
         applicationId "com.fiuu.xdkandroid"
-        minSdkVersion 21
+        minSdkVersion 26
         targetSdkVersion 34
         versionCode 1
         versionName "1.0"
