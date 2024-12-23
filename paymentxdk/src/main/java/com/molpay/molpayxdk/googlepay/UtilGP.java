@@ -81,7 +81,7 @@ public class UtilGP {
 
     /**
      * Card authentication methods supported by your app and your gateway.
-     *
+     * <p>
      * and make updates in Constants.java.
      *
      * @return Allowed card authentication methods.
@@ -139,6 +139,7 @@ public class UtilGP {
 
     /**
      * Return a collection of payment methods allowed to complete the operation with Google Pay.
+     *
      * @return A JSONArray object with the list of payment methods.
      * @throws JSONException
      */
@@ -239,9 +240,8 @@ public class UtilGP {
      * @param cents value of the price in cents.
      */
     public static String centsToString(long cents) {
-        return new BigDecimal(cents)
-                .divide(CENTS_IN_A_UNIT, RoundingMode.HALF_EVEN)
-                .setScale(2, RoundingMode.HALF_EVEN)
+        return BigDecimal.valueOf(cents)
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_EVEN)
                 .toString();
     }
 }
