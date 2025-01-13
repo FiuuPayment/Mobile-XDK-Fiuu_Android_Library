@@ -122,6 +122,8 @@ public class MOLPayActivity extends AppCompatActivity {
     private Boolean isClosingReceipt = false;
     private Boolean isClosebuttonDisplay = false;
 
+    private Boolean isTNGResult = false;
+
     // Private API
     private void closemolpay() {
         mpMainUI.loadUrl("javascript:closemolpay()");
@@ -173,6 +175,8 @@ public class MOLPayActivity extends AppCompatActivity {
 
         // For submodule wrappers
         boolean is_submodule = false;
+
+        isTNGResult = false;
 
         if (paymentDetails != null) {
             if (paymentDetails.containsKey("is_submodule")) {
@@ -370,6 +374,7 @@ public class MOLPayActivity extends AppCompatActivity {
 
                     if (!s.isEmpty()) {
                         Log.d(MOLPAY, "MPMOLPayUIWebClient success");
+                        isTNGResult = true;
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(dataString));
                         startActivity(intent);
                     } else {
@@ -385,7 +390,9 @@ public class MOLPayActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        if (mpMOLPayUI != null && !paymentDetails.isEmpty()) {
+        // Custom onResume condition for TNG only
+        if (mpMOLPayUI != null && !paymentDetails.isEmpty() && isTNGResult) {
+            Log.d(MOLPAY , "onResume TNG condition");
             closemolpay();
         }
     }
