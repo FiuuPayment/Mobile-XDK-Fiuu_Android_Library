@@ -67,10 +67,10 @@ public class MainActivity extends AppCompatActivity {
     ActivityResultLauncher<Intent> paymentActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                Log.d("MOLPAYXDKLibrary", "result: " + result);
-                Log.d("MOLPAYXDKLibrary", "result: " + result.getResultCode());
+                //Log.d("MOLPAYXDKLibrary", "result: " + result);
+                //Log.d("MOLPAYXDKLibrary", "result: " + result.getResultCode());
                 if (result.getResultCode() == MOLPayActivity.RESULT_OK) {
-                    Log.d("MOLPAYXDKLibrary", "result: " + result.getData().getStringExtra(MOLPayActivity.MOLPayTransactionResult));
+                    //Log.d("MOLPAYXDKLibrary", "result: " + result.getData().getStringExtra(MOLPayActivity.MOLPayTransactionResult));
 
                     TextView tw = findViewById(R.id.resultTV);
                     tw.setText(result.getData().getStringExtra(MOLPayActivity.MOLPayTransactionResult));
@@ -120,20 +120,20 @@ public class MainActivity extends AppCompatActivity {
     ActivityResultLauncher<Intent> gpActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                Log.d("MOLPAYXDKLibrary", "result: " + result);
-                Log.d("MOLPAYXDKLibrary", "result: " + result.getResultCode());
+                //Log.d("MOLPAYXDKLibrary", "result: " + result);
+                //Log.d("MOLPAYXDKLibrary", "result: " + result.getResultCode());
 
                 if (result.getResultCode() == MOLPayActivity.RESULT_OK && result.getData() != null) {
                     Intent data = result.getData();
                     String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
 
                     if (data.getData() != null && transactionResult != null) {
-                        Log.d(MOLPayActivity.MOLPAY, "MOLPay result = " + data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
+                        //Log.d(MOLPayActivity.MOLPAY, "MOLPay result = " + data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
                         TextView tw = findViewById(R.id.resultTV);
                         tw.setText(data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
                     }
                 } else {
-                    Log.e("logGooglePay", "RESULT_CANCELED data == null");
+                    //Log.e("logGooglePay", "RESULT_CANCELED data == null");
                     TextView tw = findViewById(R.id.resultTV);
                     tw.setText("result = null");
                 }

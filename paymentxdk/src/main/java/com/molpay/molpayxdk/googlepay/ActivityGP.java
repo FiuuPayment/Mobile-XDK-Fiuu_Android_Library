@@ -62,8 +62,8 @@ public class ActivityGP extends AppCompatActivity {
     ActivityResultLauncher<IntentSenderRequest> resolvePaymentForResult = registerForActivityResult(
             new ActivityResultContracts.StartIntentSenderForResult(),
             result -> {
-                Log.e("logGooglePay", "resolvePaymentForResult");
-                Log.e("logGooglePay", "result.getResultCode() = " + result.getResultCode());
+                //Log.e("logGooglePay", "resolvePaymentForResult");
+                //Log.e("logGooglePay", "result.getResultCode() = " + result.getResultCode());
                 switch (result.getResultCode()) {
                     case Activity.RESULT_OK:
                         Intent resultData = result.getData();
@@ -123,7 +123,7 @@ public class ActivityGP extends AppCompatActivity {
             @Override
             public void handleOnBackPressed() {
                 // Do nothing - prevent user from performing backpress
-                Log.e("logGooglePay", "ActivityGP backpressed");
+                //Log.e("logGooglePay", "ActivityGP backpressed");
             }
         };
 
@@ -158,9 +158,9 @@ public class ActivityGP extends AppCompatActivity {
 
     public void requestPayment() {
 
-        Log.e("logGooglePay", "requestPayment");
-        Log.e("logGooglePay", "mp_amount = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString());
-        Log.e("logGooglePay", "totalPriceCents = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
+        //Log.e("logGooglePay", "requestPayment");
+        //Log.e("logGooglePay", "mp_amount = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString());
+        //Log.e("logGooglePay", "totalPriceCents = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
 
         // The price provided to the API should include taxes and shipping.
         // This price is not displayed to the user.
@@ -169,7 +169,7 @@ public class ActivityGP extends AppCompatActivity {
         final Task<PaymentData> task = model.getLoadPaymentDataTask(totalPriceCents);
 
         task.addOnCompleteListener(completedTask -> {
-            Log.e("logGooglePay", "addOnCompleteListener");
+            //Log.e("logGooglePay", "addOnCompleteListener");
 
             if (completedTask.isSuccessful()) {
                 handlePaymentSuccess(completedTask.getResult());
@@ -203,7 +203,7 @@ public class ActivityGP extends AppCompatActivity {
     private void handlePaymentSuccess(PaymentData paymentData) {
 
         pbLoading.setVisibility(View.VISIBLE);
-        Log.e("logGooglePay", "handlePaymentSuccess");
+        //Log.e("logGooglePay", "handlePaymentSuccess");
 
         final String paymentInfo = paymentData.toJson();
 
@@ -251,7 +251,7 @@ public class ActivityGP extends AppCompatActivity {
                 });
 
             } catch (JSONException e) {
-//            Log.e(Constants.LOG_GOOGLE_PAY, "handlePaymentSuccess JSONException: " + e);
+//            //Log.e(Constants.LOG_GOOGLE_PAY, "handlePaymentSuccess JSONException: " + e);
             }
         }
 
@@ -267,7 +267,7 @@ public class ActivityGP extends AppCompatActivity {
      * WalletConstants#constant-summary">Wallet Constants Library</a>
      */
     private void handleError(int statusCode, @Nullable String message) {
-//        Log.e("loadPaymentData failed", String.format(Locale.getDefault(), "Error code: %d, Message: %s", statusCode, message));
+//        //Log.e("loadPaymentData failed", String.format(Locale.getDefault(), "Error code: %d, Message: %s", statusCode, message));
     }
 
     @Override
@@ -290,13 +290,13 @@ public class ActivityGP extends AppCompatActivity {
                     if (data != null) {
                         response = data.getStringExtra("response");
 
-                        Log.e("logGooglePay", "RESULT_OK response = " + response);
+                        //Log.e("logGooglePay", "RESULT_OK response = " + response);
 
                         Intent result = new Intent();
                         result.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
                         setResult(RESULT_OK, result);
                     } else {
-                        Log.e("logGooglePay", "RESULT_OK data = null");
+                        //Log.e("logGooglePay", "RESULT_OK data = null");
                         setResult(RESULT_OK, null);
                     }
 
@@ -309,12 +309,12 @@ public class ActivityGP extends AppCompatActivity {
                     // Response Error CallBack
                     if (data != null) {
                         response = data.getStringExtra("response");
-                        Log.e("logGooglePay", "RESULT_CANCELED response = " + response);
+                        //Log.e("logGooglePay", "RESULT_CANCELED response = " + response);
                         Intent resultCancel = new Intent();
                         resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
                         setResult(RESULT_CANCELED, resultCancel);
                     } else {
-                        Log.e("logGooglePay", "RESULT_CANCELED data = null");
+                        //Log.e("logGooglePay", "RESULT_CANCELED data = null");
                         setResult(RESULT_CANCELED, null);
                     }
 
@@ -326,7 +326,7 @@ public class ActivityGP extends AppCompatActivity {
                     if (status != null) {
                         handleError(status.getStatusCode(), status.getStatusMessage());
                     } else {
-                        Log.e("logGooglePay", "RESULT_ERROR status = null");
+                        //Log.e("logGooglePay", "RESULT_ERROR status = null");
                         handleError(0, "");
                     }
                     break;
