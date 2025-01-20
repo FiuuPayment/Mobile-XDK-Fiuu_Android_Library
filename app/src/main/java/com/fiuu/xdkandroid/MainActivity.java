@@ -127,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
                     Intent data = result.getData();
                     String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
 
-                    if (data.getData() != null && transactionResult != null) {
+                    if (transactionResult != null) {
                         //Log.d(MOLPayActivity.MOLPAY, "MOLPay result = " + data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
                         TextView tw = findViewById(R.id.resultTV);
                         tw.setText(data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
