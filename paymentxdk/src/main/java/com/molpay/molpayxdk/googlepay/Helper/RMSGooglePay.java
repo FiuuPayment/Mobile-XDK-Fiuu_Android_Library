@@ -17,7 +17,10 @@ import java.util.regex.Pattern;
 
 public class RMSGooglePay {
 
-    final Pattern ORDERID = Pattern.compile("^[a-zA-Z0-9]*$");
+//    final Pattern ORDERID = Pattern.compile("^[a-zA-Z0-9]*$"); // Allow alphanumeric only
+//    final Pattern ORDERID = Pattern.compile("^[a-zA-Z0-9\\p{Punct}]*$"); // Allow all characters
+    final Pattern ORDERID = Pattern.compile("^[a-zA-Z0-9_-]*$"); // Allow alphanumeric + underscore + hyphen only
+
     final Pattern AMOUNT = Pattern.compile("^[0-9.]*$");
     final Pattern CURRENCY = Pattern.compile("^[a-zA-Z]*$");
     final Pattern BILLNAME = Pattern.compile("^[\\S\\s]+[\\S]*$");
