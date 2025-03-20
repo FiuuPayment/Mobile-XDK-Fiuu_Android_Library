@@ -14,10 +14,10 @@ To obtain your credentials for testing or production purposes, please contact us
 This library is designed for native Android projects using Android Studio.
 
 For integration with other development frameworks, kindly refer to the following links :
-a) iOS : https://cocoapods.org/pods/fiuu-mobile-xdk-cocoapods
-b) Flutter : https://pub.dev/packages/fiuu_mobile_xdk_flutter
-c) React Native : https://www.npmjs.com/package/fiuu-mobile-xdk-reactnative
-d) Others : https://github.com/FiuuPayment
+* iOS : https://cocoapods.org/pods/fiuu-mobile-xdk-cocoapods
+* Flutter : https://pub.dev/packages/fiuu_mobile_xdk_flutter
+* React Native : https://www.npmjs.com/package/fiuu-mobile-xdk-reactnative
+* Others : https://github.com/FiuuPayment
 
 ## Recommended configurations
 
