@@ -101,6 +101,7 @@ public class MOLPayActivity extends AppCompatActivity {
     public final static String mp_dpa_id = "mp_dpa_id";
     public final static String mp_company = "mp_company";
     public final static String mp_closebutton_display = "mp_closebutton_display";
+    public final static String mp_metadata = "mp_metadata";
 
     public final static String MOLPAY = "logMOLPAY";
     private final static String mpopenmolpaywindow = "mpopenmolpaywindow://";
@@ -564,7 +565,12 @@ public class MOLPayActivity extends AppCompatActivity {
                         paymentDetails.put(MOLPayActivity.mp_extended_vcode, Objects.requireNonNull(paymentDetails.get("mp_extended_vcode")));
                     }
 
-                    paymentDetails.put(MOLPayActivity.mp_sandbox_mode, Objects.requireNonNull(paymentDetails.get("mp_sandbox_mode"))); // Only set to false once you have request production access for your app
+                    if (paymentDetails.get("mp_sandbox_mode") == null) {
+                        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, false);
+                    } else {
+                        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, Objects.requireNonNull(paymentDetails.get("mp_sandbox_mode")));
+                    }
+
                     paymentDetails.put(MOLPayActivity.mp_merchant_ID, Objects.requireNonNull(paymentDetails.get("mp_merchant_ID"))); // Your sandbox / production merchant ID
                     paymentDetails.put(MOLPayActivity.mp_verification_key, Objects.requireNonNull(paymentDetails.get("mp_verification_key"))); // Your sandbox / production verification key
                     paymentDetails.put(MOLPayActivity.mp_amount, Objects.requireNonNull(paymentDetails.get("mp_amount"))); // Must be in 2 decimal points format
@@ -619,7 +625,7 @@ public class MOLPayActivity extends AppCompatActivity {
                     Intent data = result.getData();
                     String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
 
-                    if (data.getData() != null && transactionResult != null) {
+                    if (transactionResult != null) {
                         //Log.e("logGooglePay", "MOLPAY result = " + transactionResult);
 
                         Intent intent = new Intent();
