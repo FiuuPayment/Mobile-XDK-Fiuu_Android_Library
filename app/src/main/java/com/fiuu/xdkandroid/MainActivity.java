@@ -29,31 +29,75 @@ public class MainActivity extends AppCompatActivity {
     HashMap<Object, Object> paymentDetails = new HashMap<>();
 
     private void restartmolpay() {
-        paymentDetails.put(MOLPayActivity.mp_amount, "0.10");
 
-        // TODO: Enter your merchant account credentials before test run
+        // Compulsory String. Values obtained from Fiuu.
         paymentDetails.put(MOLPayActivity.mp_username, "");
         paymentDetails.put(MOLPayActivity.mp_password, "");
-        paymentDetails.put(MOLPayActivity.mp_merchant_ID, "");
         paymentDetails.put(MOLPayActivity.mp_app_name, "");
+        paymentDetails.put(MOLPayActivity.mp_merchant_ID, "");
         paymentDetails.put(MOLPayActivity.mp_verification_key, "");
 
-        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis());
+        // Compulsory String. Payment info.
+        paymentDetails.put(MOLPayActivity.mp_amount, "1.01"); // 2 decimal points format
+        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
         paymentDetails.put(MOLPayActivity.mp_currency, "MYR");
         paymentDetails.put(MOLPayActivity.mp_country, "MY");
-        paymentDetails.put(MOLPayActivity.mp_channel, "multi");
-        paymentDetails.put(MOLPayActivity.mp_bill_description, "bill description");
-        paymentDetails.put(MOLPayActivity.mp_bill_name, "bill name");
-        paymentDetails.put(MOLPayActivity.mp_bill_email, "example@gmail.com");
+        paymentDetails.put(MOLPayActivity.mp_bill_description, "The bill description");
+        paymentDetails.put(MOLPayActivity.mp_bill_name, "Payer Name");
+        paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
         paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 
-//        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // For Google Pay Only - Set true if your account enabled extended Verify Payment
-//        paymentDetails.put(MOLPayActivity.mp_channel_editing, false);
-//        paymentDetails.put(MOLPayActivity.mp_editing_enabled, true);
-        paymentDetails.put(MOLPayActivity.mp_express_mode, false);
-        paymentDetails.put(MOLPayActivity.mp_dev_mode, false);
+        // --------------------------------- FOR GOOGLE PAY ----------------------------------------
+
+//        paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+//        paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+//        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
+//        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment (by default false)
+
+        // ------------------------------------ OPTIONAL -------------------------------------------
+
+        // TODO: Learn more about optional parameters here https://github.com/RazerMS/Mobile-XDK-RazerMS_Android_Studio/wiki/Installation-Guidance#prepare-the-payment-detail-object
+
+        // -------------------------------- Most commonly used -------------------------------------
+
+        // To pre-select channel, please refer to column mp_channel in https://github.com/RazerMS/Mobile-XDK-RazerMS_Examples/blob/master/channel-list.md
+//        paymentDetails.put(MOLPayActivity.mp_channel, "maybank2u");
+
+        // Optional, required a valid mp_channel value, this will skip the payment info page and go direct to the payment screen.
+        // Channel "credit" could not use express mode due security reasons.
+//        paymentDetails.put(MOLPayActivity.mp_express_mode, true);
+
+        // Optional, show selected channels only.
+//        String allowedchannels[] = {"TNG-EWALLET","maybank2u"}; // Refer to column mp_channel in https://github.com/RazerMS/Mobile-XDK-RazerMS_Examples/blob/master/channel-list.md
+//        paymentDetails.put(MOLPayActivity.mp_allowed_channels, allowedchannels);
+
+        // Optional, simulate offline payment, set boolean value to enable.
+        // Need set true for Google Pay Test Environment.
+//        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true);
+
+        // Optional, for Google Pay Only - Set true if your account enabled extended Verify Payment
+//        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false);
+
+        // Optional, show close button.
 //        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
-//        paymentDetails.put(MOLPayActivity.mp_preferred_token, "new");
+
+        // Optional, allow / block change channel for preset mp_channel
+//        paymentDetails.put(MOLPayActivity.mp_channel_editing, true);
+
+        // Optional, allow billing information editing.
+//        paymentDetails.put(MOLPayActivity.mp_editing_enabled, true);
+
+        // Optional, explicitly force disable user input by field.
+//        paymentDetails.put(MOLPayActivity.mp_bill_name_edit_disabled, true);
+//        paymentDetails.put(MOLPayActivity.mp_bill_email_edit_disabled, false);
+//        paymentDetails.put(MOLPayActivity.mp_bill_mobile_edit_disabled, true);
+//        paymentDetails.put(MOLPayActivity.mp_bill_description_edit_disabled, false);
+
+        // Optional, EN, MS, VI, TH, FIL, MY, KM, ID, ZH.
+//        paymentDetails.put(MOLPayActivity.mp_language, "MS");
+
+        // Add metadata in JSON String format e.g.
+//        paymentDetails.put(MOLPayActivity.mp_metadata, "{\"store_id\":\"MY2025HQ\"}");
 
         openStartActivityResult();
     }
@@ -67,13 +111,21 @@ public class MainActivity extends AppCompatActivity {
     ActivityResultLauncher<Intent> paymentActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                //Log.d("MOLPAYXDKLibrary", "result: " + result);
-                //Log.d("MOLPAYXDKLibrary", "result: " + result.getResultCode());
-                if (result.getResultCode() == MOLPayActivity.RESULT_OK) {
-                    //Log.d("MOLPAYXDKLibrary", "result: " + result.getData().getStringExtra(MOLPayActivity.MOLPayTransactionResult));
+//                Log.d(MOLPayActivity.MOLPAY, "result: "+result);
 
+                if (result.getData() != null) {
+                    Intent data = result.getData();
+                    String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
+
+                    if (transactionResult != null) {
+//                        Log.d(MOLPayActivity.MOLPAY, "final response = " + transactionResult);
+                        TextView tw = findViewById(R.id.resultTV);
+                        tw.setText(transactionResult);
+                    }
+                } else {
+//                    Log.d(MOLPayActivity.MOLPAY , "data == null");
                     TextView tw = findViewById(R.id.resultTV);
-                    tw.setText(result.getData().getStringExtra(MOLPayActivity.MOLPayTransactionResult));
+                    tw.setText("result = null");
                 }
 
             }
@@ -90,22 +142,23 @@ public class MainActivity extends AppCompatActivity {
              After your app has been approved, test your integration in production by set mp_sandbox_mode = false & use production mp_verification_key & mp_merchant_ID.
              Then launching Google Pay from a signed, release build of your app.
              */
-        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // Only set to false once you have request production access for your app
 
         // TODO: Enter your merchant account credentials before test run
-        paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Your sandbox / production merchant ID
-        paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Your sandbox / production verification key
+        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
+        paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+        paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
 
-        paymentDetails.put(MOLPayActivity.mp_amount, "1.01"); // Must be in 2 decimal points format
-        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Must be unique
-        paymentDetails.put(MOLPayActivity.mp_currency, "MYR"); // Must matched mp_country
-        paymentDetails.put(MOLPayActivity.mp_country, "MY"); // Must matched mp_currency
+        paymentDetails.put(MOLPayActivity.mp_amount, "1.01"); // 2 decimal points format
+        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
+        paymentDetails.put(MOLPayActivity.mp_currency, "MYR");
+        paymentDetails.put(MOLPayActivity.mp_country, "MY");
         paymentDetails.put(MOLPayActivity.mp_bill_description, "The bill description");
-        paymentDetails.put(MOLPayActivity.mp_bill_name, "The bill name");
+        paymentDetails.put(MOLPayActivity.mp_bill_name, "Payer name");
         paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
         paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 
-        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment
+//        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment
+
         openGPActivityWithResult();
 
     }
@@ -120,20 +173,19 @@ public class MainActivity extends AppCompatActivity {
     ActivityResultLauncher<Intent> gpActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                //Log.d("MOLPAYXDKLibrary", "result: " + result);
-                //Log.d("MOLPAYXDKLibrary", "result: " + result.getResultCode());
+//                Log.d("logGooglePay", "result: "+result);
 
-                if (result.getResultCode() == MOLPayActivity.RESULT_OK && result.getData() != null) {
+                if (result.getData() != null) {
                     Intent data = result.getData();
                     String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
 
                     if (transactionResult != null) {
-                        //Log.d(MOLPayActivity.MOLPAY, "MOLPay result = " + data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
+//                        Log.d("logGooglePay", "final response = " + transactionResult);
                         TextView tw = findViewById(R.id.resultTV);
-                        tw.setText(data.getStringExtra(MOLPayActivity.MOLPayTransactionResult));
+                        tw.setText(transactionResult);
                     }
                 } else {
-                    //Log.e("logGooglePay", "RESULT_CANCELED data == null");
+//                    Log.d("logGooglePay" , "data == null");
                     TextView tw = findViewById(R.id.resultTV);
                     tw.setText("result = null");
                 }
