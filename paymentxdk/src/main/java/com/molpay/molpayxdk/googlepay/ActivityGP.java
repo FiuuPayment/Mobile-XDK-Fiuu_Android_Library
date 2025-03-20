@@ -32,9 +32,7 @@ import com.molpay.molpayxdk.databinding.ActivityGooglepayBinding;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.SimpleDateFormat;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -104,10 +102,14 @@ public class ActivityGP extends AppCompatActivity {
             COUNTRY_CODE = Objects.requireNonNull(paymentDetails.get("mp_country")).toString();
             CURRENCY_CODE = Objects.requireNonNull(paymentDetails.get("mp_currency")).toString();
 
-            if (Boolean.parseBoolean(Objects.requireNonNull(paymentDetails.get("mp_sandbox_mode")).toString())) {
-                PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_TEST;
-            } else {
+            if (paymentDetails.get("mp_sandbox_mode") == null) {
                 PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_PRODUCTION;
+            } else {
+                if (Boolean.parseBoolean(Objects.requireNonNull(paymentDetails.get("mp_sandbox_mode")).toString())) {
+                    PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_TEST;
+                } else {
+                    PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_PRODUCTION;
+                }
             }
 
         }
@@ -207,8 +209,6 @@ public class ActivityGP extends AppCompatActivity {
 
         final String paymentInfo = paymentData.toJson();
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.getDefault());
-
         if (paymentDetails != null) {
             try {
                 // Extended VCode setting
@@ -237,7 +237,11 @@ public class ActivityGP extends AppCompatActivity {
              Then launching Google Pay from a signed, release build of your app.
              Remember to use your live mode verificationKey & merchantId. Set isSandbox = false for production environment.
              */
-                paymentInput.put("isSandbox", Objects.requireNonNull(paymentDetails.get("mp_sandbox_mode")).toString()); // True = Testing ; False = Production
+                if (paymentDetails.get("mp_sandbox_mode") == null) {
+                    paymentInput.put("isSandbox", false);
+                } else {
+                    paymentInput.put("isSandbox", Objects.requireNonNull(paymentDetails.get("mp_sandbox_mode")));
+                }
 
                 JSONObject paymentInputObj = paymentInput;
 
