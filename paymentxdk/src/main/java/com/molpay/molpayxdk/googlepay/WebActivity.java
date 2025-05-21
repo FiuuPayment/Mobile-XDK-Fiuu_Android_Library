@@ -7,11 +7,14 @@ package com.molpay.molpayxdk.googlepay;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.http.SslError;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebResourceError;
@@ -34,6 +37,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Iterator;
+import java.util.Objects;
 
 public class WebActivity extends AppCompatActivity {
 
@@ -44,10 +48,15 @@ public class WebActivity extends AppCompatActivity {
 
     public static boolean statCodeValueSuccess = false;
 
-    public static String isSandbox;
+    public static String isSandbox = "";
 
     private CountDownTimer countDownTimer;
     private String requestType = "";
+    public static String paymentV2Requery = "0";
+    private String paymentInput;
+    private String paymentInfo;
+    private boolean requeryPaymentV2 = false;
+    private Boolean isClosebuttonDisplay = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,18 +67,22 @@ public class WebActivity extends AppCompatActivity {
         setContentView(R.layout.activity_web);
 
         Intent intent = getIntent();
-        String paymentInput = intent.getStringExtra("paymentInput");
-        String paymentInfo = intent.getStringExtra("paymentInfo");
+        paymentInput = intent.getStringExtra("paymentInput");
+        paymentInfo = intent.getStringExtra("paymentInfo");
 
-        // Transcation model from paymentInput
-        JSONObject paymentInputObj = null;
-        try {
-            paymentInputObj = new JSONObject(paymentInput);
-            transaction.setVkey(paymentInputObj.getString("verificationKey"));
-            isSandbox = paymentInputObj.getString("isSandbox");
-            //Log.e("logGooglePay", "WebActivity isSandbox = " + isSandbox);
-        } catch (JSONException e) {
-            e.printStackTrace();
+//        Log.e("logGooglePay" , "after getStringExtra 1");
+
+        if (paymentInput != null) {
+            // Transcation model from paymentInput
+            JSONObject paymentInputObj = null;
+            try {
+                paymentInputObj = new JSONObject(paymentInput);
+                transaction.setVkey(paymentInputObj.getString("verificationKey"));
+                isSandbox = paymentInputObj.getString("isSandbox");
+//                Log.e("logGooglePay" , "WebActivity isSandbox = " + isSandbox);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
 
         tvLoading = findViewById(R.id.tvLoading);
@@ -89,18 +102,29 @@ public class WebActivity extends AppCompatActivity {
         wvGateway.getSettings().setBuiltInZoomControls(true);
         wvGateway.getSettings().setDisplayZoomControls(false);
 
-        PaymentThread paymentThread = new PaymentThread();
-        paymentThread.setValue(paymentInput, paymentInfo); // set value
-        Thread thread = new Thread(paymentThread);
-        thread.start();
+//        Log.e("logGooglePay" , "before get cancelResponse");
 
-        try {
-            thread.join();
-            JSONObject paymentResult = new JSONObject(new JSONObject(paymentThread.getValue()).getString("responseBody"));
-            onRequestData(paymentResult);
-        } catch (InterruptedException | JSONException e) {
-            e.printStackTrace();
+        String cancelResponse = intent.getStringExtra("cancelResponse");
+
+        if (cancelResponse != null) {
+//            Log.e("logGooglePay" , "cancelResponse != null");
+
+            try {
+                // Convert the JSON string into a JSONObject
+                JSONObject responseBody = new JSONObject(cancelResponse);
+//                Log.e("logGooglePay", "-1 set minTimeOut 60000");
+                ActivityGP.minTimeOut = 60000;
+                onRequestData(responseBody);
+//                Log.e("logGooglePay" , "cancelResponse = " + cancelResponse);
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+
+//        Log.e("logGooglePay" , "bypass return cancelResponse");
+
+        runPaymentThread ();
 
         // Register a callback for handling the back press
         OnBackPressedCallback callback = new OnBackPressedCallback(true) {
@@ -115,17 +139,43 @@ public class WebActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, callback);
     }
 
+    private void runPaymentThread () {
+        new Thread(() -> {
+            PaymentThread paymentThread = new PaymentThread();
+            paymentThread.setValue(paymentInput, paymentInfo);
+            paymentThread.run(); // Run thread work
+
+            try {
+                JSONObject paymentResult = new JSONObject(new JSONObject(paymentThread.getValue()).getString("responseBody"));
+
+                runOnUiThread(() -> {
+//                    Log.e("logGooglePay", "thread paymentResult = " + paymentResult);
+                    onRequestData(paymentResult); // Restart polling logic
+                });
+
+            } catch (JSONException e) {
+                runOnUiThread(() -> {
+//                    Log.e("logGooglePay", "JSONException = " + e);
+                    Intent resultCancel = new Intent();
+                    resultCancel.putExtra("response", String.valueOf(e));
+                    setResult(RESULT_CANCELED, resultCancel);
+                    finish();
+                });
+            }
+        }).start();
+    }
+
     private void onStartTimOut() {
 
-        long minTimeOut = 180000; // 3 minutes
-        long interval = 6000;
+        long interval = 3000;
         final String[] queryResultStr = {null};
         final String[] trasactionJsonStr = {null};
 
-        // Query Transaction ID for every 6 second in 3 minutes
-        countDownTimer = new CountDownTimer(minTimeOut, interval) {
+//        Log.e("logGooglePay" , "onStartTimOut ActivityGP.minTimeOut = " + ActivityGP.minTimeOut);
 
-            // Query Transaction ID for every 6 second in 3 minutes
+        // Query Transaction ID for every 3 second in 1 minute
+        countDownTimer = new CountDownTimer(ActivityGP.minTimeOut, interval) {
+
             @Override
             public void onTick(long millisUntilFinished) {
 
@@ -157,11 +207,14 @@ public class WebActivity extends AppCompatActivity {
                             JSONObject responseBodyObj = new JSONObject(responseBody);
 
                             // If StatCode
-                            if (responseBodyObj.has("StatCode")) {
+                            if (responseBodyObj.has("StatCode")){
                                 String statCodeValue = responseBodyObj.getString("StatCode");
+                                String channelValue = responseBodyObj.getString("Channel");
 
-                                Intent intent = new Intent();
-                                intent.putExtra("response", String.valueOf(responseBodyObj));
+////                                TODO 1: For Testing User Case Only
+//                                if (millisUntilFinished < 50000) {
+//                                    statCodeValue = "00";
+//                                }
 
                                 //Log.e("logGooglePay", "statCodeValue " + statCodeValue);
 
@@ -193,14 +246,46 @@ public class WebActivity extends AppCompatActivity {
                                             .setMessage(errorCode + " : " + errorDesc)
                                             .setCancelable(false)
                                             .setPositiveButton("CLOSE", (dialog, which) -> {
-                                                setResult(RESULT_CANCELED, intent);
+//                                                Log.e("logGooglePay" , "RESULT_CANCELED WebActivity 1 responseBodyObj = " + responseBodyObj);
+                                                Intent resultCancel = new Intent();
+                                                resultCancel.putExtra("response", String.valueOf(responseBodyObj));
+                                                setResult(RESULT_CANCELED, resultCancel);
                                                 finish();
                                             }).show();
-                                } else if (statCodeValue.equals("22")) {
-                                    // Do Nothing - It will auto handle
-                                }
-                            }
+                                }  else if (statCodeValue.equals("22")) {
+                                    if (channelValue.contains("ShopeePay") || channelValue.contains("TNG-EWALLET")) {
+//                                        Log.e("logGooglePay", "E-Wallet - need requery payment_v2");
+                                        countDownTimer.cancel(); // Stop current countdown
 
+                                        if (millisUntilFinished > 3000) {
+                                            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                                                pbLoading.setVisibility(View.VISIBLE);
+                                                tvLoading.setVisibility(View.VISIBLE);
+                                                // Reduce minTimeOut by 3 seconds
+                                                ActivityGP.minTimeOut -= 3000;
+                                                paymentV2Requery = "1";
+                                                requeryPaymentV2 = true;
+                                                runPaymentThread ();
+                                            }, 3000); // 3-second delay
+
+                                        } else {
+                                            // Timeout too short, cancel payment
+//                                            Log.e("logGooglePay", "Timeout too short, canceling payment");
+//                                            Log.e("logGooglePay", "responseBodyObj = " + responseBodyObj);
+                                            Intent resultCancel = new Intent();
+                                            resultCancel.putExtra("response", String.valueOf(responseBodyObj));
+                                            setResult(RESULT_CANCELED, resultCancel);
+                                            finish();
+                                        }
+                                    }
+                                    else {
+                                        // Do Nothing - It will auto handle q_by_tid.php
+//                                        Log.e("logGooglePay" , "CARD - Do Nothing it will auto handle by q_by_tid.php");
+                                    }
+                                }
+                            } else {
+
+                            }
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -227,7 +312,11 @@ public class WebActivity extends AppCompatActivity {
                     if (!responseBodyObj.has("StatCode")) {
                         setResult(RESULT_CANCELED, intent);
                     } else {
-                        setResult(RESULT_OK, intent);
+                        if (responseBodyObj.getString("StatCode").equalsIgnoreCase("22")) {
+                            setResult(RESULT_CANCELED, intent);
+                        } else {
+                            setResult(RESULT_OK, intent);
+                        }
                     }
 
                     countDownTimer.cancel();
@@ -259,9 +348,12 @@ public class WebActivity extends AppCompatActivity {
             wvGateway.loadData(xdkHTMLRedirection, "text/html", "base64");
         } else if (requestType.equalsIgnoreCase("REDIRECT")) {
             wvGateway.loadData(encodedHtml, "text/html", "base64");
-            pbLoading.setVisibility(View.GONE);
-            tvLoading.setVisibility(View.GONE);
-            wvGateway.setVisibility(View.VISIBLE);
+//            Log.e("logGooglePay" , "requeryPaymentV2 = " + requeryPaymentV2);
+            if ( ! requeryPaymentV2 ) {
+                pbLoading.setVisibility(View.GONE);
+                tvLoading.setVisibility(View.GONE);
+                wvGateway.setVisibility(View.VISIBLE);
+            }
         } else {
             wvGateway.loadData(encodedHtml, "text/html", "base64");
         }
@@ -317,6 +409,7 @@ public class WebActivity extends AppCompatActivity {
                     transaction.setTxID(response.getString("TxnID"));
                     transaction.setDomain(response.getString("MerchantID"));
                     transaction.setAmount(response.getString("TxnAmount"));
+                    transaction.setVkey(ActivityGP.verificationKey);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -385,7 +478,7 @@ public class WebActivity extends AppCompatActivity {
     public class PaymentThread implements Runnable {
         private volatile String resp;
         private String paymentInput;
-        private String paymentInfo;
+        private String  paymentInfo;
 
         public String getValue() {
             return resp;
@@ -400,12 +493,8 @@ public class WebActivity extends AppCompatActivity {
         public void run() {
 
             RMSGooglePay pay = new RMSGooglePay();
-            JSONObject result = null;
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                result = (JSONObject) pay.requestPayment(paymentInput, paymentInfo);
-            }
-
+            JSONObject result;
+            result = (JSONObject) pay.requestPayment(paymentInput, paymentInfo);
             resp = result.toString();
 
         }
@@ -434,4 +523,52 @@ public class WebActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+
+//        Log.e("logGooglePay" , "onCreateOptionsMenu paymentInput = " + paymentInput);
+
+        if (paymentInput != null) {
+            JSONObject json = null;
+            try {
+                json = new JSONObject(paymentInput);
+
+//                Log.e("logGooglePay" , "onCreateOptionsMenu");
+
+                if (json.has("closeButton")) {
+                    isClosebuttonDisplay = json.getBoolean("closeButton");
+                }
+            } catch (JSONException e) {
+                return false;
+            }
+
+            if (isClosebuttonDisplay) {
+                getMenuInflater().inflate(R.menu.menu_molpay, menu);
+                return super.onCreateOptionsMenu(menu);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+//        Log.e("logGooglePay", "Get Menu: " + item.getTitle());
+        if (Objects.equals(item.getTitle(), "Close")) {
+            setResult(RESULT_CANCELED, null);
+            finish();
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (countDownTimer != null) {
+//            Log.e("logGooglePay", "onDestroy countDownTimer NOT NULL");
+            countDownTimer.cancel();
+        }
+        super.onDestroy();
+    }
 }

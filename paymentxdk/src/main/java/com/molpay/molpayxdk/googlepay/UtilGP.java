@@ -21,8 +21,6 @@ import java.math.RoundingMode;
  */
 public class UtilGP {
 
-    public static final BigDecimal CENTS_IN_A_UNIT = new BigDecimal(100);
-
     /**
      * Create a Google Pay API base request object with properties used in all requests.
      *
@@ -144,9 +142,53 @@ public class UtilGP {
      * @throws JSONException
      */
     public static JSONArray getAllowedPaymentMethods() throws JSONException {
-        return new JSONArray() {{
-            put(getCardPaymentMethod());
-        }};
+//        Log.e("logGooglePay", "getAllowedPaymentMethods");
+        return getPaymentMethods(ActivityGP.createTxnResult); // New Card + e-wallets methods
+    }
+
+    public static JSONArray getPaymentMethods(String createTxnResult) throws JSONException {
+
+        JSONArray createTxnResponseData = new JSONArray();
+
+        try {
+            JSONObject json = new JSONObject(createTxnResult);
+            createTxnResponseData = json.getJSONArray("responseData");
+            ActivityGP.tranID = json.getString("tranID");
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            JSONObject cardPaymentMethod = new JSONObject();
+            cardPaymentMethod.put("type", "CARD");
+
+            JSONObject parameters = new JSONObject();
+            parameters.put("allowedAuthMethods", new JSONArray()
+                    .put("PAN_ONLY")
+                    .put("CRYPTOGRAM_3DS"));
+            parameters.put("allowedCardNetworks", new JSONArray()
+                    .put("MASTERCARD")
+                    .put("VISA"));
+            parameters.put("assuranceDetailsRequired", true);
+
+            cardPaymentMethod.put("parameters", parameters);
+
+            JSONObject tokenizationSpecification = new JSONObject();
+            tokenizationSpecification.put("type", "PAYMENT_GATEWAY");
+
+            JSONObject tokenParams = new JSONObject();
+            tokenParams.put("gateway", "molpay");
+            tokenParams.put("gatewayMerchantId", "molpay");
+
+            tokenizationSpecification.put("parameters", tokenParams);
+
+            cardPaymentMethod.put("tokenizationSpecification", tokenizationSpecification);
+
+            // Add the object to the JSONArray
+            createTxnResponseData.put(cardPaymentMethod);
+        }
+
+//        Log.e("logGooglePay", "responseData = " + createTxnResponseData);
+
+        return createTxnResponseData;
     }
 
     /**
@@ -160,8 +202,7 @@ public class UtilGP {
     public static JSONObject getIsReadyToPayRequest() {
         try {
             JSONObject isReadyToPayRequest = getBaseRequest();
-            isReadyToPayRequest.put(
-                    "allowedPaymentMethods", new JSONArray().put(getBaseCardPaymentMethod()));
+            isReadyToPayRequest.put("allowedPaymentMethods", getAllowedPaymentMethods());
 
             return isReadyToPayRequest;
 
@@ -214,7 +255,7 @@ public class UtilGP {
 
         try {
             JSONObject paymentDataRequest = UtilGP.getBaseRequest();
-            paymentDataRequest.put("allowedPaymentMethods", new JSONArray().put(UtilGP.getCardPaymentMethod()));
+            paymentDataRequest.put("allowedPaymentMethods", getAllowedPaymentMethods());
             paymentDataRequest.put("transactionInfo", UtilGP.getTransactionInfo(price));
             paymentDataRequest.put("merchantInfo", UtilGP.getMerchantInfo());
 

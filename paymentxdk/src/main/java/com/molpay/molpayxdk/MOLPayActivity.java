@@ -38,6 +38,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.molpay.molpayxdk.googlepay.ActivityGP;
 
 import org.json.JSONArray;
@@ -102,6 +103,8 @@ public class MOLPayActivity extends AppCompatActivity {
     public final static String mp_company = "mp_company";
     public final static String mp_closebutton_display = "mp_closebutton_display";
     public final static String mp_metadata = "mp_metadata";
+    public final static String mp_gpay_channel = "mp_gpay_channel";
+    public final static String device_info = "device_info";
 
     public final static String MOLPAY = "logMOLPAY";
     private final static String mpopenmolpaywindow = "mpopenmolpaywindow://";
@@ -112,7 +115,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "14a";
+    private final static String wrapperVersion = "15a";
 
     private String filename;
     private Bitmap imgBitmap;
@@ -124,6 +127,8 @@ public class MOLPayActivity extends AppCompatActivity {
     private Boolean isClosebuttonDisplay = false;
 
     private Boolean isTNGResult = false;
+
+    private static final Gson gson =  new Gson();
 
     // Private API
     private void closemolpay() {
@@ -571,6 +576,18 @@ public class MOLPayActivity extends AppCompatActivity {
                         paymentDetails.put(MOLPayActivity.mp_sandbox_mode, Objects.requireNonNull(paymentDetails.get("mp_sandbox_mode")));
                     }
 
+                    if (paymentDetails.get(MOLPayActivity.mp_gpay_channel) == null) {
+                        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC" });
+                    } else {
+                        paymentDetails.put(MOLPayActivity.mp_gpay_channel, Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_gpay_channel)));
+                    }
+
+                    if (paymentDetails.get(MOLPayActivity.mp_closebutton_display) == null) {
+                        paymentDetails.put(MOLPayActivity.mp_closebutton_display, false);
+                    } else {
+                        paymentDetails.put(MOLPayActivity.mp_closebutton_display, Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_closebutton_display)));
+                    }
+
                     paymentDetails.put(MOLPayActivity.mp_merchant_ID, Objects.requireNonNull(paymentDetails.get("mp_merchant_ID"))); // Your sandbox / production merchant ID
                     paymentDetails.put(MOLPayActivity.mp_verification_key, Objects.requireNonNull(paymentDetails.get("mp_verification_key"))); // Your sandbox / production verification key
                     paymentDetails.put(MOLPayActivity.mp_amount, Objects.requireNonNull(paymentDetails.get("mp_amount"))); // Must be in 2 decimal points format
@@ -621,7 +638,9 @@ public class MOLPayActivity extends AppCompatActivity {
                 //Log.d("MOLPAYXDKLibrary", "result: " + result);
                 //Log.d("MOLPAYXDKLibrary", "result: " + result.getResultCode());
 
-                if (result.getResultCode() == MOLPayActivity.RESULT_OK && result.getData() != null) {
+                Log.d("logGooglePay", "MOLPayActivity gpActivityResultLauncher result = " + result.toString());
+
+                if (result.getData() != null) {
                     Intent data = result.getData();
                     String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
 
@@ -679,26 +698,19 @@ public class MOLPayActivity extends AppCompatActivity {
         }
     }
 
-    @TargetApi(23)
     public void isStoragePermissionGranted() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                //Log.d(MOLPAY, "isStoragePermissionGranted Permission granted");
-                storeImage(imgBitmap);
-            } else {
-                //Log.d(MOLPAY, "isStoragePermissionGranted Permission revoked");
-                ActivityCompat.requestPermissions(MOLPayActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_EXTERNAL_STORAGE);
-            }
-
-        } else { //permission is automatically granted on sdk<23 upon installation
-            //Log.d(MOLPAY, "isStoragePermissionGranted Permission granted on sdk<23");
+        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            Log.d(MOLPAY, "isStoragePermissionGranted Permission granted");
             storeImage(imgBitmap);
+        } else {
+            Log.d(MOLPAY, "isStoragePermissionGranted Permission revoked");
+            ActivityCompat.requestPermissions(MOLPayActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_EXTERNAL_STORAGE);
         }
+
     }
 
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
 
-    @TargetApi(23)
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);

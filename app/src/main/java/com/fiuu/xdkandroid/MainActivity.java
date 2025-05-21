@@ -11,6 +11,7 @@ import androidx.appcompat.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.android.gms.wallet.button.ButtonConstants;
@@ -47,10 +48,15 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
         paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 
-        // --------------------------------- FOR GOOGLE PAY ----------------------------------------
+        // --------------------------------- FOR WEB GOOGLE PAY ----------------------------------------
+
+        // GPay e-Wallet setting examples :
+        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET", "CC" }); // Enable ShopeePay, TNG eWallet & Card
+//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
+//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
 
 //        paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
-//        paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+//        paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox vKey for TEST environment & Production/Dev vKey once Google approved production access
 //        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
 //        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment (by default false)
 
@@ -79,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
 //        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false);
 
         // Optional, show close button.
-//        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
+        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
 
         // Optional, allow / block change channel for preset mp_channel
 //        paymentDetails.put(MOLPayActivity.mp_channel_editing, true);
@@ -148,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
         paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
 
-        paymentDetails.put(MOLPayActivity.mp_amount, "1.01"); // 2 decimal points format
+        paymentDetails.put(MOLPayActivity.mp_amount, "0.10"); // 2 decimal points format
         paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
         paymentDetails.put(MOLPayActivity.mp_currency, "MYR");
         paymentDetails.put(MOLPayActivity.mp_country, "MY");
@@ -157,7 +163,14 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
         paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 
-//        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment
+        // GPay e-Wallet setting examples :
+        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET", "CC" }); // Enable ShopeePay, TNG eWallet & Card
+//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
+//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
+
+        // Optional
+        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true); // Enable close button
+//        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
 
         openGPActivityWithResult();
 
@@ -199,23 +212,35 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // The Google Pay button is a layout file – take the root view
-        PayButton googlePayButton = findViewById(R.id.googlePayButton);
+        // TODO: For GPay e-Wallet payment method cannot use PayButton API Style & Personalization : https://developers.google.com/pay/api/android/guides/brand-guidelines
 
-        try {
-            // TODO: Choose your preferred Google Pay button : https://developers.google.com/pay/api/android/guides/brand-guidelines
-            googlePayButton.initialize(
-                    ButtonOptions.newBuilder()
-                            .setButtonTheme(ButtonConstants.ButtonTheme.DARK)
-                            .setButtonType(ButtonConstants.ButtonType.PAY)
-                            .setCornerRadius(99)
-                            .setAllowedPaymentMethods(UtilGP.getAllowedPaymentMethods().toString())
-                            .build()
-            );
-            googlePayButton.setOnClickListener(view -> googlePayPayment());
-        } catch (JSONException e) {
-            // Keep Google Pay button hidden (consider logging this to your app analytics service)
-        }
+        ImageView btnGPay = findViewById(R.id.btnGPay);
+        btnGPay.setOnClickListener(v -> {
+            googlePayPayment();
+        });
+
+//----------------------------------------------------------------------------------
+
+//        NOTE: Below implementation only available to GPay Card payment method only
+
+        // The Google Pay button is a layout file – take the root view
+//        PayButton googlePayButton = findViewById(R.id.googlePayButton);
+
+//        try {
+//            googlePayButton.initialize(
+//                    ButtonOptions.newBuilder()
+//                            .setButtonTheme(ButtonConstants.ButtonTheme.DARK)
+//                            .setButtonType(ButtonConstants.ButtonType.PAY)
+//                            .setCornerRadius(99)
+//                            .setAllowedPaymentMethods(UtilGP.getAllowedPaymentMethods().toString())
+//                            .build()
+//            );
+//            googlePayButton.setOnClickListener(view -> {
+//                googlePayPayment();
+//            });
+//        } catch (JSONException e) {
+//            // Keep Google Pay button hidden (consider logging this to your app analytics service)
+//        }
     }
 
     @Override
