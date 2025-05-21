@@ -18,11 +18,24 @@
         android:layout_height="wrap_content"
         android:text="Tap Google Pay button or START for other payments" />
 
-    <com.google.android.gms.wallet.button.PayButton
-        android:id="@+id/googlePayButton"
+<!--    NOTE: com.google.android.gms.wallet.button.PayButton only available for GPay Card payment method only-->
+
+<!--    <com.google.android.gms.wallet.button.PayButton-->
+<!--        android:id="@+id/googlePayButton"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_margin="19dp"-->
+<!--        android:visibility="gone"/>-->
+
+<!--    // TODO: For GPay e-Wallet payment method cannot use PayButton API Style & Personalization : https://developers.google.com/pay/api/android/guides/brand-guidelines-->
+
+    <ImageView
+        android:id="@+id/btnGPay"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:src="@drawable/btn_gpay"
         android:layout_alignParentBottom="true"
-        android:layout_margin="19dp" />
+        android:visibility="visible"/>
 
 </RelativeLayout>

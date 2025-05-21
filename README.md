@@ -230,16 +230,36 @@ NOTE: Can only use TEST environment & Sandbox account if not yet get Google Pay 
 
 Add Google Pay button in XML layout e.g. :
 
-        <com.google.android.gms.wallet.button.PayButton
+[//]: # (   TODO: For GPay e-Wallet payment method cannot use PayButton API Style & Personalization : https://developers.google.com/pay/api/android/guides/brand-guidelines)
+
+    <ImageView
+        android:id="@+id/btnGPay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:src="@drawable/btn_gpay"
+        android:layout_alignParentBottom="true"
+        android:visibility="visible"/>
+
+[//]: # (   NOTE: com.google.android.gms.wallet.button.PayButton only available for GPay Card payment method only)
+
+    <com.google.android.gms.wallet.button.PayButton
         android:id="@+id/googlePayButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_margin="19dp" />
+        android:layout_margin="19dp"
+        android:visibility="gone"/>
 
 In Java class add this in onCreate :
 
-//      TODO: Choose your preferred Google Pay button design using this guideline : https://developers.google.com/pay/api/android/guides/brand-guidelines
+[//]: # (      TODO: For GPay e-Wallet payment method cannot use PayButton API Style & Personalization : https://developers.google.com/pay/api/android/guides/brand-guidelines)
+      
+      ImageView btnGPay = findViewById(R.id.btnGPay);
+      btnGPay.setOnClickListener(v -> {
+      googlePayPayment();
+      });
+
+[//]: # (        NOTE: Below implementation only available to GPay Card payment method only)
 
         PayButton googlePayButton = findViewById(R.id.googlePayButton);
 
@@ -290,6 +310,11 @@ In Java class add this in onCreate :
         
                 paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
                 paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment (by default false)
+
+               // GPay e-Wallet setting examples : 
+               paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET", "CC" }); // Enable ShopeePay, TNG eWallet & Card 
+               paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
+               paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
 
                 openGPActivityWithResult();
         }

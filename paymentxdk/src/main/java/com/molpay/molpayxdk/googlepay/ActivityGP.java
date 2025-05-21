@@ -25,6 +25,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.wallet.AutoResolveHelper;
 import com.google.android.gms.wallet.PaymentData;
 import com.google.android.gms.wallet.WalletConstants;
+import com.google.gson.Gson;
 import com.molpay.molpayxdk.MOLPayActivity;
 import com.molpay.molpayxdk.R;
 import com.molpay.molpayxdk.databinding.ActivityGooglepayBinding;
@@ -33,6 +34,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -43,6 +46,7 @@ public class ActivityGP extends AppCompatActivity {
     public JSONObject paymentInput = new JSONObject();
 
     private static final int LOAD_TRANSACTION_DATA_REQUEST_CODE = 998;
+    private static final int CANCEL_GPAY_TXN = 997;
 
     private ViewModelGP model;
 
@@ -55,6 +59,11 @@ public class ActivityGP extends AppCompatActivity {
     public static String COUNTRY_CODE = "MY";
     public static String CURRENCY_CODE = "MYR";
     public static int PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_TEST; // 3 = TEST & 1 = PRODUCTION
+
+    public static String createTxnResult;
+    public static String tranID = "";
+    public static String verificationKey = "";
+    public static long minTimeOut = 60000;
 
     // Handle potential conflict from calling loadPaymentData.
     ActivityResultLauncher<IntentSenderRequest> resolvePaymentForResult = registerForActivityResult(
@@ -75,23 +84,39 @@ public class ActivityGP extends AppCompatActivity {
 
                     case Activity.RESULT_CANCELED:
                         // The user cancelled the payment attempt
-                        setResult(RESULT_CANCELED, null);
-                        finish();
+                        CancelGPay("");
                         break;
 
                     default:
-                        // If Result = 1 finish with no response
-                        setResult(RESULT_FIRST_USER, null);
-                        finish();
+                        CancelGPay("");
                         break;
                 }
-            });
+            }
+    );
 
-    /**
-     * Initialize the Google Pay API on creation of the activity
-     *
-     * @see Activity#onCreate(Bundle)
-     */
+    public void CancelGPay (String paymentV2Response) {
+        ApiRequestService.CancelTxn(paymentV2Response, new ApiRequestService.NetworkCallback() {
+            @Override
+            public void onSuccess(String responseJson) {
+
+                runOnUiThread(() -> {
+                    // Safely update UI here
+//                    Log.e("logGooglePay", "onSuccess = " + responseJson);
+                    Intent i = new Intent(ActivityGP.this, WebActivity.class); // Redirect To WebActivity (RMS library)
+                    i.putExtra("cancelResponse", responseJson);
+                    startActivityForResult(i, CANCEL_GPAY_TXN);
+                });
+            }
+
+            @Override
+            public void onFailure(String error) {
+//                Log.e("logGooglePay", "ActivityGP ApiRequestService.CancelTxn onFailure = " + error);
+                // Send custom cancel response
+                sendCustomFailResponse("Payment cancelled.");
+            }
+        } , paymentDetails);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,6 +126,7 @@ public class ActivityGP extends AppCompatActivity {
         if (paymentDetails != null) {
             COUNTRY_CODE = Objects.requireNonNull(paymentDetails.get("mp_country")).toString();
             CURRENCY_CODE = Objects.requireNonNull(paymentDetails.get("mp_currency")).toString();
+            verificationKey = Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_verification_key)).toString();
 
             if (paymentDetails.get("mp_sandbox_mode") == null) {
                 PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_PRODUCTION;
@@ -116,21 +142,92 @@ public class ActivityGP extends AppCompatActivity {
 
         initializeUi();
 
-        // Check Google Pay availability
-        model = new ViewModelProvider(this).get(ViewModelGP.class);
-        model.canUseGooglePay.observe(this, this::setGooglePayAvailable);
+//        Log.e("logGooglePay", "PAYMENTS_ENVIRONMENT = " + PAYMENTS_ENVIRONMENT);
 
-        // Register a callback for handling the back press
-        OnBackPressedCallback callback = new OnBackPressedCallback(true) {
+        ApiRequestService.CreateTxn(new ApiRequestService.NetworkCallback() {
             @Override
-            public void handleOnBackPressed() {
-                // Do nothing - prevent user from performing backpress
-                //Log.e("logGooglePay", "ActivityGP backpressed");
-            }
-        };
+            public void onSuccess(String responseJson) {
 
-        // Add the callback to the OnBackPressedDispatcher
-        getOnBackPressedDispatcher().addCallback(this, callback);
+                runOnUiThread(() -> {
+                    // Safely update UI here
+//                    Log.e("logGooglePay", "CreateTxn onSuccess = " + responseJson);
+
+                    try {
+                        JSONObject jsonObject = new JSONObject(responseJson);
+                        String returnCode = jsonObject.getString("return_code");
+
+                        if (returnCode.contains("fail")) {
+                            String message = jsonObject.getString("message");
+                            sendCustomFailResponse(message);
+                            return;
+                        }
+                    } catch (JSONException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    createTxnResult = responseJson;
+
+                    // Check Google Pay availability
+                    model = new ViewModelProvider(ActivityGP.this).get(ViewModelGP.class);
+                    model.canUseGooglePay.observe(ActivityGP.this, ActivityGP.this::setGooglePayAvailable);
+
+                    // Register a callback for handling the back press
+                    OnBackPressedCallback callback = new OnBackPressedCallback(true) {
+                        @Override
+                        public void handleOnBackPressed() {
+                            // Do nothing - prevent user from performing backpress
+//                            Log.e("logGooglePay", "ActivityGP backpressed");
+                        }
+                    };
+
+                    // Add the callback to the OnBackPressedDispatcher
+                    getOnBackPressedDispatcher().addCallback(ActivityGP.this, callback);
+                });
+            }
+
+            @Override
+            public void onFailure(String error) {
+//                Log.e("logGooglePay", "ActivityGP createTxn.php onFailure = " + error);
+                // Send custom failed response
+                sendCustomFailResponse("Payment failed. Error: " + error);
+            }
+        } , paymentDetails);
+
+    }
+
+    private void sendCustomFailResponse(String failMessage) {
+//        Log.e("logGooglePay", "sendCustomFailResponse");
+        // Send custom failed response
+        Map<String, Object> data = new HashMap<>();
+        data.put("StatCode", "11");
+        data.put("StatName", "failed");
+        data.put("TranID", tranID);
+        data.put("Amount", Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_amount)).toString());
+        data.put("Domain", Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_merchant_ID)).toString());
+        data.put("VrfKey", "");
+        data.put("Channel", "GooglePay");
+        data.put("OrderID", Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_order_ID)).toString());
+        data.put("Currency", Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_currency)).toString());
+        data.put("ErrorCode", "GOOGLEPAY_PE");
+        data.put("ErrorDesc", failMessage);
+        data.put("ProcessorResponseCode", null);
+        data.put("ProcessorCVVResponse", null);
+        data.put("SchemeTransactionID", null);
+        data.put("MerchantAdviceCode", null);
+        data.put("ECI", null);
+        data.put("3DSVersion", null);
+        data.put("ACSTransactionID", null);
+        data.put("3DSTransactionID", null);
+
+        Gson gson = new Gson();
+        String jsonGPayCancel = gson.toJson(data);
+
+//        Log.e("logGooglePay", "jsonGPayCancel = " + jsonGPayCancel);
+
+        Intent resultCancel = new Intent();
+        resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, jsonGPayCancel);
+        setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
+        finish(); // finish ActivityGP
     }
 
     private void initializeUi() {
@@ -218,6 +315,13 @@ public class ActivityGP extends AppCompatActivity {
                     paymentInput.put("extendedVCode", Objects.requireNonNull(paymentDetails.get("mp_extended_vcode")));
                 }
 
+                // Close button setting
+                if (paymentDetails.get(MOLPayActivity.mp_closebutton_display) == null) {
+                    paymentInput.put("closeButton", false);
+                } else {
+                    paymentInput.put("closeButton", Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_closebutton_display)));
+                }
+
                 // TODO: Send the payment info e.g. (all info are compulsory) :
                 paymentInput.put("orderId", Objects.requireNonNull(paymentDetails.get("mp_order_ID")).toString()); // Unique payment order id
                 paymentInput.put("amount", Objects.requireNonNull(paymentDetails.get("mp_amount")).toString()); // Payment amount
@@ -280,7 +384,7 @@ public class ActivityGP extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
 //        CharSequence response;
-        String response = "";
+        String response;
 
         if (requestCode == LOAD_TRANSACTION_DATA_REQUEST_CODE) {
 
@@ -299,12 +403,11 @@ public class ActivityGP extends AppCompatActivity {
                         Intent result = new Intent();
                         result.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
                         setResult(RESULT_OK, result);
+                        finish();
                     } else {
-                        //Log.e("logGooglePay", "RESULT_OK data = null");
-                        setResult(RESULT_OK, null);
+//                        Log.e("logGooglePay", "RESULT_OK data = null");
+                        CancelGPay("");
                     }
-
-                    finish();
 
                     break;
 
@@ -313,16 +416,18 @@ public class ActivityGP extends AppCompatActivity {
                     // Response Error CallBack
                     if (data != null) {
                         response = data.getStringExtra("response");
-                        //Log.e("logGooglePay", "RESULT_CANCELED response = " + response);
-                        Intent resultCancel = new Intent();
-                        resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
-                        setResult(RESULT_CANCELED, resultCancel);
+//                        Log.e("logGooglePay", "RESULT_CANCELED response = " + response);
+                        assert response != null;
+                        if (response.contains("StatCode")) {
+                            CancelGPay("");
+                        } else {
+                            CancelGPay(response);
+                        }
                     } else {
-                        //Log.e("logGooglePay", "RESULT_CANCELED data = null");
-                        setResult(RESULT_CANCELED, null);
+//                        Log.e("logGooglePay", "RESULT_CANCELED ActivityGP 1 data = null");
+                        CancelGPay("");
                     }
 
-                    finish();
                     break;
 
                 case AutoResolveHelper.RESULT_ERROR:
@@ -335,6 +440,15 @@ public class ActivityGP extends AppCompatActivity {
                     }
                     break;
             }
+        }
+        else if (requestCode == CANCEL_GPAY_TXN) {
+            assert data != null;
+            response = data.getStringExtra("response");
+            Intent resultCancel = new Intent();
+            resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
+//            Log.e("logGooglePay", "RESULT_CANCELED ActivityGP 2");
+            setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
+            finish(); // finish ActivityGP
         }
     }
 

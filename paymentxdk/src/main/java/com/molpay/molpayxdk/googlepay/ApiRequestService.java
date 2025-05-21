@@ -5,10 +5,10 @@
 package com.molpay.molpayxdk.googlepay;
 
 import android.net.Uri;
-import android.os.Build;
+import android.util.Log;
 
-import androidx.annotation.RequiresApi;
-
+import com.google.android.gms.wallet.WalletConstants;
+import com.molpay.molpayxdk.MOLPayActivity;
 import com.molpay.molpayxdk.googlepay.Helper.ApplicationHelper;
 
 import org.json.JSONException;
@@ -24,23 +24,210 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+import okhttp3.*;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Objects;
+
 public class ApiRequestService {
 
     static class Production {
-        static final String BASE_PAYMENT = "https://pay.merchant.razer.com/";
-        static final String API_PAYMENT = "https://api.merchant.razer.com/";
+        static final String BASE_PAYMENT = "https://pay.fiuu.com/";
+        static final String API_PAYMENT = "https://api.fiuu.com/";
     }
 
     static class Development {
-        static final String BASE_PAYMENT = "https://sandbox.merchant.razer.com/";
-        static final String API_PAYMENT = "https://sandbox.merchant.razer.com/";
+        static final String SB_PAYMENT_FIUU = "https://sandbox-payment.fiuu.com/";
+        static final String SB_API_FIUU = "https://sandbox-api.fiuu.com/";
     }
+
+    private static String signature;
+    private static Boolean extendedVcode;
 
     public ApiRequestService() {
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    public Object GetPaymentRequest(JSONObject paymentInput, String paymentInfo) {
+    public interface NetworkCallback {
+        void onSuccess(String responseJson);
+        void onFailure(String error);
+    }
+
+    public static void CancelTxn(String paymentV2Response, NetworkCallback callback, HashMap<String, Object> paymentDetails) {
+
+//        Log.e("logGooglePay", "ActivityGP.tranID = " + ActivityGP.tranID);
+
+        String endPoint = "";
+
+        if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_PRODUCTION) {
+            endPoint = Production.BASE_PAYMENT + "RMS/GooglePay/cancel.php";
+        } else if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
+            endPoint = Development.SB_PAYMENT_FIUU + "RMS/GooglePay/cancel.php";
+        }
+
+//        Log.e("logGooglePay", endPoint);
+
+        OkHttpClient client = new OkHttpClient();
+        RequestBody formBody;
+
+        if (paymentV2Response.isEmpty()) {
+            // Cancel before proceed payment V2
+            formBody = new FormBody.Builder()
+                    .add("MerchantID", Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_merchant_ID)).toString())
+                    .add("ReferenceNo", Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_order_ID)).toString())
+                    .add("TxnID", ActivityGP.tranID)
+                    .add("TxnType", "SALS")
+                    .add("TxnCurrency", Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_currency)).toString())
+                    .add("TxnAmount", Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_amount)).toString())
+                    .add("mpsl_version", "2")
+                    .build();
+        } else {
+            // Cancel after get payment v2 error
+            FormBody.Builder formBuilder = new FormBody.Builder();
+            try {
+                JSONObject json = new JSONObject(paymentV2Response);
+                Iterator<String> keys = json.keys();
+
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    String value = json.getString(key);
+                    formBuilder.add(key, value);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+                callback.onFailure("Invalid JSON format: " + e.getMessage());
+                return;
+            }
+
+            formBody = formBuilder.build();
+        }
+
+        // Build the request
+        Request request = new Request.Builder()
+                .url(endPoint)
+                .post(formBody)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+//                Log.e("logGooglePay", "ApiRequestService cancel.php onFailure = " + e.getMessage());
+                callback.onFailure(e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful()) {
+//                    Log.e("logGooglePay", "onResponse code = " + response.code());
+                    callback.onFailure("Unexpected code: " + response.code());
+                } else {
+                    String responseBody = response.body().string();
+//                    Log.e("logGooglePay", "onResponse responseBody = " + responseBody);
+                    callback.onSuccess(responseBody);
+                }
+            }
+        });
+    }
+
+    public static void CreateTxn(NetworkCallback callback , HashMap<String, Object> paymentDetails) {
+
+        OkHttpClient client = new OkHttpClient();
+        FormBody formBody = null;
+        String endPoint = "";
+
+        if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_PRODUCTION) {
+            endPoint = Production.BASE_PAYMENT + "RMS/GooglePay/createTxn.php";
+        } else if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
+            endPoint = Development.SB_PAYMENT_FIUU + "RMS/GooglePay/createTxn.php";
+        }
+
+//        Log.e("logGooglePay", endPoint);
+
+        if (paymentDetails != null) {
+
+//            Log.e("logGooglePay", "paymentDetails NOT NULL");
+
+            if (paymentDetails.get("mp_extended_vcode") == null) {
+                extendedVcode = false;
+            } else {
+//                Log.e("logGooglePay", "mp_extended_vcode = " + paymentDetails.get("mp_extended_vcode"));
+                extendedVcode = (Boolean) paymentDetails.get("mp_extended_vcode");
+            }
+
+            signature = ApplicationHelper.getInstance().GetVCode(
+                    Objects.requireNonNull(paymentDetails.get("mp_amount")).toString(),
+                    Objects.requireNonNull(paymentDetails.get("mp_merchant_ID")).toString(),
+                    Objects.requireNonNull(paymentDetails.get("mp_order_ID")).toString(),
+                    Objects.requireNonNull(paymentDetails.get("mp_verification_key")).toString(),
+                    Objects.requireNonNull(paymentDetails.get("mp_currency")).toString(),
+                    extendedVcode
+            );
+
+            FormBody.Builder formBuilder = new FormBody.Builder()
+                    .add("MerchantID", Objects.requireNonNull(paymentDetails.get("mp_merchant_ID")).toString())
+                    .add("ReferenceNo", Objects.requireNonNull(paymentDetails.get("mp_order_ID")).toString())
+                    .add("TxnType", "SALS")
+                    .add("TxnCurrency", Objects.requireNonNull(paymentDetails.get("mp_currency")).toString())
+                    .add("TxnAmount", Objects.requireNonNull(paymentDetails.get("mp_amount")).toString())
+                    .add("Signature", signature)
+                    .add("CustName", Objects.requireNonNull(paymentDetails.get("mp_bill_name")).toString())
+                    .add("CustContact", Objects.requireNonNull(paymentDetails.get("mp_bill_mobile")).toString())
+                    .add("mpsl_version", "2")
+                    .add("vc_channel", "indexAN")
+                    .add("ReturnURL", "")
+                    .add("NotificationURL", "")
+                    .add("CallbackURL", "")
+                    .add("ExpirationTime", "");
+
+            // Handle paymentMethods[] from String[] mp_gpay_channel
+            if (paymentDetails.get("mp_gpay_channel") != null) {
+                String[] gpayChannels = (String[]) paymentDetails.get("mp_gpay_channel");
+                for (int i = 0; i < Objects.requireNonNull(gpayChannels).length; i++) {
+                    formBuilder.add("paymentMethods[" + i + "]", gpayChannels[i]);
+                }
+            } else {
+                formBuilder.add("paymentMethods[" + 0 + "]", "CC");
+            }
+
+//            Log.e("logGooglePay", "2 formBuilder = " + formBuilder.toString());
+
+            formBody = formBuilder.build();
+
+//            Log.e("logGooglePay", "3 formBody = " + formBody.toString());
+
+            Request request = new Request.Builder()
+                    .url(endPoint)
+                    .post(formBody)
+                    .build();
+
+//            Log.e("logGooglePay", "before client.newCall");
+
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+//                    Log.e("logGooglePay", "ApiRequestServicec createTxn.php onFailure = " + e.getMessage());
+                    callback.onFailure(e.getMessage());
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    if (!response.isSuccessful()) {
+//                        Log.e("logGooglePay", "onResponse code = " + response.code());
+                        callback.onFailure("Unexpected code: " + response.code());
+                    } else {
+                        String responseBody = response.body().string();
+//                        Log.e("logGooglePay", "onResponse responseBody = " + responseBody);
+                        callback.onSuccess(responseBody);
+                    }
+                }
+            });
+        } else {
+//            Log.e("logGooglePay", "paymentDetails == NULL");
+        }
+
+    }
+
+    public Object GetPaymentRequest(JSONObject paymentInput, String paymentInfo ) {
 
         try {
             String endPoint = "";
@@ -56,10 +243,10 @@ public class ApiRequestService {
             String merchantId = paymentInput.getString("merchantId");
             String verificationKey = paymentInput.getString("verificationKey");
 
-            if (WebActivity.isSandbox.equals("false")) {
-                endPoint = Production.BASE_PAYMENT + "RMS/API/Direct/1.4.0/index.php";
-            } else if (WebActivity.isSandbox.equals("true")) {
-                endPoint = Development.BASE_PAYMENT + "RMS/API/Direct/1.4.0/index.php";
+            if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_PRODUCTION) {
+                endPoint = Production.BASE_PAYMENT + "RMS/GooglePay/payment_v2.php";
+            } else if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
+                endPoint = Development.SB_PAYMENT_FIUU + "RMS/GooglePay/payment_v2.php";
             }
 
             Uri uri = Uri.parse(endPoint)
@@ -68,16 +255,38 @@ public class ApiRequestService {
 
             //"Signature": "<MD5(amount+merchantID+referenceNo+Vkey)>",
             String vCode = ApplicationHelper.getInstance().GetVCode(
-                    amount,
-                    merchantId,
-                    orderId,
-                    verificationKey,
-                    currency,
-                    extendedVCode
+                amount,
+                merchantId,
+                orderId,
+                verificationKey,
+                currency,
+                extendedVCode
             );
 
             String GooglePayBase64 = Base64.getEncoder()
-                    .encodeToString(paymentInfo.getBytes());
+                                    .encodeToString(paymentInfo.getBytes());
+
+            String requery;
+            if (WebActivity.paymentV2Requery.isEmpty()) {
+                requery = "0";
+            } else {
+                requery = WebActivity.paymentV2Requery;
+            }
+
+//            Log.e("logGooglePay", "endPoint = " + endPoint);
+//            Log.e("logGooglePay", "MerchantID = " + merchantId);
+//            Log.e("logGooglePay", "ReferenceNo = " + orderId);
+//            Log.e("logGooglePay", "TxnType = " + txnType);
+//            Log.e("logGooglePay", "TxnCurrency = " + currency);
+//            Log.e("logGooglePay", "TxnAmount = " + amount);
+//            Log.e("logGooglePay", "CustName = " + billName);
+//            Log.e("logGooglePay", "CustEmail = " + billEmail);
+//            Log.e("logGooglePay", "CustContact = " + billPhone);
+//            Log.e("logGooglePay", "CustDesc = " + billDesc);
+//            Log.e("logGooglePay", "Signature = " + vCode);
+//            Log.e("logGooglePay", "mpsl_version = 2");
+//            Log.e("logGooglePay", "requery = " + requery);
+//            Log.e("logGooglePay", "GooglePay = " + GooglePayBase64);
 
             Uri.Builder builder = new Uri.Builder()
                     .appendQueryParameter("MerchantID", merchantId)
@@ -91,23 +300,27 @@ public class ApiRequestService {
                     .appendQueryParameter("CustDesc", billDesc)
                     .appendQueryParameter("Signature", vCode)
                     .appendQueryParameter("mpsl_version", "2")
+                    .appendQueryParameter("tranID", ActivityGP.tranID)
+                    .appendQueryParameter("requery", requery)
                     .appendQueryParameter("GooglePay", GooglePayBase64);
 
-            return postRequest(uri, builder);
+            WebActivity.paymentV2Requery = "0";
+
+                return postRequest(uri, builder);
         } catch (JSONException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    public Object GetPaymentResult(JSONObject transaction) {
+    public Object GetPaymentResult(JSONObject transaction ) {
         try {
             String endPoint = "";
 
-            if (WebActivity.isSandbox.equals("false")) {
+            if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_PRODUCTION) {
                 endPoint = Production.API_PAYMENT + "RMS/q_by_tid.php";
-            } else if (WebActivity.isSandbox.equals("true")) {
-                endPoint = Development.API_PAYMENT + "RMS/q_by_tid.php";
+            } else if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
+                endPoint = Development.SB_API_FIUU + "RMS/q_by_tid.php";
             }
 
             Uri uri = Uri.parse(endPoint)

@@ -4,10 +4,6 @@
 
 package com.molpay.molpayxdk.googlepay.Helper;
 
-import android.os.Build;
-
-import androidx.annotation.RequiresApi;
-
 import com.molpay.molpayxdk.googlepay.ApiRequestService;
 
 import org.json.JSONException;
@@ -31,7 +27,6 @@ public class RMSGooglePay {
     final Pattern VERFICATIONKEY = Pattern.compile("^[A-Za-z0-9]+$");
     final Pattern ENV = Pattern.compile("^(?i)(true|false)$");
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
     public Object requestPayment(String paymentInput, String paymentInfo) {
 
         try {
