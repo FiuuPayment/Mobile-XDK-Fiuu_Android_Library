@@ -284,6 +284,22 @@ public class MOLPayActivity extends AppCompatActivity {
 
         // Add the callback to the OnBackPressedDispatcher
         getOnBackPressedDispatcher().addCallback(this, callback);
+
+        boolean isRooted = isDeviceRooted(this);
+
+        if (isRooted) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Security Alert")
+                    .setMessage("This device appears to be rooted. For security reasons, this application will now close.")
+                    .setCancelable(false)
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        dialog.dismiss();
+                        finish();
+                    })
+                    .show();
+
+            return; // stop further execution
+        }
     }
 
     private void nativeWebRequestUrlUpdates(String url) {
@@ -743,4 +759,46 @@ public class MOLPayActivity extends AppCompatActivity {
             }
         }
     }
+
+    public static boolean isDeviceRooted(Context context) {
+        String[] paths = {
+                "/system/app/Superuser.apk",
+                "/system/app/Superuser.apk",
+                "/system/etc/init.d/99SuperSUDaemon",
+                "/dev/com.koushikdutta.superuser.daemon/",
+                "/system/xbin/daemonsu",
+                "/sbin/su",
+                "/system/bin/su",
+                "/system/bin/failsafe/su",
+                "/system/xbin/su",
+                "/system/xbin/busybox",
+                "/system/sd/xbin/su",
+                "/data/local/su",
+                "/data/local/xbin/su",
+                "/data/local/bin/su",
+        };
+        for (String path : paths) {
+            if (new File(path).exists())
+                return true;
+        }
+
+        String[] knownRootAppsPackages = {
+                "eu.chainfire.supersu",
+                "com.noshufou.android.su",
+                "com.koushikdutta.superuser",
+                "com.zachspong.temprootremovejb",
+                "com.ramdroid.appquarantine",
+                "com.topjohnwu.magisk",
+        };
+
+        for (String pkg : knownRootAppsPackages) {
+            try {
+                context.getPackageManager().getPackageInfo(pkg, 0);
+                return true;
+            } catch (PackageManager.NameNotFoundException ignored) {
+            }
+        }
+        return false;
+    }
+
 }
