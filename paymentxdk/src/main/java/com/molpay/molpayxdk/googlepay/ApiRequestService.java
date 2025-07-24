@@ -187,6 +187,8 @@ public class ApiRequestService {
                 }
             } else {
                 formBuilder.add("paymentMethods[" + 0 + "]", "CC");
+                formBuilder.add("paymentMethods[" + 1 + "]", "TNG-EWALLET");
+                formBuilder.add("paymentMethods[" + 2 + "]", "SHOPEEPAY");
             }
 
 //            Log.e("logGooglePay", "2 formBuilder = " + formBuilder.toString());
