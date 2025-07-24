@@ -101,6 +101,7 @@ public class MOLPayActivity extends AppCompatActivity {
     public final static String mp_dpa_id = "mp_dpa_id";
     public final static String mp_company = "mp_company";
     public final static String mp_closebutton_display = "mp_closebutton_display";
+    public final static String mp_enable_fullscreen = "mp_enable_fullscreen";
     public final static String mp_metadata = "mp_metadata";
     public final static String mp_gpay_channel = "mp_gpay_channel";
     public final static String device_info = "device_info";
@@ -124,7 +125,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private Boolean isMainUILoaded = false;
     private Boolean isClosingReceipt = false;
     private Boolean isClosebuttonDisplay = false;
-
+    private Boolean isEnableFullscreen = false;
     private Boolean isTNGResult = false;
 
     private static final Gson gson =  new Gson();
@@ -184,6 +185,21 @@ public class MOLPayActivity extends AppCompatActivity {
         isTNGResult = false;
 
         if (paymentDetails != null) {
+
+            JSONObject json = new JSONObject(paymentDetails);
+
+            if (json.has("mp_enable_fullscreen")) {
+                try {
+                    isEnableFullscreen = json.getBoolean("mp_enable_fullscreen");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                if (isEnableFullscreen) {
+                    setTheme(R.style.Theme_Fullscreen);
+                }
+            }
+
             if (paymentDetails.containsKey("is_submodule")) {
                 is_submodule = Boolean.parseBoolean(Objects.requireNonNull(paymentDetails.get("is_submodule")).toString());
             }

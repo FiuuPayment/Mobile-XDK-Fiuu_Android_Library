@@ -66,6 +66,9 @@ public class ActivityGP extends AppCompatActivity {
     public static String verificationKey = "";
     public static long minTimeOut = 60000;
 
+    private Boolean isEnableFullscreen = false;
+
+
     // Handle potential conflict from calling loadPaymentData.
     ActivityResultLauncher<IntentSenderRequest> resolvePaymentForResult = registerForActivityResult(
             new ActivityResultContracts.StartIntentSenderForResult(),
@@ -125,6 +128,21 @@ public class ActivityGP extends AppCompatActivity {
         paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(MOLPayPaymentDetails);
 
         if (paymentDetails != null) {
+
+            JSONObject json = new JSONObject(paymentDetails);
+
+            if (json.has("mp_enable_fullscreen")) {
+                try {
+                    isEnableFullscreen = json.getBoolean("mp_enable_fullscreen");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                if (isEnableFullscreen) {
+                    setTheme(R.style.Theme_Fullscreen);
+                }
+            }
+
             COUNTRY_CODE = Objects.requireNonNull(paymentDetails.get("mp_country")).toString();
             CURRENCY_CODE = Objects.requireNonNull(paymentDetails.get("mp_currency")).toString();
             verificationKey = Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_verification_key)).toString();
