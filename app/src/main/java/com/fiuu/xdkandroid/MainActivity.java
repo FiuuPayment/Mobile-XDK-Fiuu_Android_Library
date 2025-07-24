@@ -8,20 +8,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.ImageView;
-import android.widget.TextView;
-
-import com.google.android.gms.wallet.button.ButtonConstants;
-import com.google.android.gms.wallet.button.ButtonOptions;
-import com.google.android.gms.wallet.button.PayButton;
 import com.molpay.molpayxdk.MOLPayActivity;
 import com.molpay.molpayxdk.googlepay.ActivityGP;
-import com.molpay.molpayxdk.googlepay.UtilGP;
-
-import org.json.JSONException;
 
 import java.util.Calendar;
 import java.util.HashMap;
