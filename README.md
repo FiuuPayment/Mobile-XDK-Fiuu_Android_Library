@@ -355,7 +355,7 @@ Just need to control these parameters :
         paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
         paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
         paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment (by default false)
-        paymentDetails.put(MOLPayActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button (by default false)
+        paymentDetails.put(MOLPayActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button for Card Payment (by default false)
 
 ## Payment Results
 
