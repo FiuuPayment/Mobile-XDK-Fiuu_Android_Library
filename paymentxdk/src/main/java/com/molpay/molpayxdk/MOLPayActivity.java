@@ -175,9 +175,6 @@ public class MOLPayActivity extends AppCompatActivity {
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_molpay);
-
         paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(MOLPayPaymentDetails);
 
         // For submodule wrappers
@@ -220,6 +217,9 @@ public class MOLPayActivity extends AppCompatActivity {
                 paymentDetails.put(wrapper_version, wrapperVersion);
             }
         }
+
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_molpay);
 
         // Bind resources
         mpMainUI = findViewById(R.id.MPMainUI);
