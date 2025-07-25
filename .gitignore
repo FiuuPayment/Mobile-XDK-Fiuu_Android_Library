@@ -3,4 +3,10 @@ local.properties
 .idea/*
 paymentxdk/build/*
 paymentxdk/.idea/*
-molpayxdk/build/
+MOLPayXDKProject/.gradle/
+MOLPayXDKProject/.idea/
+MOLPayXDKProject/app/build/
+MOLPayXDKProject/paymentxdk/build/
+MOLPayXDKProject/java_pid16100.hprof
+MOLPayXDKProject/key.properties
+app/release/

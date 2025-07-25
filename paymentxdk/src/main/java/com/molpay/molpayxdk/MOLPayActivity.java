@@ -2,26 +2,18 @@ package com.molpay.molpayxdk;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Message;
-
-import androidx.activity.OnBackPressedCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
@@ -37,6 +29,13 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
+
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import com.google.gson.Gson;
 import com.molpay.molpayxdk.googlepay.ActivityGP;
@@ -102,8 +101,10 @@ public class MOLPayActivity extends AppCompatActivity {
     public final static String mp_dpa_id = "mp_dpa_id";
     public final static String mp_company = "mp_company";
     public final static String mp_closebutton_display = "mp_closebutton_display";
+    public final static String mp_enable_fullscreen = "mp_enable_fullscreen";
     public final static String mp_metadata = "mp_metadata";
     public final static String mp_gpay_channel = "mp_gpay_channel";
+    public final static String mp_hide_googlepay = "mp_hide_googlepay";
     public final static String device_info = "device_info";
 
     public final static String MOLPAY = "logMOLPAY";
@@ -115,7 +116,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "15a";
+    private final static String wrapperVersion = "16a";
 
     private String filename;
     private Bitmap imgBitmap;
@@ -125,7 +126,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private Boolean isMainUILoaded = false;
     private Boolean isClosingReceipt = false;
     private Boolean isClosebuttonDisplay = false;
-
+    private Boolean isEnableFullscreen = false;
     private Boolean isTNGResult = false;
 
     private static final Gson gson =  new Gson();
@@ -174,9 +175,6 @@ public class MOLPayActivity extends AppCompatActivity {
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_molpay);
-
         paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(MOLPayPaymentDetails);
 
         // For submodule wrappers
@@ -185,6 +183,21 @@ public class MOLPayActivity extends AppCompatActivity {
         isTNGResult = false;
 
         if (paymentDetails != null) {
+
+            JSONObject json = new JSONObject(paymentDetails);
+
+            if (json.has("mp_enable_fullscreen")) {
+                try {
+                    isEnableFullscreen = json.getBoolean("mp_enable_fullscreen");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                if (isEnableFullscreen) {
+                    setTheme(R.style.Theme_Fullscreen);
+                }
+            }
+
             if (paymentDetails.containsKey("is_submodule")) {
                 is_submodule = Boolean.parseBoolean(Objects.requireNonNull(paymentDetails.get("is_submodule")).toString());
             }
@@ -204,6 +217,9 @@ public class MOLPayActivity extends AppCompatActivity {
                 paymentDetails.put(wrapper_version, wrapperVersion);
             }
         }
+
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_molpay);
 
         // Bind resources
         mpMainUI = findViewById(R.id.MPMainUI);
@@ -269,6 +285,22 @@ public class MOLPayActivity extends AppCompatActivity {
 
         // Add the callback to the OnBackPressedDispatcher
         getOnBackPressedDispatcher().addCallback(this, callback);
+
+        boolean isRooted = isDeviceRooted(this);
+
+        if (isRooted) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Security Alert")
+                    .setMessage("This device appears to be rooted. For security reasons, this application will now close.")
+                    .setCancelable(false)
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        dialog.dismiss();
+                        finish();
+                    })
+                    .show();
+
+            return; // stop further execution
+        }
     }
 
     private void nativeWebRequestUrlUpdates(String url) {
@@ -558,12 +590,30 @@ public class MOLPayActivity extends AppCompatActivity {
                         isStoragePermissionGranted();
 
                     } catch (Throwable t) {
-                        //Log.d(MOLPAY, "MPMainUIWebClient jsonResult error = " + t);
+//                        Log.d(MOLPAY, "MPMainUIWebClient jsonResult error = " + t);
                     }
 
-                } else if (url.startsWith(mpclickgpbutton)) {
+                }
+                else if (url.startsWith(mpclickgpbutton)) {
+                    String mp_channel = "";
+//                    Log.e("logGooglePay" , "url = " + url);
+                    // Extract the part after "://"
+                    String base64Part = url.substring(url.indexOf("://") + 3);
+                    // Decode the Base64 string
+                    byte[] decodedBytes = Base64.decode(base64Part, Base64.DEFAULT);
+                    String decodedString = new String(decodedBytes);
+//                    Log.e("logGooglePay" , "decodedString = " + decodedString);
 
-                    // Extended VCode setting
+                    try {
+                        JSONObject json = new JSONObject(decodedString);
+                        mp_channel = json.getString("mp_channel");
+//                        Log.e("logGooglePay" , "mp_channel = " + mp_channel);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    // Optional params checker
+
                     if (paymentDetails.get("mp_extended_vcode") == null) {
                         paymentDetails.put(MOLPayActivity.mp_extended_vcode, false);
                     } else {
@@ -576,10 +626,16 @@ public class MOLPayActivity extends AppCompatActivity {
                         paymentDetails.put(MOLPayActivity.mp_sandbox_mode, Objects.requireNonNull(paymentDetails.get("mp_sandbox_mode")));
                     }
 
-                    if (paymentDetails.get(MOLPayActivity.mp_gpay_channel) == null) {
+                    if (paymentDetails.get(MOLPayActivity.mp_gpay_channel) != null) {
+                        paymentDetails.put(MOLPayActivity.mp_gpay_channel, Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_gpay_channel)));
+                    } else if (mp_channel.toLowerCase().contains("tng")) {
+                        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "TNG-EWALLET" });
+                    } else if (mp_channel.toLowerCase().contains("shopee")) {
+                        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY" });
+                    } else if (mp_channel.toLowerCase().contains("credit")) {
                         paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC" });
                     } else {
-                        paymentDetails.put(MOLPayActivity.mp_gpay_channel, Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_gpay_channel)));
+                        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET", "CC" });
                     }
 
                     if (paymentDetails.get(MOLPayActivity.mp_closebutton_display) == null) {
@@ -638,7 +694,7 @@ public class MOLPayActivity extends AppCompatActivity {
                 //Log.d("MOLPAYXDKLibrary", "result: " + result);
                 //Log.d("MOLPAYXDKLibrary", "result: " + result.getResultCode());
 
-                Log.d("logGooglePay", "MOLPayActivity gpActivityResultLauncher result = " + result.toString());
+//                Log.d("logGooglePay", "MOLPayActivity gpActivityResultLauncher result = " + result.toString());
 
                 if (result.getData() != null) {
                     Intent data = result.getData();
@@ -728,4 +784,46 @@ public class MOLPayActivity extends AppCompatActivity {
             }
         }
     }
+
+    public static boolean isDeviceRooted(Context context) {
+        String[] paths = {
+                "/system/app/Superuser.apk",
+                "/system/app/Superuser.apk",
+                "/system/etc/init.d/99SuperSUDaemon",
+                "/dev/com.koushikdutta.superuser.daemon/",
+                "/system/xbin/daemonsu",
+                "/sbin/su",
+                "/system/bin/su",
+                "/system/bin/failsafe/su",
+                "/system/xbin/su",
+                "/system/xbin/busybox",
+                "/system/sd/xbin/su",
+                "/data/local/su",
+                "/data/local/xbin/su",
+                "/data/local/bin/su",
+        };
+        for (String path : paths) {
+            if (new File(path).exists())
+                return true;
+        }
+
+        String[] knownRootAppsPackages = {
+                "eu.chainfire.supersu",
+                "com.noshufou.android.su",
+                "com.koushikdutta.superuser",
+                "com.zachspong.temprootremovejb",
+                "com.ramdroid.appquarantine",
+                "com.topjohnwu.magisk",
+        };
+
+        for (String pkg : knownRootAppsPackages) {
+            try {
+                context.getPackageManager().getPackageInfo(pkg, 0);
+                return true;
+            } catch (PackageManager.NameNotFoundException ignored) {
+            }
+        }
+        return false;
+    }
+
 }

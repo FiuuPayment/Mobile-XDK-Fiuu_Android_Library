@@ -1,27 +1,20 @@
 package com.fiuu.xdkandroid;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.ImageView;
-import android.widget.TextView;
-
-import com.google.android.gms.wallet.button.ButtonConstants;
-import com.google.android.gms.wallet.button.ButtonOptions;
-import com.google.android.gms.wallet.button.PayButton;
 import com.molpay.molpayxdk.MOLPayActivity;
 import com.molpay.molpayxdk.googlepay.ActivityGP;
-import com.molpay.molpayxdk.googlepay.UtilGP;
-
-import org.json.JSONException;
 
 import java.util.Calendar;
 import java.util.HashMap;
@@ -50,15 +43,15 @@ public class MainActivity extends AppCompatActivity {
 
         // --------------------------------- FOR WEB GOOGLE PAY ----------------------------------------
 
-        // GPay e-Wallet setting examples :
-        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET", "CC" }); // Enable ShopeePay, TNG eWallet & Card
-//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
+        // GPay payment methods setting examples : (by default will show all payment methods)
 //        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
+//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
 
 //        paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
 //        paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox vKey for TEST environment & Production/Dev vKey once Google approved production access
-//        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
+//        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // Optional :  true = Test Environment & false = production (required Google Pay production access approval)(by default false)
 //        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment (by default false)
+//        paymentDetails.put(MOLPayActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button for Card (by default false)
 
         // ------------------------------------ OPTIONAL -------------------------------------------
 
@@ -86,6 +79,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Optional, show close button.
         paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
+//        paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
+
 
         // Optional, allow / block change channel for preset mp_channel
 //        paymentDetails.put(MOLPayActivity.mp_channel_editing, true);
@@ -163,15 +158,14 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
         paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 
-        // GPay e-Wallet setting examples :
-        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET", "CC" }); // Enable ShopeePay, TNG eWallet & Card
-//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
+        // GPay payment methods setting examples : (by default will show all payment methods)
 //        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
+//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
 
         // Optional
         paymentDetails.put(MOLPayActivity.mp_closebutton_display, true); // Enable close button
+//        paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
 //        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
-
         openGPActivityWithResult();
 
     }
@@ -211,6 +205,21 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        boolean isRooted = MOLPayActivity.isDeviceRooted(MainActivity.this);
+        if (isRooted) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Security Alert")
+                    .setMessage("This device appears to be rooted. For security reasons, this application will now close.")
+                    .setCancelable(false)
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        dialog.dismiss();
+                        finish();
+                    })
+                    .show();
+
+            return; // stop further execution
+        }
 
         // TODO: For GPay e-Wallet payment method cannot use PayButton API Style & Personalization : https://developers.google.com/pay/api/android/guides/brand-guidelines
 

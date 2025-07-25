@@ -14,6 +14,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.IntentSenderRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -64,6 +65,9 @@ public class ActivityGP extends AppCompatActivity {
     public static String tranID = "";
     public static String verificationKey = "";
     public static long minTimeOut = 60000;
+
+    private Boolean isEnableFullscreen = false;
+
 
     // Handle potential conflict from calling loadPaymentData.
     ActivityResultLauncher<IntentSenderRequest> resolvePaymentForResult = registerForActivityResult(
@@ -121,9 +125,39 @@ public class ActivityGP extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        boolean isRooted = MOLPayActivity.isDeviceRooted(ActivityGP.this);
+        if (isRooted) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Security Alert")
+                    .setMessage("This device appears to be rooted. For security reasons, this application will now close.")
+                    .setCancelable(false)
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        dialog.dismiss();
+                        finish();
+                    })
+                    .show();
+
+            return; // stop further execution
+        }
+
         paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(MOLPayPaymentDetails);
 
         if (paymentDetails != null) {
+
+            JSONObject json = new JSONObject(paymentDetails);
+
+            if (json.has("mp_enable_fullscreen")) {
+                try {
+                    isEnableFullscreen = json.getBoolean("mp_enable_fullscreen");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                if (isEnableFullscreen) {
+                    setTheme(R.style.Theme_Fullscreen);
+                }
+            }
+
             COUNTRY_CODE = Objects.requireNonNull(paymentDetails.get("mp_country")).toString();
             CURRENCY_CODE = Objects.requireNonNull(paymentDetails.get("mp_currency")).toString();
             verificationKey = Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_verification_key)).toString();
