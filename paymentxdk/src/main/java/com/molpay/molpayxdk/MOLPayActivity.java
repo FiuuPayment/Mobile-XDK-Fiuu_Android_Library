@@ -433,11 +433,11 @@ public class MOLPayActivity extends AppCompatActivity {
         super.onResume();
         try {
             if(isTNGResult && mpMOLPayUI != null){
-                Log.d(MOLPAY, "onResume TNG condition");
+                // Log.d(MOLPAY, "onResume TNG condition");
                 closemolpay();
             }
         } catch (Exception e) {
-            Log.e(MOLPAY, e.toString());
+            // Log.e(MOLPAY, e.toString());
             closemolpay();
         }
     }
