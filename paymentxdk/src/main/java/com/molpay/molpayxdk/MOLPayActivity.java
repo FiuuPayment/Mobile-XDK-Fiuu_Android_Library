@@ -431,10 +431,13 @@ public class MOLPayActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
-        // Custom onResume condition for TNG only
-        if (mpMOLPayUI != null && !paymentDetails.isEmpty() && isTNGResult) {
-            //Log.d(MOLPAY , "onResume TNG condition");
+        try {
+            if(isTNGResult && mpMOLPayUI != null){
+                Log.d(MOLPAY, "onResume TNG condition");
+                closemolpay();
+            }
+        } catch (Exception e) {
+            Log.e(MOLPAY, e.toString());
             closemolpay();
         }
     }
