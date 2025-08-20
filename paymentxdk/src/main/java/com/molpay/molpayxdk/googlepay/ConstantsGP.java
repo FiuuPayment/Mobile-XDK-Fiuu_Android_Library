@@ -37,7 +37,7 @@ public class ConstantsGP {
 
     /**
      * TODO: List card networks supported by your app
-     * <p>
+     *
      * The allowed networks to be requested from the API. If the user has cards from networks not
      * specified here in their account, these will not be offered for them to choose in the popup.
      *
@@ -52,7 +52,7 @@ public class ConstantsGP {
 
     /**
      * TODO: Confirm your processor supports Android device tokens on your supported card networks
-     * <p>
+     *
      * The Google Pay API may return cards on file on Google.com (PAN_ONLY) and/or a device token on
      * an Android device authenticated with a 3-D Secure cryptogram (CRYPTOGRAM_3DS).
      *

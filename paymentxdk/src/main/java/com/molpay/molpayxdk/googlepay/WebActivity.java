@@ -62,7 +62,7 @@ public class WebActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        //Log.e("logGooglePay", "WebActivity");
+//        Log.e("logGooglePay" , "WebActivity");
 
         setContentView(R.layout.activity_web);
 
@@ -131,7 +131,7 @@ public class WebActivity extends AppCompatActivity {
             @Override
             public void handleOnBackPressed() {
                 // Do nothing - prevent user from performing backpress
-                //Log.e("logGooglePay", "WebActivity GP backpressed");
+//                Log.e("logGooglePay" , "WebActivity GP backpressed");
             }
         };
 
@@ -216,11 +216,11 @@ public class WebActivity extends AppCompatActivity {
 //                                    statCodeValue = "00";
 //                                }
 
-                                //Log.e("logGooglePay", "statCodeValue " + statCodeValue);
+//                                Log.e("logGooglePay" , "statCodeValue " + statCodeValue);
 
                                 if (statCodeValue.equals("00")) {
                                     if (statCodeValueSuccess) {
-                                        //Log.e("logGooglePay", "statCodeValueSuccess finish");
+//                                        Log.e("logGooglePay" , "statCodeValueSuccess finish");
                                         onFinish();
                                     }
                                 } else if (statCodeValue.equals("11")) {
@@ -315,10 +315,10 @@ public class WebActivity extends AppCompatActivity {
                     Intent intent = new Intent();
                     intent.putExtra("response", String.valueOf(responseBodyObj));
 
-                    //Log.e("logGooglePay", "onFinish response = " + String.valueOf(responseBodyObj));
+//                    Log.e("logGooglePay" , "onFinish response = " + String.valueOf(responseBodyObj));
 
                     // If timeout / cancel
-                    if (!responseBodyObj.has("StatCode")) {
+                    if (!responseBodyObj.has("StatCode")){
                         setResult(RESULT_CANCELED, intent);
                     } else {
                         if (responseBodyObj.getString("StatCode").equalsIgnoreCase("22")) {
@@ -340,7 +340,6 @@ public class WebActivity extends AppCompatActivity {
     }
 
     private String xdkHTMLRedirection = "";
-
     private void onLoadHtmlWebView(String plainHtml) {
 
 //        wvGateway.setVisibility(View.VISIBLE);
@@ -350,7 +349,7 @@ public class WebActivity extends AppCompatActivity {
 
         String encodedHtml = Base64.encodeToString(plainHtml.getBytes(), Base64.NO_PADDING);
 
-        //Log.e("logGooglePay", "plainHtml = " + plainHtml);
+//        Log.e("logGooglePay" , "plainHtml = " + plainHtml);
 
         if (plainHtml.contains("xdkHTMLRedirection")) {
             xdkHTMLRedirection = StringUtils.substringBetween(plainHtml, "xdkHTMLRedirection' value='", "'");
@@ -493,19 +492,17 @@ public class WebActivity extends AppCompatActivity {
             return resp;
         }
 
-        public void setValue(String paymentInput, String paymentInfo) {
+        public void setValue(String paymentInput, String  paymentInfo) {
             this.paymentInput = paymentInput;
             this.paymentInfo = paymentInfo;
         }
 
         @Override
         public void run() {
-
             RMSGooglePay pay = new RMSGooglePay();
             JSONObject result;
             result = (JSONObject) pay.requestPayment(paymentInput, paymentInfo);
             resp = result.toString();
-
         }
     }
 
@@ -524,11 +521,11 @@ public class WebActivity extends AppCompatActivity {
         @Override
         public void run() {
 
-            RMSGooglePay pay = new RMSGooglePay();
-            JSONObject result = (JSONObject) pay.queryPaymentResult(transaction);
-            if (result != null) {
-                resp = result.toString();
-            }
+                RMSGooglePay pay = new RMSGooglePay();
+                JSONObject result = (JSONObject) pay.queryPaymentResult(transaction);
+                if (result != null) {
+                    resp = result.toString();
+                }
         }
     }
 

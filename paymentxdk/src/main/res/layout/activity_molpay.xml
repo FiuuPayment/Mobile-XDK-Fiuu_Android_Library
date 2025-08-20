@@ -12,7 +12,6 @@
         android:layout_height="match_parent"
         android:layout_alignParentTop="false"
         android:layout_centerHorizontal="true" />
-
     <WebView
         android:id="@+id/MPMOLPayUI"
         android:layout_width="match_parent"

@@ -6,11 +6,9 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application>
-        <activity
-            android:name=".MOLPayActivity"
+        <activity android:name=".MOLPayActivity"
             android:configChanges="orientation|screenSize" />
-        <activity
-            android:name=".googlepay.ActivityGP"
+        <activity android:name=".googlepay.ActivityGP"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name=".googlepay.WebActivity"
