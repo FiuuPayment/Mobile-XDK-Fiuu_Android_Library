@@ -1,17 +1,49 @@
-# Add project specific ProGuard rules here.
-# By default, the flags in this file are appended to flags specified
-# in /Users/clement/Library/Android/sdk/tools/proguard/proguard-android.txt
-# You can edit the include path and order by changing the proguardFiles
-# directive in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+############################################
+#  General settings / optimizations
+############################################
 
-# Add any project specific keep options here:
+# Keep class/method names for all Activities, Services & BroadcastReceivers
+-keep class * extends android.app.Activity
+-keep class * extends android.app.Service
+-keep class * extends android.content.BroadcastReceiver
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep all custom view classes (anything that extends View)
+-keep class * extends android.view.View {
+    <init>(android.content.Context);
+    <init>(android.content.Context, android.util.AttributeSet);
+    <init>(android.content.Context, android.util.AttributeSet, int);
+}
+
+# Keep Enum values
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+############################################
+#  WebView / Javascript bridge
+############################################
+# Keep all methods annotated with @JavascriptInterface
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+############################################
+#  MOLPay SDK (prevents obfuscation of JS functions)
+############################################
+-keep class com.molpay.** { *; }
+
+############################################
+#  Gson / JSON (optional - but commonly used)
+############################################
+# If you use Gson or any other reflection based JSON library
+-keep class com.google.gson.stream.** { *; }
+-keep class com.google.gson.** { *; }
+
+############################################
+#  Optional: OkHttp / Retrofit (only if you use them)
+############################################
+# -dontwarn okhttp3.**
+# -keep class okhttp3.** { *; }
+# -dontwarn retrofit2.**
+# -keep class retrofit2.** { *; }
