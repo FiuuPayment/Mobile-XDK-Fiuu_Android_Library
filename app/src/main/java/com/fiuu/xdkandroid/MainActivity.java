@@ -80,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
         // Optional, show close button.
         paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
 //        paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
+//        paymentDetails.put(MOLPayActivity.mp_classic_webcore, false);
 
 
         // Optional, allow / block change channel for preset mp_channel
