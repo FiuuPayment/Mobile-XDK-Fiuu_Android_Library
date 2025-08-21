@@ -52,12 +52,16 @@ public class MainActivity extends AppCompatActivity {
 //        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // Optional :  true = Test Environment & false = production (required Google Pay production access approval)(by default false)
 //        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment (by default false)
 //        paymentDetails.put(MOLPayActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button for Card (by default false)
+//        paymentDetails.put(MOLPayActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
 
         // ------------------------------------ OPTIONAL -------------------------------------------
 
         // TODO: Learn more about optional parameters here https://github.com/RazerMS/Mobile-XDK-RazerMS_Android_Studio/wiki/Installation-Guidance#prepare-the-payment-detail-object
 
         // -------------------------------- Most commonly used -------------------------------------
+
+        // Used classic XDK UI instead of new one
+//        paymentDetails.put(MOLPayActivity.mp_classic_webcore, true);
 
         // To pre-select channel, please refer to column mp_channel in https://github.com/RazerMS/Mobile-XDK-RazerMS_Examples/blob/master/channel-list.md
 //        paymentDetails.put(MOLPayActivity.mp_channel, "maybank2u");
@@ -78,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
 //        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false);
 
         // Optional, show close button.
-        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
+//        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
 //        paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
 //        paymentDetails.put(MOLPayActivity.mp_classic_webcore, false);
 
@@ -164,7 +168,8 @@ public class MainActivity extends AppCompatActivity {
 //        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
 
         // Optional
-        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true); // Enable close button
+//        paymentDetails.put(MOLPayActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
+//        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true); // Enable close button
 //        paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
 //        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
         openGPActivityWithResult();
