@@ -259,7 +259,11 @@ public class MOLPayActivity extends AppCompatActivity {
 
         // Load the main ui
         mpMainUI.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-        mpMainUI.getSettings().setAllowUniversalAccessFromFileURLs(true);
+        mpMainUI.getSettings().setAllowUniversalAccessFromFileURLs(false);
+        mpMainUI.getSettings().setAllowFileAccess(false);
+        mpMainUI.getSettings().setAllowContentAccess(false);
+        mpMainUI.getSettings().setAllowFileAccessFromFileURLs(false);
+        mpMainUI.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         mpMainUI.setWebViewClient(new MPMainUIWebClient());
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
