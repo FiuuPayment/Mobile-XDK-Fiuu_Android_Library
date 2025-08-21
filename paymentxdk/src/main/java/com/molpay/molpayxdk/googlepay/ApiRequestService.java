@@ -173,6 +173,7 @@ public class ApiRequestService {
                     .add("Signature", signature)
                     .add("CustName", Objects.requireNonNull(paymentDetails.get("mp_bill_name")).toString())
                     .add("CustContact", Objects.requireNonNull(paymentDetails.get("mp_bill_mobile")).toString())
+                    .add("CustEmail", Objects.requireNonNull(paymentDetails.get("mp_bill_email")).toString())
                     .add("mpsl_version", "2")
                     .add("vc_channel", "indexAN")
                     .add("ReturnURL", "")
