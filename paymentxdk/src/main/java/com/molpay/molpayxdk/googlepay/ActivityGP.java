@@ -418,6 +418,7 @@ public class ActivityGP extends AppCompatActivity {
      */
     private void handleError(int statusCode, @Nullable String message) {
 //        Log.e("logGooglePay", String.format(Locale.getDefault(), "Error code: %d, Message: %s", statusCode, message));
+        sendCustomFailResponse("Invalid amount. Please try again or contact customer support. (Error code: " + statusCode + ")");
     }
 
     @Override
