@@ -249,14 +249,12 @@ public class UtilGP {
      * @see <a
      * href="https://developers.google.com/pay/api/android/reference/object#PaymentDataRequest">PaymentDataRequest</a>
      */
-    public static JSONObject getPaymentDataRequest(long priceCents) {
-
-        final String price = UtilGP.centsToString(priceCents);
+    public static JSONObject getPaymentDataRequest(String priceCents) {
 
         try {
             JSONObject paymentDataRequest = UtilGP.getBaseRequest();
             paymentDataRequest.put("allowedPaymentMethods", getAllowedPaymentMethods());
-            paymentDataRequest.put("transactionInfo", UtilGP.getTransactionInfo(price));
+            paymentDataRequest.put("transactionInfo", UtilGP.getTransactionInfo(priceCents));
             paymentDataRequest.put("merchantInfo", UtilGP.getMerchantInfo());
 
       /* An optional shipping address requirement is a top-level property of the PaymentDataRequest

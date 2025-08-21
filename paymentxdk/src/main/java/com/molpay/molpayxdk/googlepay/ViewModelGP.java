@@ -73,7 +73,7 @@ public class ViewModelGP extends AndroidViewModel {
      * @return a Task with the payment information.
      * )
      */
-    public Task<PaymentData> getLoadPaymentDataTask(final long priceCents) {
+    public Task<PaymentData> getLoadPaymentDataTask(final String priceCents) {
 
 //        Log.e("logGooglePay" , "getLoadPaymentDataTask");
 
