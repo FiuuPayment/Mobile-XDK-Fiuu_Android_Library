@@ -1,6 +1,7 @@
 package com.molpay.molpayxdk.googlepay;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Bundle;
@@ -14,7 +15,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.IntentSenderRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -73,8 +73,9 @@ public class ActivityGP extends AppCompatActivity {
     ActivityResultLauncher<IntentSenderRequest> resolvePaymentForResult = registerForActivityResult(
             new ActivityResultContracts.StartIntentSenderForResult(),
             result -> {
-                //Log.e("logGooglePay", "resolvePaymentForResult");
-                //Log.e("logGooglePay", "result.getResultCode() = " + result.getResultCode());
+//                Log.e("logGooglePay", "resolvePaymentForResult");
+//                Log.e("logGooglePay", "result.getResultCode() = " + result.getResultCode());
+
                 switch (result.getResultCode()) {
                     case Activity.RESULT_OK:
                         Intent resultData = result.getData();
@@ -155,6 +156,7 @@ public class ActivityGP extends AppCompatActivity {
 
                 if (isEnableFullscreen) {
                     setTheme(R.style.Theme_Fullscreen);
+
                     View decorView = getWindow().getDecorView();
                     decorView.setSystemUiVisibility(
                             View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -175,7 +177,6 @@ public class ActivityGP extends AppCompatActivity {
                     PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_PRODUCTION;
                 }
             }
-
         }
 
         initializeUi();
@@ -230,7 +231,6 @@ public class ActivityGP extends AppCompatActivity {
                 sendCustomFailResponse("Payment failed. Error: " + error);
             }
         } , paymentDetails);
-
     }
 
     private void sendCustomFailResponse(String failMessage) {
@@ -295,10 +295,9 @@ public class ActivityGP extends AppCompatActivity {
 
     public void requestPayment() {
 
-        //Log.e("logGooglePay", "requestPayment");
-        //Log.e("logGooglePay", "mp_amount = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString());
-        //Log.e("logGooglePay", "totalPriceCents = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
-
+//        Log.e("logGooglePay", "requestPayment");
+//        Log.e("logGooglePay", "mp_amount = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString());
+//        Log.e("logGooglePay", "totalPriceCents = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
         // The price provided to the API should include taxes and shipping.
         // This price is not displayed to the user.
         long totalPriceCents = Long.parseLong(Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
@@ -306,7 +305,7 @@ public class ActivityGP extends AppCompatActivity {
         final Task<PaymentData> task = model.getLoadPaymentDataTask(totalPriceCents);
 
         task.addOnCompleteListener(completedTask -> {
-            //Log.e("logGooglePay", "addOnCompleteListener");
+//            Log.e("logGooglePay", "addOnCompleteListener");
 
             if (completedTask.isSuccessful()) {
                 handlePaymentSuccess(completedTask.getResult());
@@ -340,7 +339,7 @@ public class ActivityGP extends AppCompatActivity {
     private void handlePaymentSuccess(PaymentData paymentData) {
 
         pbLoading.setVisibility(View.VISIBLE);
-        //Log.e("logGooglePay", "handlePaymentSuccess");
+//        Log.e("logGooglePay", "handlePaymentSuccess");
 
         final String paymentInfo = paymentData.toJson();
 
@@ -397,7 +396,7 @@ public class ActivityGP extends AppCompatActivity {
                 });
 
             } catch (JSONException e) {
-//            //Log.e(Constants.LOG_GOOGLE_PAY, "handlePaymentSuccess JSONException: " + e);
+//            Log.e(Constants.LOG_GOOGLE_PAY, "handlePaymentSuccess JSONException: " + e);
             }
         }
 
@@ -413,7 +412,7 @@ public class ActivityGP extends AppCompatActivity {
      * WalletConstants#constant-summary">Wallet Constants Library</a>
      */
     private void handleError(int statusCode, @Nullable String message) {
-//        //Log.e("loadPaymentData failed", String.format(Locale.getDefault(), "Error code: %d, Message: %s", statusCode, message));
+//        Log.e("logGooglePay", String.format(Locale.getDefault(), "Error code: %d, Message: %s", statusCode, message));
     }
 
     @Override
@@ -436,7 +435,7 @@ public class ActivityGP extends AppCompatActivity {
                     if (data != null) {
                         response = data.getStringExtra("response");
 
-                        //Log.e("logGooglePay", "RESULT_OK response = " + response);
+//                        Log.e("logGooglePay", "RESULT_OK response = " + response);
 
                         Intent result = new Intent();
                         result.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
@@ -473,7 +472,7 @@ public class ActivityGP extends AppCompatActivity {
                     if (status != null) {
                         handleError(status.getStatusCode(), status.getStatusMessage());
                     } else {
-                        //Log.e("logGooglePay", "RESULT_ERROR status = null");
+//                        Log.e("logGooglePay", "RESULT_ERROR status = null");
                         handleError(0, "");
                     }
                     break;
@@ -489,5 +488,4 @@ public class ActivityGP extends AppCompatActivity {
             finish(); // finish ActivityGP
         }
     }
-
 }
