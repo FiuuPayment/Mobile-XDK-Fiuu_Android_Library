@@ -239,7 +239,11 @@ public class UtilGP {
      * href="https://developers.google.com/pay/api/android/reference/object#MerchantInfo">MerchantInfo</a>
      */
     private static JSONObject getMerchantInfo() throws JSONException {
-        return new JSONObject().put("merchantName", "Example Merchant");
+        if (ApiRequestService.merchantName.isEmpty()) {
+            return new JSONObject().put("merchantName", "Amount");
+        } else {
+            return new JSONObject().put("merchantName", ApiRequestService.merchantName);
+        }
     }
 
     /**
