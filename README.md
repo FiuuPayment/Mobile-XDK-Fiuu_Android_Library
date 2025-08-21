@@ -88,6 +88,19 @@ Import the others required library classes for your class e.g.
         
         import java.util.HashMap;
 
+### Setup Release Build
+
+Add rules in proguard-rules.pro
+
+         #  For WebView / Javascript bridge
+         # Keep all methods annotated with @JavascriptInterface
+         -keepclassmembers class * {
+            @android.webkit.JavascriptInterface <methods>;
+         }
+
+         #  Keep XDK classes (prevents obfuscation of JS functions)
+         -keep class com.molpay.** { *; }
+
 ### Show All Subscribed Channels (Default Page)
 
     HashMap<Object, Object> paymentDetails = new HashMap<>();
@@ -170,6 +183,9 @@ This will only show maybank2u & TNG-EWALLET channels in the channel listing.
 Learn more about optional parameters here https://github.com/RazerMS/Mobile-XDK-RazerMS_Android_Studio/wiki/Installation-Guidance#prepare-the-payment-detail-object
 
         // -------------------------------- Most commonly used -------------------------------------
+        
+        // Used classic XDK UI instead of new one
+        paymentDetails.put(MOLPayActivity.mp_classic_webcore, true);
 
         // To pre-select channel, refer column mp_channel in https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Examples/blob/master/channel-list.md
         // e.g. set mp_channel = credit to directly load required card info.
@@ -309,13 +325,18 @@ In Java class add this in onCreate :
                 paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
         
                 paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
-                paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment (by default false)
-                paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
 
-               // GPay e-Wallet setting examples : 
-               paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET", "CC" }); // Enable ShopeePay, TNG eWallet & Card 
-               paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
-               paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
+                // GPay payment methods setting examples : (by default will show all payment methods)
+                paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
+                paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
+                // NOTE: SHOPEEPAY & TNG-EWALLET only applicable to MY & MYR. Others currency & country only supported CC.
+
+                // Optional
+                paymentDetails.put(MOLPayActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
+                paymentDetails.put(MOLPayActivity.mp_closebutton_display, true); // Enable close button
+                paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
+                paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
+                paymentDetails.put(MOLPayActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button (by default false)
 
                 openGPActivityWithResult();
         }
@@ -354,8 +375,18 @@ Just need to control these parameters :
         paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
         paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
         paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
-        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment (by default false)
-        paymentDetails.put(MOLPayActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button for Card Payment (by default false)
+
+         // Optional
+         paymentDetails.put(MOLPayActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
+         paymentDetails.put(MOLPayActivity.mp_closebutton_display, true); // Enable close button
+         paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
+         paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
+         paymentDetails.put(MOLPayActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button (by default false)
+
+         // MY (MYR) GPay payment methods setting examples : (by default will show all payment methods)
+         paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
+         paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
+         // NOTE: SHOPEEPAY & TNG-EWALLET only applicable to MY & MYR. Others currency & country only supported CC.
 
 ## Payment Results
 

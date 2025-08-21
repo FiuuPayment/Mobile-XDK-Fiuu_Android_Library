@@ -166,6 +166,11 @@ public class ActivityGP extends AppCompatActivity {
 
             COUNTRY_CODE = Objects.requireNonNull(paymentDetails.get("mp_country")).toString();
             CURRENCY_CODE = Objects.requireNonNull(paymentDetails.get("mp_currency")).toString();
+
+            if ( ! COUNTRY_CODE.equalsIgnoreCase("MY") || ! CURRENCY_CODE.equalsIgnoreCase("MYR") ) {
+                paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC" });
+            }
+
             verificationKey = Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_verification_key)).toString();
 
             if (paymentDetails.get("mp_sandbox_mode") == null) {
@@ -300,7 +305,7 @@ public class ActivityGP extends AppCompatActivity {
 //        Log.e("logGooglePay", "totalPriceCents = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
         // The price provided to the API should include taxes and shipping.
         // This price is not displayed to the user.
-        long totalPriceCents = Long.parseLong(Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
+        String totalPriceCents = Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[,]", "");
 
         final Task<PaymentData> task = model.getLoadPaymentDataTask(totalPriceCents);
 
@@ -413,6 +418,7 @@ public class ActivityGP extends AppCompatActivity {
      */
     private void handleError(int statusCode, @Nullable String message) {
 //        Log.e("logGooglePay", String.format(Locale.getDefault(), "Error code: %d, Message: %s", statusCode, message));
+        sendCustomFailResponse("Invalid amount. Please try again or contact customer support. (Error code: " + statusCode + ")");
     }
 
     @Override

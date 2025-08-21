@@ -123,7 +123,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "19a";
+    private final static String wrapperVersion = "20a";
 
     private String filename;
     private Bitmap imgBitmap;
@@ -259,7 +259,11 @@ public class MOLPayActivity extends AppCompatActivity {
 
         // Load the main ui
         mpMainUI.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-        mpMainUI.getSettings().setAllowUniversalAccessFromFileURLs(true);
+        mpMainUI.getSettings().setAllowUniversalAccessFromFileURLs(false);
+        mpMainUI.getSettings().setAllowFileAccess(false);
+        mpMainUI.getSettings().setAllowContentAccess(false);
+        mpMainUI.getSettings().setAllowFileAccessFromFileURLs(false);
+        mpMainUI.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         mpMainUI.setWebViewClient(new MPMainUIWebClient());
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);

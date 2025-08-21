@@ -42,6 +42,7 @@ public class ApiRequestService {
         static final String SB_API_FIUU = "https://sandbox-api.fiuu.com/";
     }
 
+    public static String merchantName = "";
     private static String signature;
     private static Boolean extendedVcode;
 
@@ -172,6 +173,7 @@ public class ApiRequestService {
                     .add("Signature", signature)
                     .add("CustName", Objects.requireNonNull(paymentDetails.get("mp_bill_name")).toString())
                     .add("CustContact", Objects.requireNonNull(paymentDetails.get("mp_bill_mobile")).toString())
+                    .add("CustEmail", Objects.requireNonNull(paymentDetails.get("mp_bill_email")).toString())
                     .add("mpsl_version", "2")
                     .add("vc_channel", "indexAN")
                     .add("ReturnURL", "")
@@ -219,6 +221,18 @@ public class ApiRequestService {
                     } else {
                         String responseBody = response.body().string();
 //                        Log.e("logGooglePay", "onResponse responseBody = " + responseBody);
+
+                        if (paymentDetails.get("mp_company") != null) {
+                            merchantName = Objects.requireNonNull(paymentDetails.get("mp_company")).toString();
+                        } else {
+                            JSONObject jsonObject;
+                            try {
+                                jsonObject = new JSONObject(responseBody);
+                                merchantName = jsonObject.getString("DBA");
+                            } catch (JSONException e) {
+                                merchantName = "";
+                            }
+                        }
                         callback.onSuccess(responseBody);
                     }
                 }
