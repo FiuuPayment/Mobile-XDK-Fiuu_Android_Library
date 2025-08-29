@@ -242,6 +242,14 @@ public class MOLPayActivity extends AppCompatActivity {
             paymentDetails.put(device_info, gson.toJson(DeviceInfoUtil.getDeviceInfo(this)));
 
         }
+        else {
+            String dataString = "{ \"error\" : \" Payment details is null.\"  }";
+//            Log.d(MOLPAY, "MPMainUIWebClient mptransactionresults dataString = " + dataString);
+            Intent result = new Intent();
+            result.putExtra(MOLPayTransactionResult, dataString);
+            setResult(RESULT_OK, result);
+            finish();
+        }
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_molpay);
@@ -701,16 +709,19 @@ public class MOLPayActivity extends AppCompatActivity {
         @Override
         public void onPageFinished(WebView view, String url) {
             if (!isMainUILoaded && !url.equals("about:blank")) {
-
-                isMainUILoaded = true;
-
-                // Create JSON object for Payment details
-                JSONObject json = new JSONObject(paymentDetails);
-//                Log.d(MOLPAY, "MPMainUIWebClient onPageFinished paymentDetails = " + json);
-
-                // Init javascript
-                mpMainUI.loadUrl("javascript:updateSdkData(" + json + ")");
-
+                if (paymentDetails != null) {
+                    JSONObject json = new JSONObject(paymentDetails);
+//                    Log.d(MOLPAY, "MPMainUIWebClient onPageFinished paymentDetails = " + json);
+//                    Init javascript
+                    mpMainUI.loadUrl("javascript:updateSdkData(" + json + ")");
+                } else {
+                    String dataString = "{ \"error\" : \" Payment details is null.\"  }";
+//                    Log.d(MOLPAY, "MPMainUIWebClient mptransactionresults dataString = " + dataString);
+                    Intent result = new Intent();
+                    result.putExtra(MOLPayTransactionResult, dataString);
+                    setResult(RESULT_OK, result);
+                    finish();
+                }
             }
         }
 
