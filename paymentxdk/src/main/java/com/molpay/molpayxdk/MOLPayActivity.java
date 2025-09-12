@@ -224,12 +224,7 @@ public class MOLPayActivity extends AppCompatActivity {
             if (isClassicWebcore && !isUATWebcore){
                 setMPMainUI = "https://pay.merchant.razer.com/RMS/API/xdk/";
             } else if(isUATWebcore && !isClassicWebcore){
-                if (paymentDetails.containsKey("mp_merchant_ID")){
-                    String testerMerchantID = Objects.requireNonNull(paymentDetails.get("mp_merchant_ID")).toString();
-                    if (testerMerchantID.equals("")){
-                        setMPMainUI = "https://uat-xdk.fiuu.com/";
-                    }
-                }
+                setMPMainUI = "https://uat-xdk.fiuu.com/";
             }
 
             if (paymentDetails.containsKey("is_submodule")) {
