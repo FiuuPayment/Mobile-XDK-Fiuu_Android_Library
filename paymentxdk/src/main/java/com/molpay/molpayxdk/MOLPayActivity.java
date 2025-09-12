@@ -112,7 +112,7 @@ public class MOLPayActivity extends AppCompatActivity {
     public final static String mp_gpay_channel = "mp_gpay_channel";
     public final static String mp_hide_googlepay = "mp_hide_googlepay";
     public final static String mp_classic_webcore = "mp_classic_webcore";
-    public final static String mp_uat_webcore = "mp_uat_webcore";
+    public final static String mp_uat_mode = "mp_uat_mode";
 
     public final static String device_info = "device_info";
 
@@ -217,7 +217,7 @@ public class MOLPayActivity extends AppCompatActivity {
             }
 
             boolean isClassicWebcore = json.optBoolean("mp_classic_webcore", false);
-            boolean isUATWebcore = json.optBoolean("mp_uat_webcore",false);
+            boolean isUATWebcore = json.optBoolean("mp_uat_mode",false);
 
             setMPMainUI = "https://xdk.fiuu.com/";
 
