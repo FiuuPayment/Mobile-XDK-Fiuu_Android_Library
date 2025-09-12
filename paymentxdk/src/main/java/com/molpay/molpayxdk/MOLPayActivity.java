@@ -226,7 +226,7 @@ public class MOLPayActivity extends AppCompatActivity {
             } else if(isUATWebcore && !isClassicWebcore){
                 if (paymentDetails.containsKey("mp_merchant_ID")){
                     String testerMerchantID = Objects.requireNonNull(paymentDetails.get("mp_merchant_ID")).toString();
-                    if (testerMerchantID.equals("SB_alzepp")){
+                    if (testerMerchantID.equals("")){
                         setMPMainUI = "https://uat-xdk.fiuu.com/";
                     }
                 }
