@@ -112,6 +112,8 @@ public class MOLPayActivity extends AppCompatActivity {
     public final static String mp_gpay_channel = "mp_gpay_channel";
     public final static String mp_hide_googlepay = "mp_hide_googlepay";
     public final static String mp_classic_webcore = "mp_classic_webcore";
+    public final static String mp_uat_mode = "mp_uat_mode";
+
     public final static String device_info = "device_info";
 
     public final static String MOLPAY = "logMOLPAY";
@@ -123,7 +125,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "20a";
+    private final static String wrapperVersion = "25a";
 
     private String filename;
     private Bitmap imgBitmap;
@@ -215,11 +217,15 @@ public class MOLPayActivity extends AppCompatActivity {
             }
 
             boolean isClassicWebcore = json.optBoolean("mp_classic_webcore", false);
+            boolean isUATWebcore = json.optBoolean("mp_uat_mode",false);
 
-            setMPMainUI = isClassicWebcore
-                    ? "https://pay.merchant.razer.com/RMS/API/xdk/"
-                    : "https://xdk.fiuu.com/";
+            setMPMainUI = "https://xdk.fiuu.com/";
 
+            if (isClassicWebcore && !isUATWebcore){
+                setMPMainUI = "https://pay.fiuu.com/RMS/API/xdk/";
+            } else if(isUATWebcore && !isClassicWebcore){
+                setMPMainUI = "https://uat-xdk.fiuu.com/";
+            }
 
             if (paymentDetails.containsKey("is_submodule")) {
                 is_submodule = Boolean.parseBoolean(Objects.requireNonNull(paymentDetails.get("is_submodule")).toString());
