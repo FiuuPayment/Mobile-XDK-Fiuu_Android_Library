@@ -27,6 +27,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.wallet.AutoResolveHelper;
 import com.google.android.gms.wallet.PaymentData;
 import com.google.android.gms.wallet.WalletConstants;
+import com.google.android.gms.wallet.contract.TaskResultContracts;
 import com.google.gson.Gson;
 import com.molpay.molpayxdk.MOLPayActivity;
 import com.molpay.molpayxdk.R;
@@ -71,34 +72,34 @@ public class ActivityGP extends AppCompatActivity {
 
 
     // Handle potential conflict from calling loadPaymentData.
-    ActivityResultLauncher<IntentSenderRequest> resolvePaymentForResult = registerForActivityResult(
-            new ActivityResultContracts.StartIntentSenderForResult(),
-            result -> {
-//                Log.e("logGooglePay", "resolvePaymentForResult");
-//                Log.e("logGooglePay", "result.getResultCode() = " + result.getResultCode());
-
-                switch (result.getResultCode()) {
-                    case Activity.RESULT_OK:
-                        Intent resultData = result.getData();
-                        if (resultData != null) {
-                            PaymentData paymentData = PaymentData.getFromIntent(result.getData());
-                            if (paymentData != null) {
-                                handlePaymentSuccess(paymentData);
-                            }
+    private final ActivityResultLauncher<Task<PaymentData>> paymentDataLauncher =
+            registerForActivityResult(new TaskResultContracts.GetPaymentDataResult(), result -> {
+                int statusCode = result.getStatus().getStatusCode();
+//                Log.e("logGooglePay", "GetPaymentDataResult statusCode = " + statusCode);
+                switch (statusCode) {
+                    case CommonStatusCodes.SUCCESS:
+                        if (result.getResult() != null) {
+                            handlePaymentSuccess(result.getResult());
+                        } else {
+                            handleError(statusCode, "CommonStatusCodes.SUCCESS Result Null");
                         }
                         break;
-
-                    case Activity.RESULT_CANCELED:
-                        // The user cancelled the payment attempt
+                    case CommonStatusCodes.CANCELED:
                         CancelGPay("");
                         break;
-
                     default:
-                        CancelGPay("");
+                        if (result.getStatus().getStatusMessage() != null) {
+                            if ( ! result.getStatus().getStatusMessage().isEmpty()) {
+                                handleError(statusCode, result.getStatus().getStatusMessage());
+                            } else {
+                                handleError(statusCode, "CommonStatusCodes Message Empty");
+                            }
+                        } else {
+                            handleError(statusCode, "CommonStatusCodes Message Null");
+                        }
                         break;
                 }
-            }
-    );
+            });
 
     public void CancelGPay (String paymentV2Response) {
         ApiRequestService.CancelTxn(paymentV2Response, new ApiRequestService.NetworkCallback() {
@@ -323,29 +324,7 @@ public class ActivityGP extends AppCompatActivity {
         String totalPriceCents = Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[,]", "");
 
         final Task<PaymentData> task = model.getLoadPaymentDataTask(totalPriceCents);
-
-        task.addOnCompleteListener(completedTask -> {
-//            Log.e("logGooglePay", "addOnCompleteListener");
-
-            if (completedTask.isSuccessful()) {
-                handlePaymentSuccess(completedTask.getResult());
-            } else {
-                Exception exception = completedTask.getException();
-                if (exception instanceof ResolvableApiException) {
-                    PendingIntent resolution = ((ResolvableApiException) exception).getResolution();
-                    resolvePaymentForResult.launch(new IntentSenderRequest.Builder(resolution).build());
-
-                } else if (exception instanceof ApiException) {
-                    ApiException apiException = (ApiException) exception;
-                    handleError(apiException.getStatusCode(), apiException.getMessage());
-
-                } else {
-                    handleError(CommonStatusCodes.INTERNAL_ERROR, "Unexpected non API" +
-                            " exception when trying to deliver the task result to an activity!");
-                }
-            }
-
-        });
+        task.addOnCompleteListener(paymentDataLauncher::launch);
     }
 
     /**
