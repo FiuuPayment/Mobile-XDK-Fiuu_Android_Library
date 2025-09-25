@@ -117,8 +117,16 @@ public class ActivityGP extends AppCompatActivity {
             @Override
             public void onFailure(String error) {
 //                Log.e("logGooglePay", "ActivityGP ApiRequestService.CancelTxn onFailure = " + error);
-                // Send custom cancel response
-                sendCustomFailResponse("Payment cancelled.");
+
+                if (error != null) {
+                    if ( ! error.isEmpty()) {
+                        sendCustomFailResponse("Payment cancelled. Error : " + error);
+                    } else {
+                        sendCustomFailResponse("Payment cancelled. Error : empty");
+                    }
+                } else {
+                    sendCustomFailResponse("Payment cancelled. Error : null");
+                }
             }
         } , paymentDetails);
     }
