@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -294,7 +295,13 @@ public class ActivityGP extends AppCompatActivity {
         if (available) {
             requestPayment();
         } else {
-            Toast.makeText(this, R.string.google_pay_status_unavailable, Toast.LENGTH_LONG).show();
+            Toast toast = Toast.makeText(getApplicationContext(),
+                    R.string.google_pay_status_unavailable,
+                    Toast.LENGTH_LONG);
+            toast.setGravity(Gravity.CENTER, 0, 0);
+            toast.show();
+
+            CancelGPay("");
         }
     }
 
