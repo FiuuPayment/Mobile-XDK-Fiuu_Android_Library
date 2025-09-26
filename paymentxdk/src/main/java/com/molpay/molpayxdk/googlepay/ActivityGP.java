@@ -463,7 +463,20 @@ public class ActivityGP extends AppCompatActivity {
 //                        Log.e("logGooglePay", "RESULT_CANCELED response = " + response);
                         assert response != null;
                         if (response.contains("StatCode")) {
-                            CancelGPay("");
+                            try {
+                                JSONObject jsonObject = new JSONObject(response);
+                                String statCode = jsonObject.getString("StatCode");
+                                if (statCode.equalsIgnoreCase("11")) {
+                                    Intent resultCancel = new Intent();
+                                    resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
+                                    setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
+                                    finish(); // finish ActivityGP
+                                } else {
+                                    CancelGPay("");
+                                }
+                            } catch (JSONException e) {
+                                CancelGPay("");
+                            }
                         } else {
                             CancelGPay(response);
                         }
