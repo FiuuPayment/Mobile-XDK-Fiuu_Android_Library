@@ -164,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
 
         // GPay payment methods setting examples : (by default will show all payment methods)
+        // NOTE: SHOPEEPAY & TNG-EWALLET only applicable to MY & MYR. Others currency & country only supported CC.
 //        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
 //        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
 
