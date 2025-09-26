@@ -317,8 +317,7 @@ public class ActivityGP extends AppCompatActivity {
                     Toast.LENGTH_LONG);
             toast.setGravity(Gravity.CENTER, 0, 0);
             toast.show();
-
-            CancelGPay("");
+            sendCustomFailResponse("Payment aborted. Device not supported Google Pay.");
         }
     }
 
