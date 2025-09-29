@@ -121,12 +121,12 @@ public class ActivityGP extends AppCompatActivity {
 
                 if (error != null) {
                     if ( ! error.isEmpty()) {
-                        sendCustomFailResponse("Payment cancelled. Error : " + error);
+                        sendCustomFailResponse("Payment aborted. Error : " + error);
                     } else {
-                        sendCustomFailResponse("Payment cancelled. Error : empty");
+                        sendCustomFailResponse("Payment aborted. Error : empty");
                     }
                 } else {
-                    sendCustomFailResponse("Payment cancelled. Error : null");
+                    sendCustomFailResponse("Payment aborted. Error : null");
                 }
             }
         } , paymentDetails);
@@ -243,7 +243,15 @@ public class ActivityGP extends AppCompatActivity {
             public void onFailure(String error) {
 //                Log.e("logGooglePay", "ActivityGP createTxn.php onFailure = " + error);
                 // Send custom failed response
-                sendCustomFailResponse("Payment failed. Error: " + error);
+                if (error != null) {
+                    if ( ! error.isEmpty()) {
+                        sendCustomFailResponse("Payment aborted. Error : " + error);
+                    } else {
+                        sendCustomFailResponse("Payment aborted. Error : empty");
+                    }
+                } else {
+                    sendCustomFailResponse("Payment aborted. Error : null");
+                }
             }
         } , paymentDetails);
     }
@@ -309,8 +317,7 @@ public class ActivityGP extends AppCompatActivity {
                     Toast.LENGTH_LONG);
             toast.setGravity(Gravity.CENTER, 0, 0);
             toast.show();
-
-            CancelGPay("");
+            sendCustomFailResponse("Payment aborted. Device not supported Google Pay. Please use other payment method.");
         }
     }
 
@@ -456,7 +463,20 @@ public class ActivityGP extends AppCompatActivity {
 //                        Log.e("logGooglePay", "RESULT_CANCELED response = " + response);
                         assert response != null;
                         if (response.contains("StatCode")) {
-                            CancelGPay("");
+                            try {
+                                JSONObject jsonObject = new JSONObject(response);
+                                String statCode = jsonObject.getString("StatCode");
+                                if (statCode.equalsIgnoreCase("11")) {
+                                    Intent resultCancel = new Intent();
+                                    resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
+                                    setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
+                                    finish(); // finish ActivityGP
+                                } else {
+                                    CancelGPay("");
+                                }
+                            } catch (JSONException e) {
+                                CancelGPay("");
+                            }
                         } else {
                             CancelGPay(response);
                         }
