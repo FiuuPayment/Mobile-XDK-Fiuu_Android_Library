@@ -125,7 +125,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "27a";
+    private final static String wrapperVersion = "28a";
 
     private String filename;
     private Bitmap imgBitmap;
