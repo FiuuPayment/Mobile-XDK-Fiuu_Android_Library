@@ -493,7 +493,7 @@ public class ActivityGP extends AppCompatActivity {
                         handleError(status.getStatusCode(), status.getStatusMessage());
                     } else {
 //                        Log.e("logGooglePay", "RESULT_ERROR status = null");
-                        handleError(0, "");
+                        handleError(0, "AutoResolveHelper.RESULT_ERROR Status Null");
                     }
                     break;
             }
