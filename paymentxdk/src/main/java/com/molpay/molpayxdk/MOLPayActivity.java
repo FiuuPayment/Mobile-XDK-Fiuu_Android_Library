@@ -125,7 +125,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "25a";
+    private final static String wrapperVersion = "28a";
 
     private String filename;
     private Bitmap imgBitmap;
@@ -224,12 +224,7 @@ public class MOLPayActivity extends AppCompatActivity {
             if (isClassicWebcore && !isUATWebcore){
                 setMPMainUI = "https://pay.fiuu.com/RMS/API/xdk/";
             } else if(isUATWebcore && !isClassicWebcore){
-                if (paymentDetails.containsKey("mp_merchant_ID")){
-                    String testerMerchantID = Objects.requireNonNull(paymentDetails.get("mp_merchant_ID")).toString();
-                    if (testerMerchantID.equals("")){
-                        setMPMainUI = "https://uat-xdk.fiuu.com/";
-                    }
-                }
+                setMPMainUI = "https://uat-xdk.fiuu.com/";
             }
 
             if (paymentDetails.containsKey("is_submodule")) {
@@ -721,13 +716,11 @@ public class MOLPayActivity extends AppCompatActivity {
         public void onPageFinished(WebView view, String url) {
             if (!isMainUILoaded && !url.equals("about:blank")) {
                 if (paymentDetails != null) {
+                    isMainUILoaded = true;
                     JSONObject json = new JSONObject(paymentDetails);
-//                    Log.d(MOLPAY, "MPMainUIWebClient onPageFinished paymentDetails = " + json);
-//                    Init javascript
                     mpMainUI.loadUrl("javascript:updateSdkData(" + json + ")");
                 } else {
                     String dataString = "{ \"error\" : \" Payment details is null.\"  }";
-//                    Log.d(MOLPAY, "MPMainUIWebClient mptransactionresults dataString = " + dataString);
                     Intent result = new Intent();
                     result.putExtra(MOLPayTransactionResult, dataString);
                     setResult(RESULT_OK, result);

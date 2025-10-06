@@ -19,8 +19,11 @@ import java.io.BufferedWriter;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -29,6 +32,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Objects;
+
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLPeerUnverifiedException;
 
 public class ApiRequestService {
 
@@ -113,14 +119,30 @@ public class ApiRequestService {
             @Override
             public void onFailure(Call call, IOException e) {
 //                Log.e("logGooglePay", "ApiRequestService cancel.php onFailure = " + e.getMessage());
-                callback.onFailure(e.getMessage());
+                if (e instanceof UnknownHostException) {
+                    // No internet or DNS issue
+                    callback.onFailure("Unable to reach the server. Please check your internet connection or use other payment method. " + e.getMessage());
+                } else if (e instanceof SocketTimeoutException) {
+                    // Server took too long to respond
+                    callback.onFailure("Request timed out. Please try again later or use other payment method. " + e.getMessage());
+                } else if (e instanceof ConnectException) {
+                    // Could not connect to server
+                    callback.onFailure("Unable to connect to the server. Please try again later or use other payment method. " + e.getMessage());
+                } else if (e instanceof SSLHandshakeException
+                        || e instanceof SSLPeerUnverifiedException) {
+                    // SSL certificate problem
+                    callback.onFailure("We’re having trouble connecting. Please try again later or use other payment method. " + e.getMessage());
+                } else {
+                    // Fallback for anything else
+                    callback.onFailure("An unexpected error occurred. Please try again or use other payment method. " + e.getMessage());
+                }
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (!response.isSuccessful()) {
-//                    Log.e("logGooglePay", "onResponse code = " + response.code());
-                    callback.onFailure("Unexpected code: " + response.code());
+//                    Log.e("logGooglePay", "Unexpected response: " + response.toString());
+                    callback.onFailure("Unexpected response. Please try again or use other payment method. " + response.toString());
                 } else {
                     String responseBody = response.body().string();
 //                    Log.e("logGooglePay", "onResponse responseBody = " + responseBody);
@@ -210,14 +232,30 @@ public class ApiRequestService {
                 @Override
                 public void onFailure(Call call, IOException e) {
 //                    Log.e("logGooglePay", "ApiRequestServicec createTxn.php onFailure = " + e.getMessage());
-                    callback.onFailure(e.getMessage());
+                    if (e instanceof UnknownHostException) {
+                        // No internet or DNS issue
+                        callback.onFailure("Unable to reach the server. Please check your internet connection or use other payment method. " + e.getMessage());
+                    } else if (e instanceof SocketTimeoutException) {
+                        // Server took too long to respond
+                        callback.onFailure("Request timed out. Please try again later or use other payment method. " + e.getMessage());
+                    } else if (e instanceof ConnectException) {
+                        // Could not connect to server
+                        callback.onFailure("Unable to connect to the server. Please try again later or use other payment method. " + e.getMessage());
+                    } else if (e instanceof SSLHandshakeException
+                            || e instanceof SSLPeerUnverifiedException) {
+                        // SSL certificate problem
+                        callback.onFailure("We’re having trouble connecting. Please try again later or use other payment method. " + e.getMessage());
+                    } else {
+                        // Fallback for anything else
+                        callback.onFailure("An unexpected error occurred. Please try again or use other payment method. " + e.getMessage());
+                    }
                 }
 
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
                     if (!response.isSuccessful()) {
-//                        Log.e("logGooglePay", "onResponse code = " + response.code());
-                        callback.onFailure("Unexpected code: " + response.code());
+//                        Log.e("logGooglePay", "Unexpected response: " + response.toString());
+                        callback.onFailure("Unexpected response. Please try again or use other payment method. " + response.toString());
                     } else {
                         String responseBody = response.body().string();
 //                        Log.e("logGooglePay", "onResponse responseBody = " + responseBody);
