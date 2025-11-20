@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_verification_key, "");
 
         // Compulsory String. Payment info.
+        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true); //to enable back close button
         paymentDetails.put(MOLPayActivity.mp_amount, "1.01"); // 2 decimal points format
         paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
         paymentDetails.put(MOLPayActivity.mp_currency, "MYR");
