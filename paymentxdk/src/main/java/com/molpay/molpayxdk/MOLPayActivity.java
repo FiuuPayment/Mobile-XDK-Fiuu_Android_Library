@@ -18,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Message;
+import android.os.Handler;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -35,6 +36,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -126,7 +128,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "29a";
+    private final static String wrapperVersion = "31a";
 
     private String filename;
     private Bitmap imgBitmap;
@@ -139,14 +141,26 @@ public class MOLPayActivity extends AppCompatActivity {
     private Boolean isEnableFullscreen = false;
     private String setMPMainUI = "";
     private Boolean isTNGResult = false;
+    private Boolean networkIssue = false;
 
     private static final Gson gson =  new Gson();
     private static DeviceInfo deviceInfo;
+    private Handler timeoutHandler = new Handler();
+    private boolean isPageLoaded = false;
+    private int progressLoading = 0;
+    private static final int TIMEOUT_DURATION = 5000; // 3 seconds
+    private static final int NETWORK_HEAVY_DURATION = 1500; // 1.5 seconds
 
     // Private API
     private void closemolpay() {
         mpMainUI.loadUrl("javascript:closemolpay()");
-        if (isClosingReceipt) {
+        if(networkIssue){
+            String dataString = "{ \"error\" : \"Network Issue\"  }";
+            Intent result = new Intent();
+            result.putExtra(MOLPayTransactionResult, dataString);
+            setResult(RESULT_OK, result);
+            finish();
+        } else if (isClosingReceipt) {
             isClosingReceipt = false;
             finish();
         }
@@ -283,7 +297,6 @@ public class MOLPayActivity extends AppCompatActivity {
         cookieManager.setAcceptCookie(true);
         cookieManager.setAcceptThirdPartyCookies(mpMainUI, true);
 
-        Log.d(MOLPAY, "mpMainUI initiate");
         mpMOLPayUI = findViewById(R.id.MPMOLPayUI);
         mpMOLPayUI.setTag("mpMOLPayUI");
         configureWebView(mpMOLPayUI);
@@ -312,6 +325,29 @@ public class MOLPayActivity extends AppCompatActivity {
         cookieManager.setAcceptThirdPartyCookies(mpMOLPayUI, true);
 
         mpMainUI.loadUrl(setMPMainUI);
+
+
+        // Post a delayed check
+        timeoutHandler.postDelayed(() -> {
+            if (!isPageLoaded) {
+                // Timeout reached, stop loading
+                mpMainUI.stopLoading();
+                Log.e(MOLPAY, "mpMainUI timeout");
+                String dataString = "{ \"error\" : \"Timeout\"  }";
+                Intent result = new Intent();
+                result.putExtra(MOLPayTransactionResult, dataString);
+                setResult(RESULT_OK, result);
+                finish();
+            }
+        }, TIMEOUT_DURATION);
+
+        timeoutHandler.postDelayed(() -> {
+            if (progressLoading < 30 && !isPageLoaded) {
+                // Timeout reached, stop loading
+                Toast.makeText(this, "Unstable network.\nCheck your connection and try again.", Toast.LENGTH_LONG).show();
+            }
+        }, NETWORK_HEAVY_DURATION);
+
 
         // Register a callback for handling the back press
         OnBackPressedCallback callback = new OnBackPressedCallback(true) {
@@ -375,7 +411,9 @@ public class MOLPayActivity extends AppCompatActivity {
                 return; // Let WebView handle null cases
             }
             String tagString = (String) webView.getTag();
-            if(tagString.equals("mpMainUI")){return;}
+            if(tagString.equals("mpMainUI")){
+                return;
+            }
             Log.d(MOLPAY, "onPageStarted url = " + url);
             nativeWebRequestUrlUpdates(url);
 
@@ -660,6 +698,8 @@ public class MOLPayActivity extends AppCompatActivity {
                 return;
             }
             if(tagString.equals("mpMainUI")){
+
+                isPageLoaded = true;
                 if (!isMainUILoaded && !url.equals("about:blank")) {
                     if (paymentDetails != null) {
                         isMainUILoaded = true;
@@ -680,6 +720,20 @@ public class MOLPayActivity extends AppCompatActivity {
                 return;
             }
             nativeWebRequestUrlUpdates(url);
+        }
+        @Override
+        public void onReceivedError(WebView webView, WebResourceRequest request, WebResourceError error) {
+            // This is the simplest way - if this triggers, loadURL failed
+            Log.e(MOLPAY, "WebViewClient " + error.getErrorCode());
+            String tagString = (String) webView.getTag();
+            int errorCode = error.getErrorCode();
+            if(!tagString.equals("mpMainUI")) {return;}
+if(errorCode == WebViewClient.ERROR_HOST_LOOKUP || errorCode == WebViewClient.ERROR_CONNECT || errorCode == WebViewClient.ERROR_TIMEOUT) {
+    networkIssue = true;
+
+}
+
+
         }
         @Override
         public void onReceivedHttpError(WebView webView, WebResourceRequest request, WebResourceResponse errorResponse) {
@@ -711,10 +765,14 @@ public class MOLPayActivity extends AppCompatActivity {
                         .show();
             }
         }
-
     }
 
     private class MPMainUIWebChromeClient extends WebChromeClient {
+        @Override
+        public void onProgressChanged(WebView view, int newProgress) {
+            progressLoading = newProgress; // 0 to 100
+            Log.d(MOLPAY, "Progress Percentage: " + progressLoading);
+        }
         @SuppressLint("SetJavaScriptEnabled")
         @Override
         public boolean onCreateWindow(WebView webView, boolean dialog, boolean userGesture, Message resultMsg) {
@@ -728,7 +786,6 @@ public class MOLPayActivity extends AppCompatActivity {
             }
             return false;
         }
-
         @Override
         public void onCloseWindow(WebView webView) {
             String tagString = (String) webView.getTag();
@@ -897,9 +954,11 @@ public class MOLPayActivity extends AppCompatActivity {
     }
     public void createWebView(WebView webView, Message resultMsg){
         RelativeLayout container = findViewById(R.id.MPContainer);
+
         configureWebView(webView);
         webView.setWebViewClient(new MPMainUIWebClient());
         webView.setWebChromeClient(new MPMainUIWebChromeClient());
+
         webView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
         container.addView(webView);
         WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
@@ -910,7 +969,7 @@ public class MOLPayActivity extends AppCompatActivity {
     @SuppressLint("SetJavaScriptEnabled")
     public void configureWebView(WebView webView) {
         String tagString = (String) webView.getTag(); // Cast to String
-        Log.d(MOLPAY, "resetWebView init mode: " + tagString);
+        Log.d(MOLPAY, "configureWebView: " + tagString);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         if(tagString.equals("mpMainUI")){
@@ -927,6 +986,7 @@ public class MOLPayActivity extends AppCompatActivity {
             settings.setAllowUniversalAccessFromFileURLs(true);
             settings.setJavaScriptCanOpenWindowsAutomatically(true);
             settings.setSupportMultipleWindows(true);
+            webView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
             return;
         }
 
