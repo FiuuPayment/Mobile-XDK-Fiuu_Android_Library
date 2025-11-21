@@ -149,7 +149,7 @@ public class MOLPayActivity extends AppCompatActivity {
     private boolean isPageLoaded = false;
     private int progressLoading = 0;
     private static final int TIMEOUT_DURATION = 5000; // 5 seconds
-    private static final int NETWORK_HEAVY_DURATION = 3000; // 3 seconds
+    private static final int NETWORK_HEAVY_DURATION = 3500; // 3 seconds
 
     // Private API
     private void closemolpay() {
@@ -342,9 +342,9 @@ public class MOLPayActivity extends AppCompatActivity {
         }, TIMEOUT_DURATION);
 
         timeoutHandler.postDelayed(() -> {
-            if (progressLoading < 50 && !isPageLoaded) {
+            if (progressLoading < 30 && !isPageLoaded) {
                 // Timeout reached, stop loading
-                Toast.makeText(this, "Unstable network.\nCheck your connection and try again.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "We are experiencing heavy traffic.\nYou may experience slight delays.", Toast.LENGTH_LONG).show();
             }
         }, NETWORK_HEAVY_DURATION);
 
