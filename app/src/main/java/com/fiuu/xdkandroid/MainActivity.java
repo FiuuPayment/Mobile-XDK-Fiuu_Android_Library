@@ -38,15 +38,15 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     HashMap<Object, Object> paymentDetails = new HashMap<>();
+    SwitchMaterial switchMaterial = findViewById(R.id.switch_material);
+    EditText editTextChannel = findViewById(R.id.edt_mp_channel);
+    EditText editTextAmount = findViewById(R.id.edt_mp_amount);
+    EditText editTextCurrency = findViewById(R.id.edt_mp_currency);
+    EditText editTextCountry = findViewById(R.id.edt_mp_country);
 
 
     private void restartmolpay() {
-        SwitchMaterial switchMaterial = findViewById(R.id.switch_material);
-        EditText editTextChannel = findViewById(R.id.edt_mp_channel);
-        EditText editTextAmount = findViewById(R.id.edt_mp_amount);
-        EditText editTextCurrency = findViewById(R.id.edt_mp_currency);
-        EditText editTextCountry = findViewById(R.id.edt_mp_country);
-
+        paymentDetails = new HashMap<>();
         boolean isExpressMode = switchMaterial.isChecked();
         String mp_channel = editTextChannel.getText().toString();
         String mp_amount = editTextAmount.getText().toString();
@@ -171,6 +171,10 @@ public class MainActivity extends AppCompatActivity {
     private void googlePayPayment() {
         paymentDetails = new HashMap<>();
 
+        String mp_amount = editTextAmount.getText().toString();
+        String mp_country = editTextCountry.getText().toString();
+        String mp_currency = editTextCurrency.getText().toString();
+
         /*
             TODO: Follow Google’s instructions to request production access for your app: https://developers.google.com/pay/api/android/guides/test-and-deploy/request-prod-access
             *
@@ -184,10 +188,10 @@ public class MainActivity extends AppCompatActivity {
         paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
         paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
 
-        paymentDetails.put(MOLPayActivity.mp_amount, "1.01"); // 2 decimal points format
+        paymentDetails.put(MOLPayActivity.mp_amount, mp_amount); // 2 decimal points format
         paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
-        paymentDetails.put(MOLPayActivity.mp_currency, "MYR");
-        paymentDetails.put(MOLPayActivity.mp_country, "MY");
+        paymentDetails.put(MOLPayActivity.mp_currency, mp_currency);
+        paymentDetails.put(MOLPayActivity.mp_country, mp_country);
         paymentDetails.put(MOLPayActivity.mp_bill_description, "The bill description");
         paymentDetails.put(MOLPayActivity.mp_bill_name, "Payer name");
         paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
