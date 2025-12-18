@@ -38,14 +38,15 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     HashMap<Object, Object> paymentDetails = new HashMap<>();
-    SwitchMaterial switchMaterial = findViewById(R.id.switch_material);
-    EditText editTextChannel = findViewById(R.id.edt_mp_channel);
-    EditText editTextAmount = findViewById(R.id.edt_mp_amount);
-    EditText editTextCurrency = findViewById(R.id.edt_mp_currency);
-    EditText editTextCountry = findViewById(R.id.edt_mp_country);
 
 
     private void restartmolpay() {
+        SwitchMaterial switchMaterial = findViewById(R.id.switch_material);
+        EditText editTextChannel = findViewById(R.id.edt_mp_channel);
+        EditText editTextAmount = findViewById(R.id.edt_mp_amount);
+        EditText editTextCurrency = findViewById(R.id.edt_mp_currency);
+        EditText editTextCountry = findViewById(R.id.edt_mp_country);
+
         paymentDetails = new HashMap<>();
         boolean isExpressMode = switchMaterial.isChecked();
         String mp_channel = editTextChannel.getText().toString();
@@ -169,6 +170,10 @@ public class MainActivity extends AppCompatActivity {
     );
 
     private void googlePayPayment() {
+        EditText editTextAmount = findViewById(R.id.edt_mp_amount);
+        EditText editTextCurrency = findViewById(R.id.edt_mp_currency);
+        EditText editTextCountry = findViewById(R.id.edt_mp_country);
+
         paymentDetails = new HashMap<>();
 
         String mp_amount = editTextAmount.getText().toString();
@@ -187,6 +192,7 @@ public class MainActivity extends AppCompatActivity {
 //        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
         paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
         paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+
 
         paymentDetails.put(MOLPayActivity.mp_amount, mp_amount); // 2 decimal points format
         paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
