@@ -75,7 +75,6 @@ public class ActivityGP extends AppCompatActivity {
     private final ActivityResultLauncher<Task<PaymentData>> paymentDataLauncher =
             registerForActivityResult(new TaskResultContracts.GetPaymentDataResult(), result -> {
                 int statusCode = result.getStatus().getStatusCode();
-//                Log.e("logGooglePay", "GetPaymentDataResult statusCode = " + statusCode);
                 switch (statusCode) {
                     case CommonStatusCodes.SUCCESS:
                         if (result.getResult() != null) {
@@ -108,7 +107,7 @@ public class ActivityGP extends AppCompatActivity {
 
                 runOnUiThread(() -> {
                     // Safely update UI here
-//                    Log.e("logGooglePay", "onSuccess = " + responseJson);
+                    Log.e("logGooglePay", "onSuccess = " + responseJson);
                     Intent i = new Intent(ActivityGP.this, WebActivity.class); // Redirect To WebActivity (RMS library)
                     i.putExtra("cancelResponse", responseJson);
                     startActivityForResult(i, CANCEL_GPAY_TXN);
@@ -117,7 +116,7 @@ public class ActivityGP extends AppCompatActivity {
 
             @Override
             public void onFailure(String error) {
-//                Log.e("logGooglePay", "ActivityGP ApiRequestService.CancelTxn onFailure = " + error);
+                Log.e("logGooglePay", "ActivityGP ApiRequestService.CancelTxn onFailure = " + error);
 
                 if (error != null) {
                     if ( ! error.isEmpty()) {
@@ -196,7 +195,7 @@ public class ActivityGP extends AppCompatActivity {
 
         initializeUi();
 
-//        Log.e("logGooglePay", "PAYMENTS_ENVIRONMENT = " + PAYMENTS_ENVIRONMENT);
+        Log.e("logGooglePay", "PAYMENTS_ENVIRONMENT = " + PAYMENTS_ENVIRONMENT);
 
         ApiRequestService.CreateTxn(new ApiRequestService.NetworkCallback() {
             @Override
@@ -204,7 +203,7 @@ public class ActivityGP extends AppCompatActivity {
 
                 runOnUiThread(() -> {
                     // Safely update UI here
-//                    Log.e("logGooglePay", "CreateTxn onSuccess = " + responseJson);
+                    Log.e("logGooglePay", "CreateTxn onSuccess = " + responseJson);
 
                     try {
                         JSONObject jsonObject = new JSONObject(responseJson);
@@ -230,7 +229,7 @@ public class ActivityGP extends AppCompatActivity {
                         @Override
                         public void handleOnBackPressed() {
                             // Do nothing - prevent user from performing backpress
-//                            Log.e("logGooglePay", "ActivityGP backpressed");
+                            Log.e("logGooglePay", "ActivityGP backpressed");
                         }
                     };
 
@@ -241,7 +240,7 @@ public class ActivityGP extends AppCompatActivity {
 
             @Override
             public void onFailure(String error) {
-//                Log.e("logGooglePay", "ActivityGP createTxn.php onFailure = " + error);
+                Log.e("logGooglePay", "ActivityGP createTxn.php onFailure = " + error);
                 // Send custom failed response
                 if (error != null) {
                     if ( ! error.isEmpty()) {
@@ -257,7 +256,7 @@ public class ActivityGP extends AppCompatActivity {
     }
 
     private void sendCustomFailResponse(String failMessage) {
-//        Log.e("logGooglePay", "sendCustomFailResponse");
+        Log.e("logGooglePay", "sendCustomFailResponse");
         // Send custom failed response
         Map<String, Object> data = new HashMap<>();
         data.put("StatCode", "11");
@@ -283,7 +282,7 @@ public class ActivityGP extends AppCompatActivity {
         Gson gson = new Gson();
         String jsonGPayCancel = gson.toJson(data);
 
-//        Log.e("logGooglePay", "jsonGPayCancel = " + jsonGPayCancel);
+        Log.e("logGooglePay", "jsonGPayCancel = " + jsonGPayCancel);
 
         Intent resultCancel = new Intent();
         resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, jsonGPayCancel);
@@ -323,9 +322,9 @@ public class ActivityGP extends AppCompatActivity {
 
     public void requestPayment() {
 
-//        Log.e("logGooglePay", "requestPayment");
-//        Log.e("logGooglePay", "mp_amount = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString());
-//        Log.e("logGooglePay", "totalPriceCents = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
+        Log.e("logGooglePay", "requestPayment");
+        Log.e("logGooglePay", "mp_amount = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString());
+        Log.e("logGooglePay", "totalPriceCents = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
         // The price provided to the API should include taxes and shipping.
         // This price is not displayed to the user.
         String totalPriceCents = Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[,]", "");
@@ -345,7 +344,7 @@ public class ActivityGP extends AppCompatActivity {
     private void handlePaymentSuccess(PaymentData paymentData) {
 
         pbLoading.setVisibility(View.VISIBLE);
-//        Log.e("logGooglePay", "handlePaymentSuccess");
+        Log.e("logGooglePay", "handlePaymentSuccess");
 
         final String paymentInfo = paymentData.toJson();
 
@@ -418,7 +417,7 @@ public class ActivityGP extends AppCompatActivity {
      * WalletConstants#constant-summary">Wallet Constants Library</a>
      */
     private void handleError(int statusCode, @Nullable String message) {
-//        Log.e("logGooglePay", String.format(Locale.getDefault(), "Error code: %d, Message: %s", statusCode, message));
+        Log.e("logGooglePay", String.format(Locale.getDefault(), "Error code: %d, Message: %s", statusCode, message));
         sendCustomFailResponse("Payment aborted.\nError Code: " + statusCode + "\nMessage : " + message);
     }
 
@@ -442,14 +441,14 @@ public class ActivityGP extends AppCompatActivity {
                     if (data != null) {
                         response = data.getStringExtra("response");
 
-//                        Log.e("logGooglePay", "RESULT_OK response = " + response);
+                        Log.e("logGooglePay", "RESULT_OK response = " + response);
 
                         Intent result = new Intent();
                         result.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
                         setResult(RESULT_OK, result);
                         finish();
                     } else {
-//                        Log.e("logGooglePay", "RESULT_OK data = null");
+                        Log.e("logGooglePay", "RESULT_OK data = null");
                         CancelGPay("");
                     }
 
@@ -460,7 +459,7 @@ public class ActivityGP extends AppCompatActivity {
                     // Response Error CallBack
                     if (data != null) {
                         response = data.getStringExtra("response");
-//                        Log.e("logGooglePay", "RESULT_CANCELED response = " + response);
+                        Log.e("logGooglePay", "RESULT_CANCELED response = " + response);
                         assert response != null;
                         if (response.contains("StatCode")) {
                             try {
@@ -481,7 +480,7 @@ public class ActivityGP extends AppCompatActivity {
                             CancelGPay(response);
                         }
                     } else {
-//                        Log.e("logGooglePay", "RESULT_CANCELED ActivityGP 1 data = null");
+                        Log.e("logGooglePay", "RESULT_CANCELED ActivityGP 1 data = null");
                         CancelGPay("");
                     }
 
@@ -492,7 +491,7 @@ public class ActivityGP extends AppCompatActivity {
                     if (status != null) {
                         handleError(status.getStatusCode(), status.getStatusMessage());
                     } else {
-//                        Log.e("logGooglePay", "RESULT_ERROR status = null");
+                        Log.e("logGooglePay", "RESULT_ERROR status = null");
                         handleError(0, "AutoResolveHelper.RESULT_ERROR Status Null");
                     }
                     break;
@@ -503,7 +502,7 @@ public class ActivityGP extends AppCompatActivity {
             response = data.getStringExtra("response");
             Intent resultCancel = new Intent();
             resultCancel.putExtra(MOLPayActivity.MOLPayTransactionResult, response);
-//            Log.e("logGooglePay", "RESULT_CANCELED ActivityGP 2");
+            Log.e("logGooglePay", "RESULT_CANCELED ActivityGP 2");
             setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
             finish(); // finish ActivityGP
         }

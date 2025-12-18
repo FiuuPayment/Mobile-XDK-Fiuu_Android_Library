@@ -1,8 +1,12 @@
 apply plugin: 'com.android.application'
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = file('C:/Users/<user>/Documents/key.properties') //directory key.properties
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
 android {
     compileSdk 34
-
     defaultConfig {
         applicationId "com.fiuu.xdkandroid"
         minSdkVersion 26
@@ -11,25 +15,37 @@ android {
         versionName "1.0"
         multiDexEnabled true
     }
+    signingConfigs {
+        sskey {
+            keyAlias keystoreProperties['xdkKeyAlias']
+            keyPassword keystoreProperties['xdkKeyPassword']
+            storeFile keystoreProperties['xdkStoreFile'] ? file(keystoreProperties['xdkStoreFile']) : null
+            storePassword keystoreProperties['xdkStorePassword']
+            v1SigningEnabled true
+        }
+    }
     buildTypes {
+        debug {
+            debuggable true
+            minifyEnabled false
+            signingConfig signingConfigs.sskey
+        }
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.sskey
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
     namespace 'com.fiuu.xdkandroid'
-
     viewBinding {
         enabled = true
     }
 }
-
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.google.android.gms:play-services-wallet:19.4.0'
     testImplementation 'junit:junit:4.13.2'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.12.0'
-//    implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:3.34.31'
     implementation project(':paymentxdk')
 }
