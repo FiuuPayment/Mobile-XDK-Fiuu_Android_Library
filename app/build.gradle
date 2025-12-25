@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 def keystoreProperties = new Properties()
-def keystorePropertiesFile = file('C:/Users/<user>/Documents/key.properties') //directory key.properties
+def keystorePropertiesFile = file('C:/Users/<user>/Documents/key.properties') //directory of your key.properties
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
@@ -28,7 +28,7 @@ android {
         debug {
             debuggable true
             minifyEnabled false
-            signingConfig signingConfigs.sskey
+            signingConfig signingConfigs.debug
         }
         release {
             minifyEnabled false
