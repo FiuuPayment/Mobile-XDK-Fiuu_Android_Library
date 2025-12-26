@@ -382,21 +382,3 @@ public class MainActivity extends AppCompatActivity {
 
     }
 }
-
-class Country {
-    private String name;
-    private String currency;
-
-    public Country(String name, String id) {
-        this.name = name;
-        this.currency = id;
-    }
-
-    public String getName() { return name; }
-    public String getCurrency() { return currency; }
-
-    @Override
-    public String toString() {
-        return name; // This shows in the collapsed AutoCompleteTextView
-    }
-}
