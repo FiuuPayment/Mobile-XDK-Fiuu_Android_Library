@@ -40,7 +40,7 @@ public class ViewModelGP extends AndroidViewModel {
     private void fetchCanUseGooglePay() {
         final JSONObject isReadyToPayJson = UtilGP.getIsReadyToPayRequest();
         if (isReadyToPayJson == null) {
-//            Log.e("logGooglePay" , "_canUseGooglePay isReadyToPayJson == null");
+           //Log.e("logGooglePay" , "_canUseGooglePay isReadyToPayJson == null");
             _canUseGooglePay.setValue(false);
             return;
         }
@@ -51,16 +51,16 @@ public class ViewModelGP extends AndroidViewModel {
         Task<Boolean> task = paymentsClient.isReadyToPay(request);
         task.addOnCompleteListener(
                 completedTask -> {
-//                    Log.e("logGooglePay" , "_canUseGooglePay completedTask = " + completedTask.toString());
+                   //Log.e("logGooglePay" , "_canUseGooglePay completedTask = " + completedTask.toString());
                     if (completedTask.isSuccessful()) {
-//                        Log.e("logGooglePay" , "_canUseGooglePay completedTask.isSuccessful");
+                       //Log.e("logGooglePay" , "_canUseGooglePay completedTask.isSuccessful");
                         _canUseGooglePay.setValue(completedTask.getResult());
                     } else {
-//                        Log.e("logGooglePay" , "_canUseGooglePay setValue(false)");
+                       //Log.e("logGooglePay" , "_canUseGooglePay setValue(false)");
                         Exception exception = completedTask.getException();
-//                        Log.e("logGooglePay", "Error checking if ready to pay = " + exception);
-//                        Log.e("logGooglePay", "getCause = " + exception.getCause());
-//                        Log.e("logGooglePay", "getMessage = " + exception.getMessage());
+                       //Log.e("logGooglePay", "Error checking if ready to pay = " + exception);
+                       //Log.e("logGooglePay", "getCause = " + exception.getCause());
+                       //Log.e("logGooglePay", "getMessage = " + exception.getMessage());
                         _canUseGooglePay.setValue(false);
                     }
                 });
@@ -75,7 +75,7 @@ public class ViewModelGP extends AndroidViewModel {
      */
     public Task<PaymentData> getLoadPaymentDataTask(final String priceCents) {
 
-//        Log.e("logGooglePay" , "getLoadPaymentDataTask");
+       //Log.e("logGooglePay" , "getLoadPaymentDataTask");
 
         JSONObject paymentDataRequestJson = UtilGP.getPaymentDataRequest(priceCents);
 

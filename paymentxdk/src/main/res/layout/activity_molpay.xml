@@ -6,6 +6,15 @@
     android:id="@+id/MPContainer"
     tools:context="com.molpay.molpayxdk.MOLPayActivity">
 
+    <ProgressBar
+        android:id="@+id/pbLoading"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:indeterminateTint="#00ff00"
+        android:elevation="10dp"  />
+
     <WebView
         android:id="@+id/MPMainUI"
         android:layout_width="match_parent"
@@ -18,5 +27,4 @@
         android:layout_height="match_parent"
         android:layout_alignParentTop="false"
         android:layout_centerHorizontal="true" />
-
 </RelativeLayout>

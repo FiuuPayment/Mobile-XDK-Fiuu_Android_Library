@@ -2,7 +2,6 @@ plugins {
     id 'com.android.library'
     id 'maven-publish'
 }
-
 android {
     compileSdk 34
     defaultConfig {
@@ -24,7 +23,6 @@ android {
         enabled = true
     }
 }
-
 dependencies {
     testImplementation 'junit:junit:4.13.2'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
@@ -41,17 +39,17 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.4'
 
     implementation 'com.google.code.gson:gson:2.11.0'
+
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 }
-
 afterEvaluate {
     publishing {
         publications {
             release(MavenPublication) {
                 from components.release
-                groupId = 'com.github.FiuuPayment'
+                groupId ='com.github.FiuuPayment'
                 artifactId = 'Mobile-XDK-Fiuu_Android_Library'
-                version = '3.34.31'
+                version = '3.34.33'
             }
         }
     }
