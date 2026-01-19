@@ -142,7 +142,7 @@ public class UtilGP {
      * @throws JSONException
      */
     public static JSONArray getAllowedPaymentMethods() throws JSONException {
-//        Log.e("logGooglePay", "getAllowedPaymentMethods");
+       //Log.e("logGooglePay", "getAllowedPaymentMethods");
         return getPaymentMethods(ActivityGP.createTxnResult); // New Card + e-wallets methods
     }
 
@@ -186,7 +186,7 @@ public class UtilGP {
             createTxnResponseData.put(cardPaymentMethod);
         }
 
-//        Log.e("logGooglePay", "responseData = " + createTxnResponseData);
+       //Log.e("logGooglePay", "responseData = " + createTxnResponseData);
 
         return createTxnResponseData;
     }

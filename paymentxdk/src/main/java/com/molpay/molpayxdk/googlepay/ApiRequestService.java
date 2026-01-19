@@ -62,7 +62,7 @@ public class ApiRequestService {
 
     public static void CancelTxn(String paymentV2Response, NetworkCallback callback, HashMap<String, Object> paymentDetails) {
 
-//        Log.e("logGooglePay", "ActivityGP.tranID = " + ActivityGP.tranID);
+       //Log.e("logGooglePay", "ActivityGP.tranID = " + ActivityGP.tranID);
 
         String endPoint = "";
 
@@ -72,7 +72,7 @@ public class ApiRequestService {
             endPoint = Development.SB_PAYMENT_FIUU + "RMS/GooglePay/cancel.php";
         }
 
-//        Log.e("logGooglePay", endPoint);
+       //Log.e("logGooglePay", endPoint);
 
         OkHttpClient client = new OkHttpClient();
         RequestBody formBody;
@@ -118,7 +118,7 @@ public class ApiRequestService {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-//                Log.e("logGooglePay", "ApiRequestService cancel.php onFailure = " + e.getMessage());
+//               //Log.e("logGooglePay", "ApiRequestService cancel.php onFailure = " + e.getMessage());
                 if (e instanceof UnknownHostException) {
                     // No internet or DNS issue
                     callback.onFailure("Unable to reach the server. Please check your internet connection or use other payment method. " + e.getMessage());
@@ -141,11 +141,11 @@ public class ApiRequestService {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (!response.isSuccessful()) {
-//                    Log.e("logGooglePay", "Unexpected response: " + response.toString());
+//                   //Log.e("logGooglePay", "Unexpected response: " + response.toString());
                     callback.onFailure("Unexpected response. Please try again or use other payment method. " + response.toString());
                 } else {
                     String responseBody = response.body().string();
-//                    Log.e("logGooglePay", "onResponse responseBody = " + responseBody);
+                   //Log.e("logGooglePay", "onResponse responseBody = " + responseBody);
                     callback.onSuccess(responseBody);
                 }
             }
@@ -164,16 +164,16 @@ public class ApiRequestService {
             endPoint = Development.SB_PAYMENT_FIUU + "RMS/GooglePay/createTxn.php";
         }
 
-//        Log.e("logGooglePay", endPoint);
+       //Log.e("logGooglePay", endPoint);
 
         if (paymentDetails != null) {
 
-//            Log.e("logGooglePay", "paymentDetails NOT NULL");
+           //Log.e("logGooglePay", "paymentDetails NOT NULL");
 
             if (paymentDetails.get("mp_extended_vcode") == null) {
                 extendedVcode = false;
             } else {
-//                Log.e("logGooglePay", "mp_extended_vcode = " + paymentDetails.get("mp_extended_vcode"));
+               //Log.e("logGooglePay", "mp_extended_vcode = " + paymentDetails.get("mp_extended_vcode"));
                 extendedVcode = (Boolean) paymentDetails.get("mp_extended_vcode");
             }
 
@@ -215,23 +215,26 @@ public class ApiRequestService {
                 formBuilder.add("paymentMethods[" + 2 + "]", "SHOPEEPAY");
             }
 
-//            Log.e("logGooglePay", "2 formBuilder = " + formBuilder.toString());
-
             formBody = formBuilder.build();
 
-//            Log.e("logGooglePay", "3 formBody = " + formBody.toString());
+            // Log all fields
+            for (int i = 0; i < formBody.size(); i++) {
+                String name = formBody.encodedName(i);
+                String value = formBody.encodedValue(i);
+               //Log.e("logGooglePay", name + " = " + value);
+            }
 
             Request request = new Request.Builder()
                     .url(endPoint)
                     .post(formBody)
                     .build();
 
-//            Log.e("logGooglePay", "before client.newCall");
+           //Log.e("logGooglePay", "before client.newCall");
 
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
-//                    Log.e("logGooglePay", "ApiRequestServicec createTxn.php onFailure = " + e.getMessage());
+//                   //Log.e("logGooglePay", "ApiRequestServicec createTxn.php onFailure = " + e.getMessage());
                     if (e instanceof UnknownHostException) {
                         // No internet or DNS issue
                         callback.onFailure("Unable to reach the server. Please check your internet connection or use other payment method. " + e.getMessage());
@@ -254,11 +257,11 @@ public class ApiRequestService {
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
                     if (!response.isSuccessful()) {
-//                        Log.e("logGooglePay", "Unexpected response: " + response.toString());
+//                       //Log.e("logGooglePay", "Unexpected response: " + response.toString());
                         callback.onFailure("Unexpected response. Please try again or use other payment method. " + response.toString());
                     } else {
                         String responseBody = response.body().string();
-//                        Log.e("logGooglePay", "onResponse responseBody = " + responseBody);
+                       //Log.e("logGooglePay", "onResponse responseBody = " + responseBody);
 
                         if (paymentDetails.get("mp_company") != null) {
                             merchantName = Objects.requireNonNull(paymentDetails.get("mp_company")).toString();
@@ -276,7 +279,7 @@ public class ApiRequestService {
                 }
             });
         } else {
-//            Log.e("logGooglePay", "paymentDetails == NULL");
+           //Log.e("logGooglePay", "paymentDetails == NULL");
         }
 
     }
@@ -327,20 +330,20 @@ public class ApiRequestService {
                 requery = WebActivity.paymentV2Requery;
             }
 
-//            Log.e("logGooglePay", "endPoint = " + endPoint);
-//            Log.e("logGooglePay", "MerchantID = " + merchantId);
-//            Log.e("logGooglePay", "ReferenceNo = " + orderId);
-//            Log.e("logGooglePay", "TxnType = " + txnType);
-//            Log.e("logGooglePay", "TxnCurrency = " + currency);
-//            Log.e("logGooglePay", "TxnAmount = " + amount);
-//            Log.e("logGooglePay", "CustName = " + billName);
-//            Log.e("logGooglePay", "CustEmail = " + billEmail);
-//            Log.e("logGooglePay", "CustContact = " + billPhone);
-//            Log.e("logGooglePay", "CustDesc = " + billDesc);
-//            Log.e("logGooglePay", "Signature = " + vCode);
-//            Log.e("logGooglePay", "mpsl_version = 2");
-//            Log.e("logGooglePay", "requery = " + requery);
-//            Log.e("logGooglePay", "GooglePay = " + GooglePayBase64);
+           //Log.e("logGooglePay", "endPoint = " + endPoint);
+           //Log.e("logGooglePay", "MerchantID = " + merchantId);
+           //Log.e("logGooglePay", "ReferenceNo = " + orderId);
+           //Log.e("logGooglePay", "TxnType = " + txnType);
+           //Log.e("logGooglePay", "TxnCurrency = " + currency);
+           //Log.e("logGooglePay", "TxnAmount = " + amount);
+           //Log.e("logGooglePay", "CustName = " + billName);
+           //Log.e("logGooglePay", "CustEmail = " + billEmail);
+           //Log.e("logGooglePay", "CustContact = " + billPhone);
+           //Log.e("logGooglePay", "CustDesc = " + billDesc);
+           //Log.e("logGooglePay", "Signature = " + vCode);
+           //Log.e("logGooglePay", "mpsl_version = 2");
+           //Log.e("logGooglePay", "requery = " + requery);
+           //Log.e("logGooglePay", "GooglePay = " + GooglePayBase64);
 
             Uri.Builder builder = new Uri.Builder()
                     .appendQueryParameter("MerchantID", merchantId)
