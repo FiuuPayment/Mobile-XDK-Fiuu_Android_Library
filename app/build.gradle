@@ -1,10 +1,5 @@
 apply plugin: 'com.android.application'
 
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = file('C:/Users/<user>/Documents/key.properties') //directory of your key.properties
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-}
 android {
     compileSdk 34
     defaultConfig {
@@ -15,24 +10,14 @@ android {
         versionName "1.0"
         multiDexEnabled true
     }
-    signingConfigs {
-        sskey {
-            keyAlias keystoreProperties['xdkKeyAlias']
-            keyPassword keystoreProperties['xdkKeyPassword']
-            storeFile keystoreProperties['xdkStoreFile'] ? file(keystoreProperties['xdkStoreFile']) : null
-            storePassword keystoreProperties['xdkStorePassword']
-            v1SigningEnabled true
-        }
-    }
+
     buildTypes {
         debug {
             debuggable true
             minifyEnabled false
-            signingConfig signingConfigs.debug
         }
         release {
             minifyEnabled false
-            signingConfig signingConfigs.sskey
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
