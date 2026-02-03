@@ -59,9 +59,10 @@ public class ActivityGP extends AppCompatActivity {
 
     public final static String MOLPayPaymentDetails = "paymentDetails";
 
+    public static String MerchantID = "";
     public static String COUNTRY_CODE = "MY";
     public static String CURRENCY_CODE = "MYR";
-    public static int PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_TEST; // 3 = TEST & 1 = PRODUCTION
+    public static int PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_PRODUCTION; // 3 = TEST & 1 = PRODUCTION
 
     public static String createTxnResult;
     public static String tranID = "";
@@ -173,6 +174,21 @@ public class ActivityGP extends AppCompatActivity {
                 }
             }
 
+            Object merchantIdValue = paymentDetails.get(MOLPayActivity.mp_merchant_ID);
+            if (merchantIdValue == null || merchantIdValue.toString().trim().isEmpty()) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Configuration Error")
+                        .setMessage("Merchant ID is required.")
+                        .setCancelable(false)
+                        .setPositiveButton("OK", (dialog, which) -> {
+                            dialog.dismiss();
+                            finish();
+                        })
+                        .show();
+                return;
+            }
+            MerchantID = merchantIdValue.toString();
+
             COUNTRY_CODE = Objects.requireNonNull(paymentDetails.get("mp_country")).toString();
             CURRENCY_CODE = Objects.requireNonNull(paymentDetails.get("mp_currency")).toString();
 
@@ -182,14 +198,26 @@ public class ActivityGP extends AppCompatActivity {
 
             verificationKey = Objects.requireNonNull(paymentDetails.get(MOLPayActivity.mp_verification_key)).toString();
 
-            if (paymentDetails.get("mp_sandbox_mode") == null) {
-                PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_PRODUCTION;
+            if (Boolean.parseBoolean(String.valueOf(paymentDetails.get("mp_sandbox_mode")))
+                    || "4".equalsIgnoreCase(String.valueOf(paymentDetails.get("mp_core_env")))) {
+                PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_TEST;
             } else {
-                if (Boolean.parseBoolean(Objects.requireNonNull(paymentDetails.get("mp_sandbox_mode")).toString())) {
-                    PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_TEST;
-                } else {
-                    PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_PRODUCTION;
-                }
+                PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_PRODUCTION;
+            }
+        }
+
+        if (PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
+            if ( ! MerchantID.toUpperCase().endsWith("_SB") && ! MerchantID.toUpperCase().startsWith("SB_")) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Required Sandbox Account")
+                        .setMessage(MerchantID + " is not a sandbox account.")
+                        .setCancelable(false)
+                        .setPositiveButton("OK", (dialog, which) -> {
+                            dialog.dismiss();
+                            finish();
+                        })
+                        .show();
+                return; // stop further execution
             }
         }
 
@@ -215,14 +243,26 @@ public class ActivityGP extends AppCompatActivity {
                             return;
                         }
                     } catch (JSONException e) {
-                        throw new RuntimeException(e);
+                        new AlertDialog.Builder(ActivityGP.this)
+                                .setTitle("Account Issues")
+                                .setMessage("Please check production / sandbox info : mp_merchant_ID & mp_verification_key")
+                                .setCancelable(false)
+                                .setPositiveButton("OK", (dialog, which) -> {
+                                    dialog.dismiss();
+                                    finish();
+                                })
+                                .show();
+                        return; // stop further execution
                     }
 
                     createTxnResult = responseJson;
 
                     // Check Google Pay availability
                     model = new ViewModelProvider(ActivityGP.this).get(ViewModelGP.class);
-                    model.canUseGooglePay.observe(ActivityGP.this, ActivityGP.this::setGooglePayAvailable);
+                    model.canUseGooglePay.observe(ActivityGP.this, available -> {
+                        setGooglePayAvailable(available);
+                    });
+
 
                     // Register a callback for handling the back press
                     OnBackPressedCallback callback = new OnBackPressedCallback(true) {
@@ -307,7 +347,7 @@ public class ActivityGP extends AppCompatActivity {
      *
      * @param available isReadyToPay API response.
      */
-    private void setGooglePayAvailable(boolean available) {
+    private void setGooglePayAvailable(Boolean available) {
         if (available) {
             requestPayment();
         } else {
