@@ -3,7 +3,7 @@
 <img alt="" src="https://user-images.githubusercontent.com/38641542/74424311-a9d64000-4e8c-11ea-8d80-d811cfe66972.jpg">
 
 This is a fully functional Fiuu Android payment library designed for seamless integration for android native projects.
-It can be integrated using the com.molpay.molpayxdk package via Gradle, sourced from Maven repository.
+It can be integrated using the com.molpay.molpayxdk package via Gradle, sourced from Maven repository. 
 For reference, we have included a sample application (com.fiuu.xdkandroid) that demonstrates the integration process with the Fiuu Android payment library.
 
 ## Getting Started
@@ -150,7 +150,7 @@ Add rules in proguard-rules.pro
 ### Express Mode
 
 Required a valid mp_channel value, this will skip the payment info page and go direct to the payment screen.
-Add mp_express_mode & set mp_channel as below :
+Add mp_express_mode & set mp_channel as below : 
 
 e.g. Express Mode to FPX Maybank online banking
 
@@ -164,7 +164,7 @@ e.g. Express Mode to Touch 'n Go payment
 
 Find all mp_channel list here https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Examples/blob/master/channel-list.md
 
-NOTE:
+NOTE: 
 * Can only select subscribed mp_channel.
 * credit channel cannot use express mode due to security reasons.
 
@@ -183,9 +183,9 @@ This will only show maybank2u & TNG-EWALLET channels in the channel listing.
 Learn more about optional parameters here https://github.com/RazerMS/Mobile-XDK-RazerMS_Android_Studio/wiki/Installation-Guidance#prepare-the-payment-detail-object
 
         // -------------------------------- Most commonly used -------------------------------------
-        
-        // Used classic XDK UI instead of new one
-        paymentDetails.put(MOLPayActivity.mp_classic_webcore, true);
+
+        // Optional, set Environment for Webview Core URL
+        // paymentDetails.put(MOLPayActivity.mp_core_env, "2"); //default = 2. Refer here for more info: https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library?tab=readme-ov-file#environment-configuration
 
         // To pre-select channel, refer column mp_channel in https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Examples/blob/master/channel-list.md
         // e.g. set mp_channel = credit to directly load required card info.
@@ -193,7 +193,7 @@ Learn more about optional parameters here https://github.com/RazerMS/Mobile-XDK-
 
         // Simulate offline payment (demo without actual charges).
         // Need set true for Google Pay Test Environment
-        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true);
+        paymentDetails.put(MOLPayActivity.mp_core_env, "4"); // sandbox
 
         // Set true if your account enabled extended Verify Payment
         paymentDetails.put(MOLPayActivity.mp_extended_vcode, false);
@@ -245,10 +245,10 @@ Follow Google’s instructions to request production access for your app: https:
 Google Pay Console : https://pay.google.com/business/console
 
 * Choose the integration type Gateway when prompted, and provide screenshots of your app for review.
-* After your app has been approved, test your integration in production by set mp_sandbox_mode = false & use production or Dev mp_verification_key & mp_merchant_ID.
+* After your app has been approved, test your integration in production by set mp_core_env = "2" or just remove it & use production or Dev mp_verification_key & mp_merchant_ID.
 * Then launching Google Pay from a signed, release build of your app.
 
-Request Production Access Example 1 :
+Request Production Access Example 1 : 
 
 ![GPay Request Production 1](https://github.com/user-attachments/assets/3a9c9a77-72ce-4b3a-9cf6-294b9c579c52)
 
@@ -284,7 +284,7 @@ Add Google Pay button in XML layout e.g. :
         android:layout_margin="19dp"
         android:visibility="gone"/>
 
-In Java class add this in onCreate :
+In Java class add this in onCreate : 
 
 [//]: # (      TODO: For GPay e-Wallet payment method cannot use PayButton API Style & Personalization : https://developers.google.com/pay/api/android/guides/brand-guidelines)
       
@@ -317,13 +317,13 @@ In Java class add this in onCreate :
 
         HashMap<Object, Object> paymentDetails = new HashMap<>();
 
-   /*
-   TODO: Follow Google’s instructions to request production access for your app: https://developers.google.com/pay/api/android/guides/test-and-deploy/request-prod-access
-   *
-   Choose the integration type Gateway when prompted, and provide screenshots of your app for review.
-   After your app has been approved, test your integration in production by set mp_sandbox_mode = false & use production / Dev mp_verification_key & mp_merchant_ID.
-   Then launching Google Pay from a signed, release build of your app.
-   */
+      /*
+      TODO: Follow Google’s instructions to request production access for your app: https://developers.google.com/pay/api/android/guides/test-and-deploy/request-prod-access
+       *
+      Choose the integration type Gateway when prompted, and provide screenshots of your app for review.
+      After your app has been approved, test your integration in production by set mp_core_env = "2" or just remove it & use production / Dev mp_verification_key & mp_merchant_ID.
+      Then launching Google Pay from a signed, release build of your app.
+      */
 
         private void googlePayPayment() {
                 paymentDetails = new HashMap<>();
@@ -342,8 +342,8 @@ In Java class add this in onCreate :
                 paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
                 paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
         
-                paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
-
+                paymentDetails.put(MOLPayActivity.mp_core_env, "4"); // 4 = Test Environment & Default/2 = production (required Google Pay production access approval)
+                
                 // GPay payment methods setting examples : (by default will show all payment methods)
                 paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
                 paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
@@ -392,7 +392,7 @@ Just need to control these parameters :
 
         paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
         paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
-        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
+        paymentDetails.put(MOLPayActivity.mp_core_env, "4"); // 4 = Test Environment & Default/2 = production (required Google Pay production access approval)
 
          // Optional
          paymentDetails.put(MOLPayActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
@@ -487,9 +487,9 @@ Just need to control these parameters :
     "Your transaction has been denied due to merchant account issue."
     OR
     "This merchant is having trouble accepting your payment at the moment.Try installing the latest version of the merchant's app or use a different payment method. [OR_BIBED_13]"
-    1) Need check mp_sandbox_mode, mp_merchant_ID & mp_verification_key
-    2) mp_sandbox_mode = true , need use Sandbox mp_merchant_ID & mp_verification_key
-    3) mp_sandbox_mode = false or if did not send mp_sandbox_mode , need use Production/Dev mp_merchant_ID & mp_verification_key
+    1) Need check mp_core_env, mp_merchant_ID & mp_verification_key
+    2) mp_core_env = 4 , need use Sandbox mp_merchant_ID & mp_verification_key
+    3) mp_core_env = 2 or if did not send mp_core_env , need use Production/Dev mp_merchant_ID & mp_verification_key
     4) Check Requirements for Production Environment notes for production/dev testing
 
 ### Other Channels Payment Results

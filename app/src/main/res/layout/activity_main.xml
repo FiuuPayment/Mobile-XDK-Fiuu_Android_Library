@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:background="@color/white"
+    tools:context=".MainActivity">
+
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_width="match_parent">
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
@@ -15,10 +20,64 @@
             android:layout_height="?attr/actionBarSize"
             android:background="#0038a3"
             app:titleTextColor="@color/white"
-            app:subtitleTextColor="@color/white">
-        </androidx.appcompat.widget.Toolbar>
+            app:subtitleTextColor="@color/white"/>
+
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tab_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:tabTextColor="@color/white"
+        app:tabSelectedTextColor="@color/white"
+        app:tabMode="fixed"
+        app:tabGravity="fill">
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Payment"
+            />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Billing"
+            />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Merchant"
+            />
+
+    </com.google.android.material.tabs.TabLayout>
+
     </com.google.android.material.appbar.AppBarLayout>
+    <ScrollView
+        android:id="@+id/scrollView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_below="@+id/appbar"
+    android:layout_above="@+id/btnGPay"
+    android:foregroundGravity="top">
 
-    <include layout="@layout/content_main" />
+<androidx.viewpager2.widget.ViewPager2
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/view_pager"
+        android:background="@color/white"
+    android:layout_gravity="top"/>
+</ScrollView>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+<ImageView
+android:id="@+id/btnGPay"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:src="@drawable/btn_gpay"
+android:layout_alignParentBottom="true"
+android:visibility="visible"
+android:layout_marginLeft="19dp"
+android:layout_marginRight="19dp"
+android:background="@color/white"/>
+
+</RelativeLayout>

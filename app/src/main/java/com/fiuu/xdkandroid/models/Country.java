@@ -1,7 +1,6 @@
-package com.fiuu.xdkandroid;
+package com.fiuu.xdkandroid.models;
 
-
-class Country {
+public class Country {
     private final String name;
     private final String currency;
 
