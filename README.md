@@ -9,7 +9,7 @@ For reference, we have included a sample application (com.fiuu.xdkandroid) that 
 ## Getting Started
 
 For commercial use, you must be a registered Fiuu merchant.
-To obtain your credentials for testing or production purposes, please contact us at sales-sa@fiuu.com.
+To obtain your credentials for testing or production purposes, please contact us at sales@fiuu.com.
 
 This library is designed for native Android projects using Android Studio.
 
@@ -180,7 +180,7 @@ This will only show maybank2u & TNG-EWALLET channels in the channel listing.
 
 ### Others Optional Parameters
 
-Learn more about optional parameters here https://github.com/RazerMS/Mobile-XDK-RazerMS_Android_Studio/wiki/Installation-Guidance#prepare-the-payment-detail-object
+Learn more about optional parameters here https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library/wiki/Installation-Guidance#prepare-the-payment-detail-object
 
         // -------------------------------- Most commonly used -------------------------------------
 
@@ -535,12 +535,12 @@ Transaction result info:
 
 ## Support
 
-Submit issue to this repository or email to our support-sa@fiuu.com
+Submit issue to this repository or email to our support@fiuu.com
 
-Merchant Technical Support / Customer Care : support-sa@fiuu.com<br>
-Sales/Reseller Enquiry : sales-sa@fiuu.com<br>
-Marketing Campaign : marketing-sa@fiuu.com<br>
-Channel/Partner Enquiry : channel-sa@fiuu.com<br>
-Media Contact : media-sa@fiuu.com<br>
-R&D and Tech-related Suggestion : technical-sa@fiuu.com<br>
-Abuse Reporting : abuse-sa@fiuu.com
+Merchant Technical Support / Customer Care : support@fiuu.com<br>
+Sales/Reseller Enquiry : sales@fiuu.com<br>
+Marketing Campaign : marketing@fiuu.com<br>
+Channel/Partner Enquiry : channel@fiuu.com<br>
+Media Contact : media@fiuu.com<br>
+R&D and Tech-related Suggestion : technical@fiuu.com<br>
+Abuse Reporting : abuse@fiuu.com
