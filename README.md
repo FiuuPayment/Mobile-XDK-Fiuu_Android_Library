@@ -180,7 +180,7 @@ This will only show maybank2u & TNG-EWALLET channels in the channel listing.
 
 ### Others Optional Parameters
 
-Learn more about optional parameters here https://github.com/RazerMS/Mobile-XDK-RazerMS_Android_Studio/wiki/Installation-Guidance#prepare-the-payment-detail-object
+Learn more about optional parameters here https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library/wiki/Installation-Guidance#prepare-the-payment-detail-object
 
         // -------------------------------- Most commonly used -------------------------------------
 
