@@ -48,11 +48,11 @@ public class MainActivity extends AppCompatActivity {
 
 
         // Compulsory String. Values obtained from Fiuu.
-        paymentDetails.put(PaymentActivity.mp_username, "RMSxdk_2022");
-        paymentDetails.put(PaymentActivity.mp_password, "RMSpwd@2022");
-        paymentDetails.put(PaymentActivity.mp_app_name, "mobile");
-        paymentDetails.put(PaymentActivity.mp_merchant_ID, "rmsxdk_mobile_Dev");
-        paymentDetails.put(PaymentActivity.mp_verification_key, "ee738b541eff7b6b495e44771f71c0ec");
+        paymentDetails.put(PaymentActivity.mp_username, "");
+        paymentDetails.put(PaymentActivity.mp_password, "");
+        paymentDetails.put(PaymentActivity.mp_app_name, "");
+        paymentDetails.put(PaymentActivity.mp_merchant_ID, "");
+        paymentDetails.put(PaymentActivity.mp_verification_key, "");
 
         // Compulsory String. Payment info.
         paymentDetails.put(PaymentActivity.mp_express_mode, "false");
