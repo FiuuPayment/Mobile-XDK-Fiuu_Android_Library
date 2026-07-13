@@ -3,33 +3,25 @@ package com.fiuu.xdkandroid;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.google.android.gms.wallet.button.ButtonConstants;
-import com.google.android.gms.wallet.button.ButtonOptions;
-import com.google.android.gms.wallet.button.PayButton;
-import com.google.android.material.switchmaterial.SwitchMaterial;
-import com.molpay.molpayxdk.MOLPayActivity;
-import com.molpay.molpayxdk.googlepay.ActivityGP;
-import com.molpay.molpayxdk.googlepay.UtilGP;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
-import org.json.JSONException;
+import com.fiuu.xdk.PaymentActivity;
+import com.fiuu.xdk.googlepay.ActivityGP;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -56,24 +48,25 @@ public class MainActivity extends AppCompatActivity {
 
 
         // Compulsory String. Values obtained from Fiuu.
-        paymentDetails.put(MOLPayActivity.mp_username, "");
-        paymentDetails.put(MOLPayActivity.mp_password, "");
-        paymentDetails.put(MOLPayActivity.mp_app_name, "");
-        paymentDetails.put(MOLPayActivity.mp_merchant_ID, "");
-        paymentDetails.put(MOLPayActivity.mp_verification_key, "");
+        paymentDetails.put(PaymentActivity.mp_username, "");
+        paymentDetails.put(PaymentActivity.mp_password, "");
+        paymentDetails.put(PaymentActivity.mp_app_name, "");
+        paymentDetails.put(PaymentActivity.mp_merchant_ID, "");
+        paymentDetails.put(PaymentActivity.mp_verification_key, "");
 
         // Compulsory String. Payment info.
-        paymentDetails.put(MOLPayActivity.mp_express_mode, isExpressMode);
-        paymentDetails.put(MOLPayActivity.mp_channel, mp_channel);
-        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
-        paymentDetails.put(MOLPayActivity.mp_amount, mp_amount); // 2 decimal points format eg:1.01
-        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
-        paymentDetails.put(MOLPayActivity.mp_country, mp_country);  //eg: "MY"
-        paymentDetails.put(MOLPayActivity.mp_currency, mp_currency); //eg: "MYR"
-        paymentDetails.put(MOLPayActivity.mp_bill_description, "The bill description");
-        paymentDetails.put(MOLPayActivity.mp_bill_name, "Payer Name");
-        paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
-        paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
+        paymentDetails.put(PaymentActivity.mp_express_mode, "false");
+        paymentDetails.put(PaymentActivity.mp_channel, "multi");
+        paymentDetails.put(PaymentActivity.mp_closebutton_display, true);
+        paymentDetails.put(PaymentActivity.mp_amount, mp_amount); // 2 decimal points format eg:1.01
+        paymentDetails.put(PaymentActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
+        paymentDetails.put(PaymentActivity.mp_country, mp_country);  //eg: "MY"
+        paymentDetails.put(PaymentActivity.mp_currency, mp_currency); //eg: "MYR"
+        paymentDetails.put(PaymentActivity.mp_bill_description, "The bill description");
+        paymentDetails.put(PaymentActivity.mp_bill_name, "Payer Name");
+        paymentDetails.put(PaymentActivity.mp_bill_email, "payer.email@fiuu.com");
+        paymentDetails.put(PaymentActivity.mp_bill_mobile, "123456789");
+        paymentDetails.put(PaymentActivity.mp_core_env, "2"); //default
 
         // --------------------------------- FOR WEB GOOGLE PAY ----------------------------------------
 
@@ -141,8 +134,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openStartActivityResult(){
-        Intent intent = new Intent(MainActivity.this, MOLPayActivity.class);
-        intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
+        Intent intent = new Intent(MainActivity.this, PaymentActivity.class);
+        intent.putExtra(PaymentActivity.XDKPaymentDetails, paymentDetails);
         paymentActivityResultLauncher.launch(intent);
     }
 
@@ -154,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (result.getData() != null) {
                     Intent data = result.getData();
-                    String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
+                    String transactionResult = data.getStringExtra(PaymentActivity.XDKTransactionResult);
 
                     if (transactionResult != null) {
                        //Log.d(MOLPayActivity.MOLPAY, "final response = " + transactionResult);
@@ -190,18 +183,18 @@ public class MainActivity extends AppCompatActivity {
 
         // TODO: Enter your merchant account credentials before test run
 //        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
-        paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
-        paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+        paymentDetails.put(PaymentActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+        paymentDetails.put(PaymentActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
 
 
-        paymentDetails.put(MOLPayActivity.mp_amount, mp_amount); // 2 decimal points format
-        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
-        paymentDetails.put(MOLPayActivity.mp_currency, mp_currency);
-        paymentDetails.put(MOLPayActivity.mp_country, mp_country);
-        paymentDetails.put(MOLPayActivity.mp_bill_description, "The bill description");
-        paymentDetails.put(MOLPayActivity.mp_bill_name, "Payer name");
-        paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
-        paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
+        paymentDetails.put(PaymentActivity.mp_amount, mp_amount); // 2 decimal points format
+        paymentDetails.put(PaymentActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
+        paymentDetails.put(PaymentActivity.mp_currency, mp_currency);
+        paymentDetails.put(PaymentActivity.mp_country, mp_country);
+        paymentDetails.put(PaymentActivity.mp_bill_description, "The bill description");
+        paymentDetails.put(PaymentActivity.mp_bill_name, "Payer name");
+        paymentDetails.put(PaymentActivity.mp_bill_email, "payer.email@fiuu.com");
+        paymentDetails.put(PaymentActivity.mp_bill_mobile, "123456789");
 
         // GPay payment methods setting examples : (by default will show all payment methods)
 //        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
@@ -218,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void openGPActivityWithResult() {
         Intent intent = new Intent(MainActivity.this, ActivityGP.class); // Used ActivityGP for Google Pay
-        intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
+        intent.putExtra(PaymentActivity.XDKPaymentDetails, paymentDetails);
         gpActivityResultLauncher.launch(intent);
     }
 
@@ -229,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (result.getData() != null) {
                     Intent data = result.getData();
-                    String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
+                    String transactionResult = data.getStringExtra(PaymentActivity.XDKTransactionResult);
 
                     if (transactionResult != null) {
                        //Log.d("logGooglePay", "final response = " + transactionResult);
@@ -253,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
         countryDropDown();
         channelDropDown();
 
-        boolean isRooted = MOLPayActivity.isDeviceRooted(MainActivity.this);
+        boolean isRooted = PaymentActivity.isDeviceRooted(MainActivity.this);
         if (isRooted) {
             new AlertDialog.Builder(this)
                     .setTitle("Security Alert")

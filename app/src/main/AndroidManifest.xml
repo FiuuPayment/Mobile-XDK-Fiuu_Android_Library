@@ -35,7 +35,7 @@
                 <data android:scheme="superapp" />
             </intent-filter>
         </activity>
-        <activity android:name="com.molpay.molpayxdk.MOLPayActivity"
+        <activity android:name="com.fiuu.xdk.PaymentActivity"
             android:label=""/>
 
         <!-- Enabling this flag is required in order to use the PaymentsClient -->
