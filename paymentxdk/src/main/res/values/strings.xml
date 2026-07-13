@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">MOLPayXDK</string>
+    <string name="app_name">Fiuu XDK</string>
     <string name="close">Close</string>
-    <string name="store_name" translatable="false">Razer MS Google Pay</string>
+    <string name="store_name" translatable="false">Fiuu Google Pay</string>
 
     <!-- Checkout -->
     <string name="google_pay_status_unavailable">Unfortunately, Google Pay is not available on this device.</string>
