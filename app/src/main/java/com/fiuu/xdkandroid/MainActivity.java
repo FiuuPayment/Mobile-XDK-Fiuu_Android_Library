@@ -3,49 +3,29 @@ package com.fiuu.xdkandroid;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.ImageView;
+import android.widget.ScrollView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.WebView;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.ScrollView;
-import android.widget.TextView;
-
+import com.fiuu.xdk.PaymentActivity;
+import com.fiuu.xdk.googlepay.ActivityGP;
 import com.fiuu.xdkandroid.models.Billing;
 import com.fiuu.xdkandroid.models.Merchant;
 import com.fiuu.xdkandroid.models.Payment;
-import com.google.android.gms.wallet.button.ButtonConstants;
-import com.google.android.gms.wallet.button.ButtonOptions;
-import com.google.android.gms.wallet.button.PayButton;
-import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.tabs.TabLayout;
-import com.google.android.material.textfield.TextInputEditText;
-import com.molpay.molpayxdk.MOLPayActivity;
-import com.molpay.molpayxdk.googlepay.ActivityGP;
-import com.molpay.molpayxdk.googlepay.UtilGP;
 
-import org.json.JSONException;
-
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.List;
 
-import android.text.TextUtils;
 
 public class MainActivity extends AppCompatActivity {
     HashMap<Object, Object> paymentDetails = new HashMap<>();
@@ -166,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
             mp_verificationKey = modelData.getVerificationKey();
         });
 
-        boolean isRooted = MOLPayActivity.isDeviceRooted(MainActivity.this);
+        boolean isRooted = PaymentActivity.isDeviceRooted(MainActivity.this);
         if (isRooted) {
             new AlertDialog.Builder(this)
                     .setTitle("Security Alert")
@@ -184,9 +164,7 @@ public class MainActivity extends AppCompatActivity {
         // TODO: For GPay e-Wallet payment method cannot use PayButton API Style & Personalization : https://developers.google.com/pay/api/android/guides/brand-guidelines
 
         ImageView btnGPay = findViewById(R.id.btnGPay);
-        btnGPay.setOnClickListener(v -> {
-            googlePayPayment();
-        });
+        btnGPay.setOnClickListener(v -> googlePayPayment());
 
 //----------------------------------------------------------------------------------
 
@@ -226,61 +204,60 @@ public class MainActivity extends AppCompatActivity {
         // START clicked
         if (id == R.id.newBtn) {
             if (TextUtils.isEmpty(mp_username.trim())
-            || TextUtils.isEmpty(mp_password.trim())
-            || TextUtils.isEmpty(mp_appname.trim())
-            || TextUtils.isEmpty(mp_merchantid.trim())
-            || TextUtils.isEmpty(mp_verificationKey.trim())) {
-                    new AlertDialog.Builder(this)
+                    || TextUtils.isEmpty(mp_password.trim())
+                    || TextUtils.isEmpty(mp_appname.trim())
+                    || TextUtils.isEmpty(mp_merchantid.trim())
+                    || TextUtils.isEmpty(mp_verificationKey.trim())) {
+                new AlertDialog.Builder(this)
                         .setTitle("Merchant Info Missing")
                         .setMessage("Please fill up all info in MERCHANT tab or set all in MainActivity.java")
                         .setCancelable(false)
-                        .setPositiveButton("OK", (dialog, which) -> {
-                            dialog.dismiss();
-                        })
+                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
                         .show();
             } else {
-                restartmolpay();
+                restartpayment();
             }
         }
 
         return super.onOptionsItemSelected(item);
     }
-    private void restartmolpay() {
+    private void restartpayment() {
         paymentDetails = new HashMap<>();
 
-        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
+        paymentDetails.put(PaymentActivity.mp_closebutton_display, true);
         // Compulsory String. Values obtained from Fiuu.
-        paymentDetails.put(MOLPayActivity.mp_username, mp_username);
-        paymentDetails.put(MOLPayActivity.mp_password, mp_password);
-        paymentDetails.put(MOLPayActivity.mp_app_name, mp_appname);
-        paymentDetails.put(MOLPayActivity.mp_merchant_ID, mp_merchantid);
-        paymentDetails.put(MOLPayActivity.mp_verification_key, mp_verificationKey);
+        paymentDetails.put(PaymentActivity.mp_username, mp_username);
+        paymentDetails.put(PaymentActivity.mp_password, mp_password);
+        paymentDetails.put(PaymentActivity.mp_app_name, mp_appname);
+        paymentDetails.put(PaymentActivity.mp_merchant_ID, mp_merchantid);
+        paymentDetails.put(PaymentActivity.mp_verification_key, mp_verificationKey);
 
         // Compulsory String. Payment info.
-        paymentDetails.put(MOLPayActivity.mp_express_mode, mp_express_mode);
-        paymentDetails.put(MOLPayActivity.mp_channel, mp_channel);
-        paymentDetails.put(MOLPayActivity.mp_amount, mp_amount); // 2 decimal points format eg:1.01
-        paymentDetails.put(MOLPayActivity.mp_country, mp_country);  //eg: "MY"
-        paymentDetails.put(MOLPayActivity.mp_currency, mp_currency); //eg: "MYR"
+        paymentDetails.put(PaymentActivity.mp_express_mode, mp_express_mode);
+        paymentDetails.put(PaymentActivity.mp_channel, mp_channel);
+        paymentDetails.put(PaymentActivity.mp_amount, mp_amount); // 2 decimal points format eg:1.01
+        paymentDetails.put(PaymentActivity.mp_country, mp_country);  //eg: "MY"
+        paymentDetails.put(PaymentActivity.mp_currency, mp_currency); //eg: "MYR"
 
-        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
-        paymentDetails.put(MOLPayActivity.mp_bill_description, mp_description);
-        paymentDetails.put(MOLPayActivity.mp_bill_name,mp_payername);
-        paymentDetails.put(MOLPayActivity.mp_bill_email, mp_payeremail);
-        paymentDetails.put(MOLPayActivity.mp_bill_mobile, mp_payermobile);
+        paymentDetails.put(PaymentActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
+        paymentDetails.put(PaymentActivity.mp_bill_description, mp_description);
+        paymentDetails.put(PaymentActivity.mp_bill_name,mp_payername);
+        paymentDetails.put(PaymentActivity.mp_bill_email, mp_payeremail);
+        paymentDetails.put(PaymentActivity.mp_bill_mobile, mp_payermobile);
+//        paymentDetails.put(PaymentActivity.mp_channel, "RPP_RTP_ABB");
 
         // --------------------------------- FOR WEB GOOGLE PAY ----------------------------------------
 
         // GPay payment methods setting examples : (by default will show all payment methods)
-//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
-//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
+//        paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
+//        paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
 
-//        paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
-//        paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox vKey for TEST environment & Production/Dev vKey once Google approved production access
-//        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // Optional :  true = Test Environment & false = production (required Google Pay production access approval)(by default false)
-//        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment (by default false)
-//        paymentDetails.put(MOLPayActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button (by default false)
-//        paymentDetails.put(MOLPayActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
+//        paymentDetails.put(PaymentActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+//        paymentDetails.put(PaymentActivity.mp_verification_key, ""); // Sandbox vKey for TEST environment & Production/Dev vKey once Google approved production access
+//        paymentDetails.put(PaymentActivity.mp_sandbox_mode, true); // Optional :  true = Test Environment & false = production (required Google Pay production access approval)(by default false)
+//        paymentDetails.put(PaymentActivity.mp_extended_vcode, false); // Optional : Set true if your account enabled extended Verify Payment (by default false)
+//        paymentDetails.put(PaymentActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button (by default false)
+//        paymentDetails.put(PaymentActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
 
         // ------------------------------------ OPTIONAL -------------------------------------------
 
@@ -289,54 +266,54 @@ public class MainActivity extends AppCompatActivity {
         // -------------------------------- Most commonly used -------------------------------------
 
         // Optional, set Environment for Webview Core URL
-//        paymentDetails.put(MOLPayActivity.mp_core_env, "2"); //default
+        paymentDetails.put(PaymentActivity.mp_core_env, "2"); //default
 
         // To pre-select channel, please refer to column mp_channel in https://github.com/RazerMS/Mobile-XDK-RazerMS_Examples/blob/master/channel-list.md
-//        paymentDetails.put(MOLPayActivity.mp_channel, "maybank2u");
+//        paymentDetails.put(PaymentActivity.mp_channel, "RPP_RTP_ABB");
 
         // Optional, required a valid mp_channel value, this will skip the payment info page and go direct to the payment screen.
         // Channel "credit" could not use express mode due security reasons.
-//        paymentDetails.put(MOLPayActivity.mp_express_mode, true);
+//        paymentDetails.put(PaymentActivity.mp_express_mode, true);
 
         // Optional, show selected channels only.
 //        String allowedchannels[] = {"TNG-EWALLET","maybank2u"}; // Refer to column mp_channel in https://github.com/RazerMS/Mobile-XDK-RazerMS_Examples/blob/master/channel-list.md
-//        paymentDetails.put(MOLPayActivity.mp_allowed_channels, allowedchannels);
+//        paymentDetails.put(PaymentActivity.mp_allowed_channels, allowedchannels);
 
         // Optional, simulate offline payment, set boolean value to enable.
         // Need set true for Google Pay Test Environment.
-//        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true);
+//        paymentDetails.put(PaymentActivity.mp_sandbox_mode, true);
 
         // Optional, for Google Pay Only - Set true if your account enabled extended Verify Payment
-//        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false);
+//        paymentDetails.put(PaymentActivity.mp_extended_vcode, false);
 
         // Optional, show close button.
-//        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
-//        paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
+//        paymentDetails.put(PaymentActivity.mp_closebutton_display, true);
+//        paymentDetails.put(PaymentActivity.mp_enable_fullscreen, true); //enable fullscreen
 
         // Optional, allow / block change channel for preset mp_channel
-//        paymentDetails.put(MOLPayActivity.mp_channel_editing, true);
+//        paymentDetails.put(PaymentActivity.mp_channel_editing, true);
 
         // Optional, allow billing information editing.
-//        paymentDetails.put(MOLPayActivity.mp_editing_enabled, true);
+//        paymentDetails.put(PaymentActivity.mp_editing_enabled, true);
 
         // Optional, explicitly force disable user input by field.
-//        paymentDetails.put(MOLPayActivity.mp_bill_name_edit_disabled, true);
-//        paymentDetails.put(MOLPayActivity.mp_bill_email_edit_disabled, false);
-//        paymentDetails.put(MOLPayActivity.mp_bill_mobile_edit_disabled, true);
-//        paymentDetails.put(MOLPayActivity.mp_bill_description_edit_disabled, false);
+//        paymentDetails.put(PaymentActivity.mp_bill_name_edit_disabled, true);
+//        paymentDetails.put(PaymentActivity.mp_bill_email_edit_disabled, false);
+//        paymentDetails.put(PaymentActivity.mp_bill_mobile_edit_disabled, true);
+//        paymentDetails.put(PaymentActivity.mp_bill_description_edit_disabled, false);
 
         // Optional, EN, MS, VI, TH, FIL, MY, KM, ID, ZH.
-//        paymentDetails.put(MOLPayActivity.mp_language, "MS");
+//        paymentDetails.put(PaymentActivity.mp_language, "MS");
 
         // Add metadata in JSON String format e.g.
-//        paymentDetails.put(MOLPayActivity.mp_metadata, "{\"store_id\":\"MY2025HQ\"}");
+//        paymentDetails.put(PaymentActivity.mp_metadata, "{\"store_id\":\"MY2025HQ\"}");
 
         openStartActivityResult();
     }
 
     private void openStartActivityResult(){
-        Intent intent = new Intent(MainActivity.this, MOLPayActivity.class);
-        intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
+        Intent intent = new Intent(MainActivity.this, PaymentActivity.class);
+        intent.putExtra(PaymentActivity.XDKPaymentDetails, paymentDetails);
         paymentActivityResultLauncher.launch(intent);
     }
 
@@ -345,14 +322,14 @@ public class MainActivity extends AppCompatActivity {
             result -> {
                 String transactionResult = "result = null";
                 viewPager.setCurrentItem(0, true);
-               //Log.d(MOLPayActivity.MOLPAY, "result: "+result);
+//               Log.d(PaymentActivity.logXDK, "result: "+result);
 
                 if (result.getData() != null) {
                     Intent data = result.getData();
-                    transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
+                    transactionResult = data.getStringExtra(PaymentActivity.XDKTransactionResult);
 
                     if (transactionResult != null) {
-                       //Log.d(MOLPayActivity.MOLPAY, "final response = " + transactionResult);
+                        //Log.d(PaymentActivity.logXDK, "final response = " + transactionResult);
 
 //                        TextView tw = findViewById(R.id.resultTV);
 //                        tw.setText(transactionResult);
@@ -363,21 +340,21 @@ public class MainActivity extends AppCompatActivity {
     );
 
     private void googlePayPayment() {
-            paymentDetails = new HashMap<>();
+        paymentDetails = new HashMap<>();
 
-            paymentDetails.put(MOLPayActivity.mp_merchant_ID, mp_merchantid);
-            paymentDetails.put(MOLPayActivity.mp_verification_key, mp_verificationKey);
+        paymentDetails.put(PaymentActivity.mp_merchant_ID, mp_merchantid);
+        paymentDetails.put(PaymentActivity.mp_verification_key, mp_verificationKey);
 
-            // Compulsory String. Payment info.
-            paymentDetails.put(MOLPayActivity.mp_amount, mp_amount); // 2 decimal points format eg:1.01
-            paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
+        // Compulsory String. Payment info.
+        paymentDetails.put(PaymentActivity.mp_amount, mp_amount); // 2 decimal points format eg:1.01
+        paymentDetails.put(PaymentActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
 
-            paymentDetails.put(MOLPayActivity.mp_currency, mp_currency); //eg: "MYR"
-            paymentDetails.put(MOLPayActivity.mp_country, mp_country);  //eg: "MY"
-            paymentDetails.put(MOLPayActivity.mp_bill_description, mp_description);
-            paymentDetails.put(MOLPayActivity.mp_bill_name,mp_payername);
-            paymentDetails.put(MOLPayActivity.mp_bill_email, mp_payeremail);
-            paymentDetails.put(MOLPayActivity.mp_bill_mobile, mp_payermobile);
+        paymentDetails.put(PaymentActivity.mp_currency, mp_currency); //eg: "MYR"
+        paymentDetails.put(PaymentActivity.mp_country, mp_country);  //eg: "MY"
+        paymentDetails.put(PaymentActivity.mp_bill_description, mp_description);
+        paymentDetails.put(PaymentActivity.mp_bill_name,mp_payername);
+        paymentDetails.put(PaymentActivity.mp_bill_email, mp_payeremail);
+        paymentDetails.put(PaymentActivity.mp_bill_mobile, mp_payermobile);
 
         /*
             TODO: Follow Google’s instructions to request production access for your app: https://developers.google.com/pay/api/android/guides/test-and-deploy/request-prod-access
@@ -388,54 +365,54 @@ public class MainActivity extends AppCompatActivity {
              */
 
         // TODO: Enter your merchant account credentials before test run
-//        paymentDetails.put(MOLPayActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
-//        paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
-//        paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+//        paymentDetails.put(PaymentActivity.mp_sandbox_mode, true); // true = Test Environment & false = production (required Google Pay production access approval)
+//        paymentDetails.put(PaymentActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+//        paymentDetails.put(PaymentActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
 
-//        paymentDetails.put(MOLPayActivity.mp_merchant_ID, "");
-//        paymentDetails.put(MOLPayActivity.mp_verification_key, "");
+//        paymentDetails.put(PaymentActivity.mp_merchant_ID, "");
+//        paymentDetails.put(PaymentActivity.mp_verification_key, "");
 //
-//        paymentDetails.put(MOLPayActivity.mp_amount, mp_amount); // 2 decimal points format
-//        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
-//        paymentDetails.put(MOLPayActivity.mp_currency, mp_currency);
-//        paymentDetails.put(MOLPayActivity.mp_country, mp_country);
-//        paymentDetails.put(MOLPayActivity.mp_bill_description, "The bill description");
-//        paymentDetails.put(MOLPayActivity.mp_bill_name, "Payer name");
-//        paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
-//        paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
+//        paymentDetails.put(PaymentActivity.mp_amount, mp_amount); // 2 decimal points format
+//        paymentDetails.put(PaymentActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
+//        paymentDetails.put(PaymentActivity.mp_currency, mp_currency);
+//        paymentDetails.put(PaymentActivity.mp_country, mp_country);
+//        paymentDetails.put(PaymentActivity.mp_bill_description, "The bill description");
+//        paymentDetails.put(PaymentActivity.mp_bill_name, "Payer name");
+//        paymentDetails.put(PaymentActivity.mp_bill_email, "payer.email@fiuu.com");
+//        paymentDetails.put(PaymentActivity.mp_bill_mobile, "123456789");
 
         // GPay payment methods setting examples : (by default will show all payment methods)
-//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
-//        paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
+//        paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
+//        paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
 
         // Optional
-//        paymentDetails.put(MOLPayActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
-//        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true); // Enable close button
-//        paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
-//        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
+//        paymentDetails.put(PaymentActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
+//        paymentDetails.put(PaymentActivity.mp_closebutton_display, true); // Enable close button
+//        paymentDetails.put(PaymentActivity.mp_enable_fullscreen, true); //enable fullscreen
+//        paymentDetails.put(PaymentActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
 
         openGPActivityWithResult();
     }
 
     private void openGPActivityWithResult() {
         Intent intent = new Intent(MainActivity.this, ActivityGP.class); // Used ActivityGP for Google Pay
-        intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
+        intent.putExtra(PaymentActivity.XDKPaymentDetails, paymentDetails);
         gpActivityResultLauncher.launch(intent);
     }
 
     ActivityResultLauncher<Intent> gpActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-               //Log.d("logGooglePay", "result: "+result);
+                //Log.d("logGooglePay", "result: "+result);
                 String transactionResult = "result = null";
                 if (isFinishing() || isDestroyed()) return;
                 viewPager.setCurrentItem(0, true);
                 if (result.getData() != null) {
                     Intent data = result.getData();
-                    transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
+                    transactionResult = data.getStringExtra(PaymentActivity.XDKTransactionResult);
 
                     if (transactionResult != null) {
-                       //Log.d("logGooglePay", "final response = " + transactionResult);
+                        //Log.d("logGooglePay", "final response = " + transactionResult);
 //                        TextView tw = findViewById(R.id.resultTV);
 //                        tw.setText(transactionResult);
                     }

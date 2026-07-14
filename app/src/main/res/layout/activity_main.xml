@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:fitsSystemWindows="true">
 
 
     <com.google.android.material.appbar.AppBarLayout
@@ -23,61 +24,61 @@
             app:subtitleTextColor="@color/white"/>
 
 
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tab_layout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:tabTextColor="@color/white"
-        app:tabSelectedTextColor="@color/white"
-        app:tabMode="fixed"
-        app:tabGravity="fill">
-
-        <com.google.android.material.tabs.TabItem
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tab_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Payment"
-            />
+            app:tabTextColor="@color/white"
+            app:tabSelectedTextColor="@color/white"
+            app:tabMode="fixed"
+            app:tabGravity="fill">
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Billing"
-            />
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Payment"
+                />
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Merchant"
-            />
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Billing"
+                />
 
-    </com.google.android.material.tabs.TabLayout>
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Merchant"
+                />
+
+        </com.google.android.material.tabs.TabLayout>
 
     </com.google.android.material.appbar.AppBarLayout>
     <ScrollView
         android:id="@+id/scrollView"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_below="@+id/appbar"
-    android:layout_above="@+id/btnGPay"
-    android:foregroundGravity="top">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/appbar"
+        android:layout_above="@+id/btnGPay"
+        android:foregroundGravity="top">
 
-<androidx.viewpager2.widget.ViewPager2
+        <androidx.viewpager2.widget.ViewPager2
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/view_pager"
+            android:background="@color/white"
+            android:layout_gravity="top"/>
+    </ScrollView>
+
+    <ImageView
+        android:id="@+id/btnGPay"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/view_pager"
-        android:background="@color/white"
-    android:layout_gravity="top"/>
-</ScrollView>
-
-<ImageView
-android:id="@+id/btnGPay"
-android:layout_width="match_parent"
-android:layout_height="wrap_content"
-android:src="@drawable/btn_gpay"
-android:layout_alignParentBottom="true"
-android:visibility="visible"
-android:layout_marginLeft="19dp"
-android:layout_marginRight="19dp"
-android:background="@color/white"/>
+        android:src="@drawable/btn_gpay"
+        android:layout_alignParentBottom="true"
+        android:visibility="visible"
+        android:layout_marginLeft="19dp"
+        android:layout_marginRight="19dp"
+        android:background="@color/white"/>
 
 </RelativeLayout>

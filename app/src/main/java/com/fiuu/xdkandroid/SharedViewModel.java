@@ -8,8 +8,6 @@ import com.fiuu.xdkandroid.models.Billing;
 import com.fiuu.xdkandroid.models.Merchant;
 import com.fiuu.xdkandroid.models.Payment;
 
-import java.util.HashMap;
-
 public class SharedViewModel extends ViewModel {
     private final  MutableLiveData<Billing> billingData = new MutableLiveData<>();
     private final  MutableLiveData<Merchant> merchantData = new MutableLiveData<>();
