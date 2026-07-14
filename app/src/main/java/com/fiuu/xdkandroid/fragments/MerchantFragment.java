@@ -13,9 +13,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.fiuu.xdkandroid.R;
 import com.fiuu.xdkandroid.SharedViewModel;
-import com.fiuu.xdkandroid.models.Billing;
 import com.fiuu.xdkandroid.models.Merchant;
-import com.fiuu.xdkandroid.models.Payment;
 import com.google.android.material.textfield.TextInputEditText;
 
 public class MerchantFragment extends Fragment {
