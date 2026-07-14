@@ -5,9 +5,9 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-import com.fiuu.xdkandroid.fragments.PaymentFragment;
-import com.fiuu.xdkandroid.fragments.MerchantFragment;
 import com.fiuu.xdkandroid.fragments.BillingFragment;
+import com.fiuu.xdkandroid.fragments.MerchantFragment;
+import com.fiuu.xdkandroid.fragments.PaymentFragment;
 
 public class MyViewPagerAdapter  extends FragmentStateAdapter {
     public MyViewPagerAdapter(@NonNull FragmentActivity fragmentActivity) {

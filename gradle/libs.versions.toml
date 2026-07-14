@@ -1,0 +1,17 @@
+[versions]
+androidMavenGradlePlugin = "2.1"
+appcompat = "1.7.1"
+gradle = "9.2.1"
+junit = "4.13.2"
+kotlinGradlePlugin = "2.4.0"
+material = "1.14.0"
+playServicesWallet = "20.0.0"
+
+[libraries]
+android-maven-gradle-plugin = { group = "com.github.dcendents", name = "android-maven-gradle-plugin", version.ref = "androidMavenGradlePlugin" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+gradle = { group = "com.android.tools.build", name = "gradle", version.ref = "gradle" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlinGradlePlugin" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+play-services-wallet = { group = "com.google.android.gms", name = "play-services-wallet", version.ref = "playServicesWallet" }
