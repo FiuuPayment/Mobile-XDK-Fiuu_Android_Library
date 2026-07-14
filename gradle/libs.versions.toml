@@ -1,17 +1,29 @@
 [versions]
 androidMavenGradlePlugin = "2.1"
 appcompat = "1.7.1"
+commonsLang3 = "3.20.0"
+constraintlayout = "2.2.1"
+core = "3.5.4"
 gradle = "9.2.1"
-junit = "4.13.2"
+gson = "2.14.0"
 kotlinGradlePlugin = "2.4.0"
+legacySupportV4 = "1.0.0"
+lifecycleViewmodel = "2.11.0"
 material = "1.14.0"
+playServicesPay = "16.5.0"
 playServicesWallet = "20.0.0"
 
 [libraries]
 android-maven-gradle-plugin = { group = "com.github.dcendents", name = "android-maven-gradle-plugin", version.ref = "androidMavenGradlePlugin" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang3" }
+constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
+core = { module = "com.google.zxing:core", version.ref = "core" }
 gradle = { group = "com.android.tools.build", name = "gradle", version.ref = "gradle" }
-junit = { group = "junit", name = "junit", version.ref = "junit" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlinGradlePlugin" }
+legacy-support-v4 = { module = "androidx.legacy:legacy-support-v4", version.ref = "legacySupportV4" }
+lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycleViewmodel" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+play-services-pay = { module = "com.google.android.gms:play-services-pay", version.ref = "playServicesPay" }
 play-services-wallet = { group = "com.google.android.gms", name = "play-services-wallet", version.ref = "playServicesWallet" }

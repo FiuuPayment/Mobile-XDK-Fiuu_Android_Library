@@ -1,0 +1,12 @@
+# JitPack defaults to Java 8. Gradle 9 / AGP 9 require JDK 17+.
+# Switch JDK in the same shell as Gradle so JAVA_HOME actually applies.
+install:
+  - |
+    source "$HOME/.sdkman/bin/sdkman-init.sh"
+    sdk update || true
+    sdk install java 17.0.13-tem </dev/null || true
+    sdk use java 17.0.13-tem </dev/null
+    export JAVA_HOME="${SDKMAN_CANDIDATES_DIR:-$HOME/.sdkman/candidates}/java/current"
+    export PATH="$JAVA_HOME/bin:$PATH"
+    java -version
+    ./gradlew :paymentxdk:publishReleasePublicationToMavenLocal -x test -x lint

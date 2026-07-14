@@ -3,8 +3,10 @@
 <img alt="" src="https://user-images.githubusercontent.com/38641542/74424311-a9d64000-4e8c-11ea-8d80-d811cfe66972.jpg">
 
 This is a fully functional Fiuu Android payment library designed for seamless integration for android native projects.
-It can be integrated using the com.molpay.molpayxdk package via Gradle, sourced from Maven repository. 
-For reference, we have included a sample application (com.fiuu.xdkandroid) that demonstrates the integration process with the Fiuu Android payment library.
+It can be integrated using the `com.fiuu.xdk` package via Gradle, sourced from [JitPack](https://jitpack.io/#FiuuPayment/Mobile-XDK-Fiuu_Android_Library).
+For reference, this repository includes a sample application (`app` / `com.fiuu.xdkandroid`) that demonstrates integration with the Fiuu Android payment library (`paymentxdk` module).
+
+**Current library version:** `3.34.38`
 
 ## Getting Started
 
@@ -21,115 +23,150 @@ For integration with other development frameworks, kindly refer to the following
 
 ## Recommended configurations
 
-When implementing Payment XDK into your project, consider the following:
+When implementing Payment XDK into your project, use at least:
 
-- compileSdk: >= 34
+| Requirement | Minimum |
+|-------------|---------|
+| `minSdkVersion` | **26** |
+| `compileSdk` | **37** |
+| `targetSdkVersion` | **37** |
+| JDK | **17** |
+| Android Gradle Plugin (AGP) | **9.1.1** |
+| Gradle | **9.0+** (sample uses **9.6.1**) |
+| Android Studio | **Panda 3** / **2025.3.3 Patch 1** or newer (required for API 37) |
 
-- targetSdkVersion: >= 34
-
-- minSdkVersion: >= 26
-
-- Android Gradle Plugin >= 7.4.2
+Notes:
+* `minSdkVersion` **26** is required by the library. Your app cannot use a lower value.
+* API / `compileSdk` **37** requires AGP **9.1.1+**. Older AGP versions are not supported for this library release.
+* The sample project in this repository is built with AGP **9.2.1**, Gradle **9.6.1**, `compileSdk` / `targetSdk` **37**, and Java **17**.
 
 ## Installation Guidance
 
 ### Import Library
 
-Set maven google & mavenCentral in build.gradle (Project:) level
+Add **JitPack** to your project repositories.
 
-      buildscript {
-         repositories {
-            mavenCentral()
-            maven {
-               url 'https://maven.google.com/'
-               name 'Google'
-            }
-            google()
-         }
-         dependencies {
-            classpath 'com.android.tools.build:gradle:7.4.2'
-            classpath 'com.github.dcendents:android-maven-gradle-plugin:1.3'
-         }
-      }
+**settings.gradle** (or `settings.gradle.kts`):
 
-      allprojects {
-         repositories {
-            mavenCentral()
-            maven {
-               url 'https://maven.google.com/'
-               name 'Google'
-            }
-         }
-      }
+```gradle
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
 
-Add dependencies in build.gradle (Module :app)
+Or, for projects still using root `build.gradle` / `allprojects`:
 
-        dependencies {
-                implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:<latest_version>'
-        }
+```gradle
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
 
-Import the required library class
+Add the dependency in your app module `build.gradle`:
 
-        import com.molpay.molpayxdk.MOLPayActivity;
+```gradle
+dependencies {
+    implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:3.34.38'
+}
+```
 
-Import these extra classes for Google Pay
+Replace `3.34.38` with the [latest release tag](https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library/releases) if a newer version is available.
 
-        import com.molpay.molpayxdk.googlepay.ActivityGP;
-        import com.molpay.molpayxdk.googlepay.UtilGP;
+### AndroidManifest
 
-        import com.google.android.gms.wallet.button.ButtonConstants;
-        import com.google.android.gms.wallet.button.ButtonOptions;
-        import com.google.android.gms.wallet.button.PayButton;
+Ensure your app declares internet access. Google Pay also requires the Wallet API meta-data:
 
-Import the others required library classes for your class e.g.
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
 
-        import androidx.activity.result.ActivityResultLauncher;
-        import androidx.activity.result.contract.ActivityResultContracts;
-        
-        import java.util.HashMap;
+<application >
+    <meta-data
+        android:name="com.google.android.gms.wallet.api.enabled"
+        android:value="true" />
+</application>
+```
+
+### Import classes
+
+Import the required library class:
+
+```java
+import com.fiuu.xdk.PaymentActivity;
+```
+
+Import these extra classes for Google Pay:
+
+```java
+import com.fiuu.xdk.googlepay.ActivityGP;
+import com.fiuu.xdk.googlepay.UtilGP;
+
+import com.google.android.gms.wallet.button.ButtonConstants;
+import com.google.android.gms.wallet.button.ButtonOptions;
+import com.google.android.gms.wallet.button.PayButton;
+```
+
+Other commonly required imports:
+
+```java
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
+import java.util.HashMap;
+```
 
 ### Setup Release Build
 
-Add rules in proguard-rules.pro
+Add rules in `proguard-rules.pro`:
 
-         #  For WebView / Javascript bridge
-         # Keep all methods annotated with @JavascriptInterface
-         -keepclassmembers class * {
-            @android.webkit.JavascriptInterface <methods>;
-         }
+```proguard
+# For WebView / Javascript bridge
+# Keep all methods annotated with @JavascriptInterface
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
 
-         #  Keep XDK classes (prevents obfuscation of JS functions)
-         -keep class com.molpay.** { *; }
+# Keep XDK classes (prevents obfuscation of JS bridge / payment result handling)
+-keep class com.fiuu.xdk.** { *; }
+```
 
 ### Show All Subscribed Channels (Default Page)
 
     HashMap<Object, Object> paymentDetails = new HashMap<>();
 
-    private void restartmolpay() {
+    private void restartpayment() {
 
         // Compulsory String. Values obtained from Fiuu.
-        paymentDetails.put(MOLPayActivity.mp_username, "");
-        paymentDetails.put(MOLPayActivity.mp_password, "");
-        paymentDetails.put(MOLPayActivity.mp_app_name, "");
-        paymentDetails.put(MOLPayActivity.mp_merchant_ID, "");
-        paymentDetails.put(MOLPayActivity.mp_verification_key, "");
+        paymentDetails.put(PaymentActivity.mp_username, "");
+        paymentDetails.put(PaymentActivity.mp_password, "");
+        paymentDetails.put(PaymentActivity.mp_app_name, "");
+        paymentDetails.put(PaymentActivity.mp_merchant_ID, "");
+        paymentDetails.put(PaymentActivity.mp_verification_key, "");
 
         // Compulsory String. Payment info.
-        paymentDetails.put(MOLPayActivity.mp_amount, "1.10"); // 2 decimal points format
-        paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
-        paymentDetails.put(MOLPayActivity.mp_currency, "MYR");
-        paymentDetails.put(MOLPayActivity.mp_country, "MY");
-        paymentDetails.put(MOLPayActivity.mp_bill_description, "The bill description");
-        paymentDetails.put(MOLPayActivity.mp_bill_name, "The bill name");
-        paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
-        paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
+        paymentDetails.put(PaymentActivity.mp_amount, "1.10"); // 2 decimal points format
+        paymentDetails.put(PaymentActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
+        paymentDetails.put(PaymentActivity.mp_currency, "MYR");
+        paymentDetails.put(PaymentActivity.mp_country, "MY");
+        paymentDetails.put(PaymentActivity.mp_bill_description, "The bill description");
+        paymentDetails.put(PaymentActivity.mp_bill_name, "The bill name");
+        paymentDetails.put(PaymentActivity.mp_bill_email, "payer.email@fiuu.com");
+        paymentDetails.put(PaymentActivity.mp_bill_mobile, "123456789");
 
         openStartActivityResult();
     }
 
     private void openStartActivityResult(){
-        Intent intent = new Intent(MainActivity.this, MOLPayActivity.class);
-        intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
+        Intent intent = new Intent(MainActivity.this, PaymentActivity.class);
+        intent.putExtra(PaymentActivity.XDKPaymentDetails, paymentDetails);
         paymentActivityResultLauncher.launch(intent);
     }
 
@@ -139,8 +176,8 @@ Add rules in proguard-rules.pro
                 if (result.getData() != null) {
                     Intent data = result.getData();
                     // Get the payment result in String
-                    String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
-                    Log.d(MOLPayActivity.MOLPAY, "transaction result = " + transactionResult);
+                    String transactionResult = data.getStringExtra(PaymentActivity.XDKTransactionResult);
+                    Log.d(PaymentActivity.logXDK, "transaction result = " + transactionResult);
                 } else {
                     // Data null handler
                 }
@@ -154,13 +191,13 @@ Add mp_express_mode & set mp_channel as below :
 
 e.g. Express Mode to FPX Maybank online banking
 
-    paymentDetails.put(MOLPayActivity.mp_express_mode, true);
-    paymentDetails.put(MOLPayActivity.mp_channel, "maybank2u");
+    paymentDetails.put(PaymentActivity.mp_express_mode, true);
+    paymentDetails.put(PaymentActivity.mp_channel, "maybank2u");
 
 e.g. Express Mode to Touch 'n Go payment
 
-    paymentDetails.put(MOLPayActivity.mp_express_mode, true);
-    paymentDetails.put(MOLPayActivity.mp_channel, "TNG-EWALLET");
+    paymentDetails.put(PaymentActivity.mp_express_mode, true);
+    paymentDetails.put(PaymentActivity.mp_channel, "TNG-EWALLET");
 
 Find all mp_channel list here https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Examples/blob/master/channel-list.md
 
@@ -174,7 +211,7 @@ Need refer column mp_channel in https://github.com/FiuuPayment/Mobile-XDK-Fiuu_E
 Then add the selected channels in allowedchannels[] e.g. :
 
         String allowedchannels[] = {"TNG-EWALLET","maybank2u"};
-        paymentDetails.put(MOLPayActivity.mp_allowed_channels, allowedchannels);
+        paymentDetails.put(PaymentActivity.mp_allowed_channels, allowedchannels);
 
 This will only show maybank2u & TNG-EWALLET channels in the channel listing.
 
@@ -185,36 +222,36 @@ Learn more about optional parameters here https://github.com/FiuuPayment/Mobile-
         // -------------------------------- Most commonly used -------------------------------------
 
         // Optional, set Environment for Webview Core URL
-        // paymentDetails.put(MOLPayActivity.mp_core_env, "2"); //default = 2. Refer here for more info: https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library?tab=readme-ov-file#environment-configuration
+        // paymentDetails.put(PaymentActivity.mp_core_env, "2"); //default = 2. Refer here for more info: https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library?tab=readme-ov-file#environment-configuration
 
         // To pre-select channel, refer column mp_channel in https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Examples/blob/master/channel-list.md
         // e.g. set mp_channel = credit to directly load required card info.
-        paymentDetails.put(MOLPayActivity.mp_channel, "credit");
+        paymentDetails.put(PaymentActivity.mp_channel, "credit");
 
         // Simulate offline payment (demo without actual charges).
         // Need set true for Google Pay Test Environment
-        paymentDetails.put(MOLPayActivity.mp_core_env, "4"); // sandbox
+        paymentDetails.put(PaymentActivity.mp_core_env, "4"); // sandbox
 
         // Set true if your account enabled extended Verify Payment
-        paymentDetails.put(MOLPayActivity.mp_extended_vcode, false);
+        paymentDetails.put(PaymentActivity.mp_extended_vcode, false);
 
         // Show close button (by default hidden)
-        paymentDetails.put(MOLPayActivity.mp_closebutton_display, true);
+        paymentDetails.put(PaymentActivity.mp_closebutton_display, true);
 
         // Allow change channel for pre-select mp_channel
-        paymentDetails.put(MOLPayActivity.mp_channel_editing, true);
+        paymentDetails.put(PaymentActivity.mp_channel_editing, true);
 
         // Allow payer information editing.
-        paymentDetails.put(MOLPayActivity.mp_editing_enabled, false);
+        paymentDetails.put(PaymentActivity.mp_editing_enabled, false);
 
         // Explicitly force disable user input by field.
-        paymentDetails.put(MOLPayActivity.mp_bill_name_edit_disabled, true);
-        paymentDetails.put(MOLPayActivity.mp_bill_email_edit_disabled, false);
-        paymentDetails.put(MOLPayActivity.mp_bill_mobile_edit_disabled, true);
-        paymentDetails.put(MOLPayActivity.mp_bill_description_edit_disabled, false);
+        paymentDetails.put(PaymentActivity.mp_bill_name_edit_disabled, true);
+        paymentDetails.put(PaymentActivity.mp_bill_email_edit_disabled, false);
+        paymentDetails.put(PaymentActivity.mp_bill_mobile_edit_disabled, true);
+        paymentDetails.put(PaymentActivity.mp_bill_description_edit_disabled, false);
 
         // Set language : EN, MS, VI, TH, FIL, MY, KM, ID, ZH.
-        paymentDetails.put(MOLPayActivity.mp_language, "MS");
+        paymentDetails.put(PaymentActivity.mp_language, "MS");
 
 ## Environment Configuration
 
@@ -329,32 +366,32 @@ In Java class add this in onCreate :
                 paymentDetails = new HashMap<>();
 
                 // Compulsory String. Values obtained from Fiuu.
-                paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
-                paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+                paymentDetails.put(PaymentActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+                paymentDetails.put(PaymentActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
                 
                 // Compulsory String. Payment info.
-                paymentDetails.put(MOLPayActivity.mp_amount, "1.01"); // 2 decimal points format
-                paymentDetails.put(MOLPayActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
-                paymentDetails.put(MOLPayActivity.mp_currency, "MYR");
-                paymentDetails.put(MOLPayActivity.mp_country, "MY");
-                paymentDetails.put(MOLPayActivity.mp_bill_description, "The bill description");
-                paymentDetails.put(MOLPayActivity.mp_bill_name, "The bill name");
-                paymentDetails.put(MOLPayActivity.mp_bill_email, "payer.email@fiuu.com");
-                paymentDetails.put(MOLPayActivity.mp_bill_mobile, "123456789");
+                paymentDetails.put(PaymentActivity.mp_amount, "1.01"); // 2 decimal points format
+                paymentDetails.put(PaymentActivity.mp_order_ID, Calendar.getInstance().getTimeInMillis()); // Any unique alphanumeric String. For symbol only allowed hypen "-" and underscore "_"
+                paymentDetails.put(PaymentActivity.mp_currency, "MYR");
+                paymentDetails.put(PaymentActivity.mp_country, "MY");
+                paymentDetails.put(PaymentActivity.mp_bill_description, "The bill description");
+                paymentDetails.put(PaymentActivity.mp_bill_name, "The bill name");
+                paymentDetails.put(PaymentActivity.mp_bill_email, "payer.email@fiuu.com");
+                paymentDetails.put(PaymentActivity.mp_bill_mobile, "123456789");
         
-                paymentDetails.put(MOLPayActivity.mp_core_env, "4"); // 4 = Test Environment & Default/2 = production (required Google Pay production access approval)
+                paymentDetails.put(PaymentActivity.mp_core_env, "4"); // 4 = Test Environment & Default/2 = production (required Google Pay production access approval)
                 
                 // GPay payment methods setting examples : (by default will show all payment methods)
-                paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
-                paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
+                paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
+                paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
                 // NOTE: SHOPEEPAY & TNG-EWALLET only applicable to MY & MYR. Others currency & country only supported CC.
 
                 // Optional
-                paymentDetails.put(MOLPayActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
-                paymentDetails.put(MOLPayActivity.mp_closebutton_display, true); // Enable close button
-                paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
-                paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
-                paymentDetails.put(MOLPayActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button (by default false)
+                paymentDetails.put(PaymentActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
+                paymentDetails.put(PaymentActivity.mp_closebutton_display, true); // Enable close button
+                paymentDetails.put(PaymentActivity.mp_enable_fullscreen, true); //enable fullscreen
+                paymentDetails.put(PaymentActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
+                paymentDetails.put(PaymentActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button (by default false)
 
                 openGPActivityWithResult();
         }
@@ -363,7 +400,7 @@ In Java class add this in onCreate :
 
        private void openGPActivityWithResult() {
             Intent intent = new Intent(MainActivity.this, ActivityGP.class); // Used ActivityGP for Google Pay
-            intent.putExtra(MOLPayActivity.MOLPayPaymentDetails, paymentDetails);
+            intent.putExtra(PaymentActivity.XDKPaymentDetails, paymentDetails);
             gpActivityResultLauncher.launch(intent);
        }
 
@@ -375,7 +412,7 @@ In Java class add this in onCreate :
                 if (result.getData() != null) {
                     Intent data = result.getData();
                     // Get payment result in String
-                    String transactionResult = data.getStringExtra(MOLPayActivity.MOLPayTransactionResult);
+                    String transactionResult = data.getStringExtra(PaymentActivity.XDKTransactionResult);
                     Log.d("logGooglePay", "transactionResult = " + transactionResult);
                 } else {
                     // If payment cancelled
@@ -390,20 +427,20 @@ Same with Show All Subscribed Channels in above.
 
 Just need to control these parameters :
 
-        paymentDetails.put(MOLPayActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
-        paymentDetails.put(MOLPayActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
-        paymentDetails.put(MOLPayActivity.mp_core_env, "4"); // 4 = Test Environment & Default/2 = production (required Google Pay production access approval)
+        paymentDetails.put(PaymentActivity.mp_merchant_ID, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+        paymentDetails.put(PaymentActivity.mp_verification_key, ""); // Sandbox ID for TEST environment & Production/Dev ID once Google approved production access
+        paymentDetails.put(PaymentActivity.mp_core_env, "4"); // 4 = Test Environment & Default/2 = production (required Google Pay production access approval)
 
          // Optional
-         paymentDetails.put(MOLPayActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
-         paymentDetails.put(MOLPayActivity.mp_closebutton_display, true); // Enable close button
-         paymentDetails.put(MOLPayActivity.mp_enable_fullscreen, true); //enable fullscreen
-         paymentDetails.put(MOLPayActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
-         paymentDetails.put(MOLPayActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button (by default false)
+         paymentDetails.put(PaymentActivity.mp_company, "Your Company Name"); // Show merchant name in Google Pay
+         paymentDetails.put(PaymentActivity.mp_closebutton_display, true); // Enable close button
+         paymentDetails.put(PaymentActivity.mp_enable_fullscreen, true); //enable fullscreen
+         paymentDetails.put(PaymentActivity.mp_extended_vcode, false); // Set true if your account enabled extended Verify Payment
+         paymentDetails.put(PaymentActivity.mp_hide_googlepay, true); // Optional : Hide Google Pay button (by default false)
 
          // MY (MYR) GPay payment methods setting examples : (by default will show all payment methods)
-         paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
-         paymentDetails.put(MOLPayActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
+         paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[] { "CC", "TNG-EWALLET" }); // Enable Card & TNG eWallet Only
+         paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[] { "SHOPEEPAY", "TNG-EWALLET" }); // Enable ShopeePay & TNG eWallet Only
          // NOTE: SHOPEEPAY & TNG-EWALLET only applicable to MY & MYR. Others currency & country only supported CC.
 
 ## Payment Results
