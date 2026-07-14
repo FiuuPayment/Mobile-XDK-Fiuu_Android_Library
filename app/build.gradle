@@ -30,7 +30,6 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation libs.play.services.wallet
-    testImplementation libs.junit
     implementation libs.appcompat
     implementation libs.material
     implementation project(':paymentxdk')
