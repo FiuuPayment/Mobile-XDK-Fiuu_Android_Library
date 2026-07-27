@@ -34,6 +34,7 @@
             </intent-filter>
         </activity>
         <activity android:name="com.fiuu.xdk.PaymentActivity"
+            android:theme="@style/Theme.Xdk"
             android:label=""/>
 
         <!-- Enabling this flag is required in order to use the PaymentsClient -->

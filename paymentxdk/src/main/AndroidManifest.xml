@@ -7,11 +7,14 @@
 
     <application>
         <activity android:name=".PaymentActivity"
+            android:theme="@style/Theme.Xdk"
             android:configChanges="orientation|screenSize" />
         <activity android:name="com.fiuu.xdk.googlepay.ActivityGP"
+            android:theme="@style/Theme.Xdk"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name="com.fiuu.xdk.googlepay.WebActivity"
+            android:theme="@style/Theme.Xdk"
             android:exported="false" />
 
         <!-- Enabling this flag is required in order to use the PaymentsClient -->

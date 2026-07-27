@@ -33,7 +33,6 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Google Pay implementation for the app
@@ -147,6 +146,15 @@ public class ActivityGP extends AppCompatActivity {
 
         paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(XDKPaymentDetails);
 
+        if (paymentDetails == null) {
+            Intent resultCancel = new Intent();
+            resultCancel.putExtra(PaymentActivity.XDKTransactionResult,
+                    "{ \"error\" : \" Payment details is null.\"  }");
+            setResult(RESULT_CANCELED, resultCancel);
+            finish();
+            return;
+        }
+
         if (paymentDetails != null) {
 
             JSONObject json = new JSONObject(paymentDetails);
@@ -183,14 +191,21 @@ public class ActivityGP extends AppCompatActivity {
             }
             MerchantID = merchantIdValue.toString();
 
-            COUNTRY_CODE = Objects.requireNonNull(paymentDetails.get("mp_country")).toString();
-            CURRENCY_CODE = Objects.requireNonNull(paymentDetails.get("mp_currency")).toString();
+            Object countryValue = paymentDetails.get("mp_country");
+            Object currencyValue = paymentDetails.get("mp_currency");
+            Object vkeyValue = paymentDetails.get(PaymentActivity.mp_verification_key);
+            if (countryValue == null || currencyValue == null || vkeyValue == null) {
+                sendCustomFailResponse("Payment aborted. Error : missing required payment fields");
+                return;
+            }
+            COUNTRY_CODE = countryValue.toString();
+            CURRENCY_CODE = currencyValue.toString();
 
             if ( ! COUNTRY_CODE.equalsIgnoreCase("MY") || ! CURRENCY_CODE.equalsIgnoreCase("MYR") ) {
                 paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[] { "CC" });
             }
 
-            verificationKey = Objects.requireNonNull(paymentDetails.get(PaymentActivity.mp_verification_key)).toString();
+            verificationKey = vkeyValue.toString();
 
             if (Boolean.parseBoolean(String.valueOf(paymentDetails.get("mp_sandbox_mode")))
                     || "4".equalsIgnoreCase(String.valueOf(paymentDetails.get("mp_core_env")))) {
@@ -291,17 +306,39 @@ public class ActivityGP extends AppCompatActivity {
 
     private void sendCustomFailResponse(String failMessage) {
         Log.e("logGooglePay", "sendCustomFailResponse");
+        if (paymentDetails == null) {
+            Intent resultCancel = new Intent();
+            resultCancel.putExtra(PaymentActivity.XDKTransactionResult,
+                    "{ \"error\" : \"" + failMessage + "\"  }");
+            setResult(RESULT_CANCELED, resultCancel);
+            finish();
+            return;
+        }
+
+        Object amount = paymentDetails.get(PaymentActivity.mp_amount);
+        Object merchantId = paymentDetails.get(PaymentActivity.mp_merchant_ID);
+        Object orderId = paymentDetails.get(PaymentActivity.mp_order_ID);
+        Object currency = paymentDetails.get(PaymentActivity.mp_currency);
+        if (amount == null || merchantId == null || orderId == null || currency == null) {
+            Intent resultCancel = new Intent();
+            resultCancel.putExtra(PaymentActivity.XDKTransactionResult,
+                    "{ \"error\" : \"" + failMessage + "\"  }");
+            setResult(RESULT_CANCELED, resultCancel);
+            finish();
+            return;
+        }
+
         // Send custom failed response
         Map<String, Object> data = new HashMap<>();
         data.put("StatCode", "11");
         data.put("StatName", "failed");
         data.put("TranID", tranID);
-        data.put("Amount", Objects.requireNonNull(paymentDetails.get(PaymentActivity.mp_amount)).toString());
-        data.put("Domain", Objects.requireNonNull(paymentDetails.get(PaymentActivity.mp_merchant_ID)).toString());
+        data.put("Amount", amount.toString());
+        data.put("Domain", merchantId.toString());
         data.put("VrfKey", "");
         data.put("Channel", "GooglePay");
-        data.put("OrderID", Objects.requireNonNull(paymentDetails.get(PaymentActivity.mp_order_ID)).toString());
-        data.put("Currency", Objects.requireNonNull(paymentDetails.get(PaymentActivity.mp_currency)).toString());
+        data.put("OrderID", orderId.toString());
+        data.put("Currency", currency.toString());
         data.put("ErrorCode", "GOOGLEPAY_PE");
         data.put("ErrorDesc", failMessage);
         data.put("ProcessorResponseCode", null);
@@ -357,11 +394,15 @@ public class ActivityGP extends AppCompatActivity {
     public void requestPayment() {
 
         Log.e("logGooglePay", "requestPayment");
-        Log.e("logGooglePay", "mp_amount = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString());
-        Log.e("logGooglePay", "totalPriceCents = " + Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[.,]", ""));
+        if (paymentDetails == null || paymentDetails.get("mp_amount") == null || model == null) {
+            sendCustomFailResponse("Payment aborted. Error : missing payment amount");
+            return;
+        }
+        Log.e("logGooglePay", "mp_amount = " + paymentDetails.get("mp_amount").toString());
+        Log.e("logGooglePay", "totalPriceCents = " + paymentDetails.get("mp_amount").toString().replaceAll("[.,]", ""));
         // The price provided to the API should include taxes and shipping.
         // This price is not displayed to the user.
-        String totalPriceCents = Objects.requireNonNull(paymentDetails.get("mp_amount")).toString().replaceAll("[,]", "");
+        String totalPriceCents = paymentDetails.get("mp_amount").toString().replaceAll("[,]", "");
 
         final Task<PaymentData> task = model.getLoadPaymentDataTask(totalPriceCents);
         task.addOnCompleteListener(paymentDataLauncher::launch);
@@ -388,26 +429,41 @@ public class ActivityGP extends AppCompatActivity {
                 if (paymentDetails.get("mp_extended_vcode") == null) {
                     paymentInput.put("extendedVCode", false);
                 } else {
-                    paymentInput.put("extendedVCode", Objects.requireNonNull(paymentDetails.get("mp_extended_vcode")));
+                    paymentInput.put("extendedVCode", paymentDetails.get("mp_extended_vcode"));
                 }
 
                 // Close button setting
                 if (paymentDetails.get(PaymentActivity.mp_closebutton_display) == null) {
                     paymentInput.put("closeButton", false);
                 } else {
-                    paymentInput.put("closeButton", Objects.requireNonNull(paymentDetails.get(PaymentActivity.mp_closebutton_display)));
+                    paymentInput.put("closeButton", paymentDetails.get(PaymentActivity.mp_closebutton_display));
+                }
+
+                Object orderId = paymentDetails.get("mp_order_ID");
+                Object amount = paymentDetails.get("mp_amount");
+                Object billName = paymentDetails.get("mp_bill_name");
+                Object billEmail = paymentDetails.get("mp_bill_email");
+                Object billPhone = paymentDetails.get("mp_bill_mobile");
+                Object billDesc = paymentDetails.get("mp_bill_description");
+                Object merchantId = paymentDetails.get("mp_merchant_ID");
+                Object verificationKeyVal = paymentDetails.get("mp_verification_key");
+                if (orderId == null || amount == null || billName == null || billEmail == null
+                        || billPhone == null || billDesc == null || merchantId == null
+                        || verificationKeyVal == null) {
+                    sendCustomFailResponse("Payment aborted. Error : missing required payment fields");
+                    return;
                 }
 
                 // TODO: Send the payment info e.g. (all info are compulsory) :
-                paymentInput.put("orderId", Objects.requireNonNull(paymentDetails.get("mp_order_ID")).toString()); // Unique payment order id
-                paymentInput.put("amount", Objects.requireNonNull(paymentDetails.get("mp_amount")).toString()); // Payment amount
+                paymentInput.put("orderId", orderId.toString()); // Unique payment order id
+                paymentInput.put("amount", amount.toString()); // Payment amount
                 paymentInput.put("currency", CURRENCY_CODE); // Payment currency
-                paymentInput.put("billName", Objects.requireNonNull(paymentDetails.get("mp_bill_name")).toString()); // Payer name
-                paymentInput.put("billEmail", Objects.requireNonNull(paymentDetails.get("mp_bill_email")).toString()); // Payer email
-                paymentInput.put("billPhone", Objects.requireNonNull(paymentDetails.get("mp_bill_mobile")).toString()); // Payer phone
-                paymentInput.put("billDesc", Objects.requireNonNull(paymentDetails.get("mp_bill_description")).toString()); // Payment description
-                paymentInput.put("merchantId", Objects.requireNonNull(paymentDetails.get("mp_merchant_ID")).toString()); // Your registered merchantId
-                paymentInput.put("verificationKey", Objects.requireNonNull(paymentDetails.get("mp_verification_key")).toString()); // Your registered verificationKey
+                paymentInput.put("billName", billName.toString()); // Payer name
+                paymentInput.put("billEmail", billEmail.toString()); // Payer email
+                paymentInput.put("billPhone", billPhone.toString()); // Payer phone
+                paymentInput.put("billDesc", billDesc.toString()); // Payment description
+                paymentInput.put("merchantId", merchantId.toString()); // Your registered merchantId
+                paymentInput.put("verificationKey", verificationKeyVal.toString()); // Your registered verificationKey
 
             /*
             TODO: Follow Google’s instructions to request production access for your app: https://developers.google.com/pay/api/android/guides/test-and-deploy/request-prod-access
@@ -420,7 +476,7 @@ public class ActivityGP extends AppCompatActivity {
                 if (paymentDetails.get("mp_sandbox_mode") == null) {
                     paymentInput.put("isSandbox", false);
                 } else {
-                    paymentInput.put("isSandbox", Objects.requireNonNull(paymentDetails.get("mp_sandbox_mode")));
+                    paymentInput.put("isSandbox", paymentDetails.get("mp_sandbox_mode"));
                 }
 
                 JSONObject paymentInputObj = paymentInput;
