@@ -25,13 +25,15 @@ import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatTextView;
+import androidx.appcompat.widget.Toolbar;
 
 import com.fiuu.xdk.R;
-import com.fiuu.xdk.googlepay.Helper.GooglePayHelper;
 import com.google.android.gms.wallet.WalletConstants;
+import com.fiuu.xdk.googlepay.Helper.GooglePayHelper;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONException;
@@ -58,6 +60,63 @@ public class WebActivity extends AppCompatActivity {
     private String paymentInfo;
     private boolean requeryPaymentV2 = false;
     private Boolean isClosebuttonDisplay = false;
+    private Toolbar paymentToolbar;
+
+    /**
+     * Optional closeButton (from mp_closebutton_display):
+     * - true  → show Toolbar + Close menu
+     * - false / omitted / invalid → hide Toolbar completely (no ActionBar)
+     */
+    private void applyCloseButtonChrome() {
+        if (paymentToolbar == null) {
+            return;
+        }
+        if (Boolean.TRUE.equals(isClosebuttonDisplay)) {
+            paymentToolbar.setVisibility(View.VISIBLE);
+            setSupportActionBar(paymentToolbar);
+            ActionBar actionBar = getSupportActionBar();
+            if (actionBar != null) {
+                actionBar.setDisplayShowTitleEnabled(false);
+                actionBar.setTitle("");
+                actionBar.show();
+            }
+            paymentToolbar.setTitle("");
+            invalidateOptionsMenu();
+        } else {
+            paymentToolbar.setVisibility(View.GONE);
+            ActionBar actionBar = getSupportActionBar();
+            if (actionBar != null) {
+                actionBar.hide();
+            }
+            setSupportActionBar(null);
+            invalidateOptionsMenu();
+        }
+    }
+
+    private void resolveCloseButtonDisplay(String paymentInputJson) {
+        isClosebuttonDisplay = false;
+        if (paymentInputJson == null) {
+            return;
+        }
+        try {
+            JSONObject json = new JSONObject(paymentInputJson);
+            if (!json.has("closeButton") || json.isNull("closeButton")) {
+                return;
+            }
+            Object value = json.get("closeButton");
+            if (value instanceof Boolean) {
+                isClosebuttonDisplay = (Boolean) value;
+            } else if (value instanceof String) {
+                isClosebuttonDisplay = Boolean.parseBoolean(((String) value).trim());
+            } else if (value instanceof Number) {
+                isClosebuttonDisplay = ((Number) value).intValue() != 0;
+            } else {
+                isClosebuttonDisplay = json.optBoolean("closeButton", false);
+            }
+        } catch (JSONException e) {
+            isClosebuttonDisplay = false;
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +129,10 @@ public class WebActivity extends AppCompatActivity {
         Intent intent = getIntent();
         paymentInput = intent.getStringExtra("paymentInput");
         paymentInfo = intent.getStringExtra("paymentInfo");
+
+        resolveCloseButtonDisplay(paymentInput);
+        paymentToolbar = findViewById(R.id.paymentToolbar);
+        applyCloseButtonChrome();
 
         Log.e("logGooglePay" , "after getStringExtra 1");
 
@@ -144,10 +207,34 @@ public class WebActivity extends AppCompatActivity {
         new Thread(() -> {
             PaymentThread paymentThread = new PaymentThread();
             paymentThread.setValue(paymentInput, paymentInfo);
-            paymentThread.run(); // Run thread work
 
             try {
-                JSONObject paymentResult = new JSONObject(new JSONObject(paymentThread.getValue()).getString("responseBody"));
+                paymentThread.run(); // Run thread work
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    Log.e("logGooglePay", "PaymentThread exception = " + e);
+                    Intent resultCancel = new Intent();
+                    resultCancel.putExtra("response", String.valueOf(e));
+                    setResult(RESULT_CANCELED, resultCancel);
+                    finish();
+                });
+                return;
+            }
+
+            String threadValue = paymentThread.getValue();
+            if (threadValue == null) {
+                runOnUiThread(() -> {
+                    Log.e("logGooglePay", "PaymentThread response is null");
+                    Intent resultCancel = new Intent();
+                    resultCancel.putExtra("response", "Payment response is null");
+                    setResult(RESULT_CANCELED, resultCancel);
+                    finish();
+                });
+                return;
+            }
+
+            try {
+                JSONObject paymentResult = new JSONObject(new JSONObject(threadValue).getString("responseBody"));
 
                 runOnUiThread(() -> {
                     Log.e("logGooglePay", "thread paymentResult = " + paymentResult);
@@ -229,18 +316,8 @@ public class WebActivity extends AppCompatActivity {
                                     pbLoading.setVisibility(View.GONE);
                                     tvLoading.setVisibility(View.GONE);
 
-                                    String errorCode;
-                                    try {
-                                        errorCode = responseBodyObj.getString("ErrorCode");
-                                    } catch (JSONException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                    String errorDesc = null;
-                                    try {
-                                        errorDesc = responseBodyObj.getString("ErrorDesc");
-                                    } catch (JSONException e) {
-                                        throw new RuntimeException(e);
-                                    }
+                                    String errorCode = responseBodyObj.optString("ErrorCode", "UNKNOWN");
+                                    String errorDesc = responseBodyObj.optString("ErrorDesc", "Unknown error");
 
                                     if (errorCode.equalsIgnoreCase("GOOGLEPAY_C1")) {
                                         Log.e("logGooglePay", "Send cancel response = " + responseBodyObj);
@@ -314,6 +391,14 @@ public class WebActivity extends AppCompatActivity {
 
             @Override
             public void onFinish() {
+                if (queryResultStr[0] == null) {
+                    Intent intent = new Intent();
+                    intent.putExtra("response", "{ \"error\" : \"Timeout\" }");
+                    setResult(RESULT_CANCELED, intent);
+                    finish();
+                    return;
+                }
+
                 try {
                     JSONObject queryResultObj = new JSONObject(queryResultStr[0]);
                     String responseBody = queryResultObj.getString("responseBody");
@@ -350,6 +435,10 @@ public class WebActivity extends AppCompatActivity {
 
                 } catch (JSONException e) {
                     e.printStackTrace();
+                    Intent intent = new Intent();
+                    intent.putExtra("response", "{ \"error\" : \"Timeout\" }");
+                    setResult(RESULT_CANCELED, intent);
+                    finish();
                 }
             }
         };
@@ -548,41 +637,20 @@ public class WebActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-
-        Log.e("logGooglePay" , "onCreateOptionsMenu paymentInput = " + paymentInput);
-
-        if (paymentInput != null) {
-            JSONObject json = null;
-            try {
-                json = new JSONObject(paymentInput);
-
-                Log.e("logGooglePay" , "onCreateOptionsMenu");
-
-                if (json.has("closeButton")) {
-                    isClosebuttonDisplay = json.getBoolean("closeButton");
-                }
-            } catch (JSONException e) {
-                return false;
-            }
-
-            if (isClosebuttonDisplay) {
-                getMenuInflater().inflate(R.menu.menu_payment, menu);
-                return super.onCreateOptionsMenu(menu);
-            }
+        if (Boolean.TRUE.equals(isClosebuttonDisplay)) {
+            getMenuInflater().inflate(R.menu.menu_payment, menu);
+            return true;
         }
         return false;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-
-        Log.e("logGooglePay", "Get Menu: " + item.getTitle());
-        if (Objects.equals(item.getTitle(), "Close")) {
+        if (item.getItemId() == R.id.closeBtn || Objects.equals(item.getTitle(), "Close")) {
             setResult(RESULT_CANCELED, null);
             finish();
+            return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 

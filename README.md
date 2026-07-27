@@ -6,7 +6,17 @@ This is a fully functional Fiuu Android payment library designed for seamless in
 It can be integrated using the `com.fiuu.xdk` package via Gradle, sourced from [JitPack](https://jitpack.io/#FiuuPayment/Mobile-XDK-Fiuu_Android_Library).
 For reference, this repository includes a sample application (`app` / `com.fiuu.xdkandroid`) that demonstrates integration with the Fiuu Android payment library (`paymentxdk` module).
 
-**Current library version:** `3.34.38`
+**Current library version:** `3.34.40`
+
+## Performance and Stability Improvements (v3.34.40+)
+
+The latest version includes significant optimizations to ensure a smooth payment experience:
+
+- **Enhanced Network Resilience**: UI loading timeout increased to **30 seconds** to support slower network conditions and prevent premature transaction failures.
+- **Asynchronous Processing**: Heavy tasks like root detection and device info collection are offloaded to background threads, ensuring the UI stays responsive and prevents "jank" or ANRs during startup.
+- **Optimized Resource Management**: Improved memory cleanup for WebViews and handlers in `onDestroy()` to prevent leaks.
+- **Improved UI Layout**: Standardized layout parameters to ensure perfect alignment with the ActionBar across all device sizes.
+- **Faster Data Parsing**: Pre-compiled regex patterns for faster HTML form processing during the payment flow.
 
 ## Getting Started
 
@@ -75,11 +85,11 @@ Add the dependency in your app module `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:3.34.38'
+    implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:3.34.40'
 }
 ```
 
-Replace `3.34.38` with the [latest release tag](https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library/releases) if a newer version is available.
+Replace `3.34.40` with the [latest release tag](https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library/releases) if a newer version is available.
 
 ### AndroidManifest
 

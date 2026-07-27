@@ -15,8 +15,17 @@ import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.os.Message;
+import android.os.Handler;
+
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
@@ -35,21 +44,14 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import androidx.activity.OnBackPressedCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-
+import com.google.gson.Gson;
 import com.fiuu.xdk.googlepay.ActivityGP;
 import com.fiuu.xdk.models.DeviceInfo;
 import com.fiuu.xdk.utils.DeviceInfoUtil;
-import com.google.gson.Gson;
+
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -148,17 +150,123 @@ public class PaymentActivity extends AppCompatActivity {
 
     private static final Gson gson =  new Gson();
     private static DeviceInfo deviceInfo;
-    private Handler timeoutHandler = new Handler();
+    private final Handler timeoutHandler = new Handler();
+    /** True once mpMainUI begins loading (connection is alive). */
+    private boolean hasPageStarted = false;
+    /** True once mpMainUI finishes loading. */
     private boolean isPageLoaded = false;
     private int progressLoading = 0;
-    private static final int TIMEOUT_DURATION = 5000; // 5 seconds
-    private static final int NETWORK_HEAVY_DURATION = 3500; // 3 seconds
-    private ProgressBar pbLoading;
+    /**
+     * Only auto-fail if the WebView never starts loading at all (dead DNS/network).
+     * Once loading has started, do not kill the session — slow pages must stay up.
+     */
+    private static final int CONNECTION_TIMEOUT_MS = 15000;
+    private static final int NETWORK_HEAVY_DURATION_MS = 3500;
+    private Toolbar paymentToolbar;
+
+    private final Runnable connectionTimeoutRunnable = () -> {
+        if (isFinishing()) {
+            return;
+        }
+        // Living loads must never be aborted here.
+        if (hasPageStarted || isPageLoaded || progressLoading > 0) {
+            return;
+        }
+        if (mpMainUI != null) {
+            mpMainUI.stopLoading();
+        }
+        String dataString = "{ \"error\" : \"Timeout\"  }";
+        Intent result = new Intent();
+        result.putExtra(XDKTransactionResult, dataString);
+        setResult(RESULT_OK, result);
+        finish();
+    };
+
+    private final Runnable heavyTrafficRunnable = () -> {
+        if (isFinishing() || isPageLoaded) {
+            return;
+        }
+        if (progressLoading < 30) {
+            Toast.makeText(this,
+                    "We are experiencing heavy traffic.\nYou may experience slight delays.",
+                    Toast.LENGTH_LONG).show();
+        }
+    };
+
+    private void clearLoadWatchdogs() {
+        timeoutHandler.removeCallbacks(connectionTimeoutRunnable);
+        timeoutHandler.removeCallbacks(heavyTrafficRunnable);
+    }
+
+    private void markMainUiStarted() {
+        hasPageStarted = true;
+        // Connection is alive — cancel hard timeout so slow pages are never killed.
+        timeoutHandler.removeCallbacks(connectionTimeoutRunnable);
+    }
+
+    private void markMainUiLoaded() {
+        isPageLoaded = true;
+        hasPageStarted = true;
+        clearLoadWatchdogs();
+    }
 
     // Private API
+    /**
+     * Optional {@link #mp_closebutton_display}:
+     * - true  → show Toolbar + Close menu
+     * - false / omitted / invalid → hide Toolbar completely (no ActionBar)
+     */
+    private void applyCloseButtonChrome() {
+        if (paymentToolbar == null) {
+            return;
+        }
+        if (Boolean.TRUE.equals(isClosebuttonDisplay)) {
+            paymentToolbar.setVisibility(View.VISIBLE);
+            setSupportActionBar(paymentToolbar);
+            ActionBar actionBar = getSupportActionBar();
+            if (actionBar != null) {
+                actionBar.setDisplayShowTitleEnabled(false);
+                actionBar.setTitle("");
+                actionBar.show();
+            }
+            paymentToolbar.setTitle("");
+            invalidateOptionsMenu();
+        } else {
+            // Optional flag off or absent: ActionBar/Toolbar must not appear at all.
+            paymentToolbar.setVisibility(View.GONE);
+            ActionBar actionBar = getSupportActionBar();
+            if (actionBar != null) {
+                actionBar.hide();
+            }
+            setSupportActionBar(null);
+            invalidateOptionsMenu();
+        }
+    }
+
+    private void resolveCloseButtonDisplay(JSONObject json) {
+        // Default: optional param omitted → hide ActionBar.
+        isClosebuttonDisplay = false;
+        if (json == null || !json.has(mp_closebutton_display) || json.isNull(mp_closebutton_display)) {
+            return;
+        }
+        try {
+            Object value = json.get(mp_closebutton_display);
+            if (value instanceof Boolean) {
+                isClosebuttonDisplay = (Boolean) value;
+            } else if (value instanceof String) {
+                isClosebuttonDisplay = Boolean.parseBoolean(((String) value).trim());
+            } else if (value instanceof Number) {
+                isClosebuttonDisplay = ((Number) value).intValue() != 0;
+            } else {
+                isClosebuttonDisplay = json.optBoolean(mp_closebutton_display, false);
+            }
+        } catch (JSONException e) {
+            isClosebuttonDisplay = false;
+        }
+    }
+
     private void closepayment() {
         if (isClosingReceipt) {
-            pbLoading.setVisibility(View.GONE);
             finish();
             return;
         }
@@ -171,7 +279,6 @@ public class PaymentActivity extends AppCompatActivity {
             Intent result = new Intent();
             result.putExtra(XDKTransactionResult, dataString);
             setResult(RESULT_OK, result);
-            pbLoading.setVisibility(View.GONE);
             finish();
             return;
         }
@@ -182,35 +289,20 @@ public class PaymentActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        JSONObject json = new JSONObject(paymentDetails);
-
-        try {
-            if (json.has("mp_closebutton_display")) {
-                isClosebuttonDisplay = json.getBoolean("mp_closebutton_display");
-            }
-
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
-        }
-
-        if (isClosebuttonDisplay) {
+        // Close menu only when mp_closebutton_display == true.
+        if (Boolean.TRUE.equals(isClosebuttonDisplay)) {
             getMenuInflater().inflate(R.menu.menu_payment, menu);
-            return super.onCreateOptionsMenu(menu);
+            return true;
         }
-
         return false;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-       // Log.d("TAG: ", "Get Menu: " + item.getTitle());
-        if (Objects.equals(item.getTitle(), "Close")) {
+        if (item.getItemId() == R.id.closeBtn || Objects.equals(item.getTitle(), "Close")) {
             closepayment();
+            return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -226,6 +318,7 @@ public class PaymentActivity extends AppCompatActivity {
         if (paymentDetails != null) {
 
             JSONObject json = new JSONObject(paymentDetails);
+            resolveCloseButtonDisplay(json);
 
             if (json.has("mp_enable_fullscreen")) {
                 try {
@@ -236,11 +329,6 @@ public class PaymentActivity extends AppCompatActivity {
 
                 if (isEnableFullscreen) {
                     setTheme(R.style.Theme_Fullscreen);
-
-                    View decorView = getWindow().getDecorView();
-                    decorView.setSystemUiVisibility(
-                            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    );
                 }
             }
 
@@ -287,22 +375,29 @@ public class PaymentActivity extends AppCompatActivity {
             }
             paymentDetails.put(device_info, gson.toJson(DeviceInfoUtil.getDeviceInfo(this)));
 
-        } else {
+        }
+
+        super.onCreate(savedInstanceState);
+
+        // Same error result as before, but stop init after finish to avoid crash/leak.
+        if (paymentDetails == null) {
             String dataString = "{ \"error\" : \" Payment details is null.\"  }";
-//           // Log.d(logXDK, "MPMainUIWebClient mptransactionresults dataString = " + dataString);
             Intent result = new Intent();
             result.putExtra(XDKTransactionResult, dataString);
             setResult(RESULT_OK, result);
             finish();
+            return;
         }
 
-        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_payment);
 
-        // Initialize ProgressBar
-        pbLoading = findViewById(R.id.pbLoading);
-        // Initially show it during first load
-        pbLoading.setVisibility(View.VISIBLE);
+        paymentToolbar = findViewById(R.id.paymentToolbar);
+        applyCloseButtonChrome();
+
+        if (isEnableFullscreen) {
+            View decorView = getWindow().getDecorView();
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        }
 
         // Bind resources
         mpMainUI = findViewById(R.id.MPMainUI);
@@ -345,29 +440,10 @@ public class PaymentActivity extends AppCompatActivity {
 
         mpMainUI.loadUrl(setMPMainUI);
 
-
-// Post a delayed check
-        timeoutHandler.postDelayed(() -> {
-            if (!isPageLoaded) {
-                // Timeout reached, stop loading
-                mpMainUI.stopLoading();
-               // Log.e(logXDK, "mpMainUI timeout");
-                String dataString = "{ \"error\" : \"Timeout\"  }";
-                Intent result = new Intent();
-                result.putExtra(XDKTransactionResult, dataString);
-                setResult(RESULT_OK, result);
-                pbLoading.setVisibility(View.GONE);
-                finish();
-            }
-        }, TIMEOUT_DURATION);
-
-        timeoutHandler.postDelayed(() -> {
-            if (progressLoading < 30 && !isPageLoaded) {
-                // Timeout reached, stop loading
-                Toast.makeText(this, "We are experiencing heavy traffic.\nYou may experience slight delays.", Toast.LENGTH_LONG).show();
-            }
-        }, NETWORK_HEAVY_DURATION);
-
+        // Soft toast only — never finish the activity while the page is still loading.
+        timeoutHandler.postDelayed(heavyTrafficRunnable, NETWORK_HEAVY_DURATION_MS);
+        // Hard fail only if the WebView never starts (dead connection).
+        timeoutHandler.postDelayed(connectionTimeoutRunnable, CONNECTION_TIMEOUT_MS);
 
         // Register a callback for handling the back press
         OnBackPressedCallback callback = new OnBackPressedCallback(true) {
@@ -433,9 +509,9 @@ public class PaymentActivity extends AppCompatActivity {
             }
 
            // Log.d(logXDK, tagString + " onPageStarted url = " + url);
-            pbLoading.setVisibility(View.VISIBLE);
 
             if(tagString.equals("mpMainUI")){
+                markMainUiStarted();
                 return;
             }
 
@@ -477,7 +553,6 @@ public class PaymentActivity extends AppCompatActivity {
                         url.contains("alipays://") ||
                         url.contains("https://app.shopback.com/pay") ||
                         url.contains("https://m.tngdigital.com.my/s/cashier/")) {
-                    pbLoading.setVisibility(View.VISIBLE);
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                         startActivity(intent);
@@ -654,44 +729,44 @@ public class PaymentActivity extends AppCompatActivity {
 
                     if (paymentDetails.get("mp_extended_vcode") == null) {
                         paymentDetails.put(PaymentActivity.mp_extended_vcode, false);
-                    } else {
-                        paymentDetails.put(PaymentActivity.mp_extended_vcode, Objects.requireNonNull(paymentDetails.get("mp_extended_vcode")));
                     }
 
                     if (paymentDetails.get("mp_sandbox_mode") == null) {
                         paymentDetails.put(PaymentActivity.mp_sandbox_mode, false);
-                    } else {
-                        paymentDetails.put(PaymentActivity.mp_sandbox_mode, Objects.requireNonNull(paymentDetails.get("mp_sandbox_mode")));
                     }
 
-                    if (paymentDetails.get(PaymentActivity.mp_gpay_channel) != null) {
-                        paymentDetails.put(PaymentActivity.mp_gpay_channel, Objects.requireNonNull(paymentDetails.get(PaymentActivity.mp_gpay_channel)));
-                    } else if (mp_channel.toLowerCase().contains("tng")) {
-                        paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[]{"TNG-EWALLET"});
-                    } else if (mp_channel.toLowerCase().contains("shopee")) {
-                        paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[]{"SHOPEEPAY"});
-                    } else if (mp_channel.toLowerCase().contains("credit")) {
-                        paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[]{"CC"});
-                    } else {
-                        paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[]{"SHOPEEPAY", "TNG-EWALLET", "CC"});
+                    if (paymentDetails.get(PaymentActivity.mp_gpay_channel) == null) {
+                        if (mp_channel.toLowerCase().contains("tng")) {
+                            paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[]{"TNG-EWALLET"});
+                        } else if (mp_channel.toLowerCase().contains("shopee")) {
+                            paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[]{"SHOPEEPAY"});
+                        } else if (mp_channel.toLowerCase().contains("credit")) {
+                            paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[]{"CC"});
+                        } else {
+                            paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[]{"SHOPEEPAY", "TNG-EWALLET", "CC"});
+                        }
                     }
 
                     if (paymentDetails.get(PaymentActivity.mp_closebutton_display) == null) {
                         paymentDetails.put(PaymentActivity.mp_closebutton_display, false);
-                    } else {
-                        paymentDetails.put(PaymentActivity.mp_closebutton_display, Objects.requireNonNull(paymentDetails.get(PaymentActivity.mp_closebutton_display)));
                     }
 
-                    paymentDetails.put(PaymentActivity.mp_merchant_ID, Objects.requireNonNull(paymentDetails.get("mp_merchant_ID"))); // Your sandbox / production merchant ID
-                    paymentDetails.put(PaymentActivity.mp_verification_key, Objects.requireNonNull(paymentDetails.get("mp_verification_key"))); // Your sandbox / production verification key
-                    paymentDetails.put(PaymentActivity.mp_amount, Objects.requireNonNull(paymentDetails.get("mp_amount"))); // Must be in 2 decimal points format
-                    paymentDetails.put(PaymentActivity.mp_order_ID, Objects.requireNonNull(paymentDetails.get("mp_order_ID"))); // Must be unique
-                    paymentDetails.put(PaymentActivity.mp_currency, Objects.requireNonNull(paymentDetails.get("mp_currency"))); // Must matched mp_country
-                    paymentDetails.put(PaymentActivity.mp_country, Objects.requireNonNull(paymentDetails.get("mp_country"))); // Must matched mp_currency
-                    paymentDetails.put(PaymentActivity.mp_bill_description, Objects.requireNonNull(paymentDetails.get("mp_bill_description")));
-                    paymentDetails.put(PaymentActivity.mp_bill_name, Objects.requireNonNull(paymentDetails.get("mp_bill_name")));
-                    paymentDetails.put(PaymentActivity.mp_bill_email, Objects.requireNonNull(paymentDetails.get("mp_bill_email")));
-                    paymentDetails.put(PaymentActivity.mp_bill_mobile, Objects.requireNonNull(paymentDetails.get("mp_bill_mobile")));
+                    // Required for Google Pay — same open path when present; error result instead of NPE when missing.
+                    String[] requiredGpKeys = {
+                            "mp_merchant_ID", "mp_verification_key", "mp_amount", "mp_order_ID",
+                            "mp_currency", "mp_country", "mp_bill_description", "mp_bill_name",
+                            "mp_bill_email", "mp_bill_mobile"
+                    };
+                    for (String key : requiredGpKeys) {
+                        if (paymentDetails.get(key) == null) {
+                            String dataString = "{ \"error\" : \"Missing required field: " + key + "\"  }";
+                            Intent result = new Intent();
+                            result.putExtra(XDKTransactionResult, dataString);
+                            setResult(RESULT_OK, result);
+                            finish();
+                            return true;
+                        }
+                    }
 
                     openGPActivityWithResult();
                     return true;
@@ -708,7 +783,6 @@ public class PaymentActivity extends AppCompatActivity {
                 return; // Let WebView handle null cases
             }
            // Log.d(logXDK, tagString + " onPageFinished url = " + url);
-            pbLoading.setVisibility(View.GONE);
 
             if(tagString.equals("mpPaymentUI")){
                 //            nativeWebRequestUrlUpdates(url);
@@ -740,7 +814,7 @@ public class PaymentActivity extends AppCompatActivity {
                 return;
             }
             if(tagString.equals("mpMainUI")){
-                isPageLoaded = true;
+                markMainUiLoaded();
                 if (!isMainUILoaded && !url.equals("about:blank")) {
                     if (paymentDetails != null) {
                         isMainUILoaded = true;
@@ -768,8 +842,9 @@ public class PaymentActivity extends AppCompatActivity {
             // This is the simplest way - if this triggers, loadURL failed
             if (!request.isForMainFrame()) return;
 
-            pbLoading.setVisibility(View.GONE);
             networkIssue = true;
+            // Avoid a misleading "Timeout" after a real load failure.
+            timeoutHandler.removeCallbacks(connectionTimeoutRunnable);
 
             String tagString = (String) webView.getTag();
             int errorCode = error.getErrorCode();
@@ -785,7 +860,6 @@ public class PaymentActivity extends AppCompatActivity {
             super.onReceivedHttpError(webView, request, errorResponse);
             if (!request.isForMainFrame()) return;
 
-            pbLoading.setVisibility(View.GONE);
             String tagString = (String) webView.getTag();
             int statusCode = errorResponse.getStatusCode();
             String reasonPhrase = errorResponse.getReasonPhrase();
@@ -818,8 +892,7 @@ public class PaymentActivity extends AppCompatActivity {
 
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-            timeoutHandler.removeCallbacksAndMessages(null);
-            pbLoading.setVisibility(View.GONE);
+            clearLoadWatchdogs();
             networkIssue = true;
             new AlertDialog.Builder(PaymentActivity.this)
                     .setTitle("Security Error")
@@ -841,10 +914,12 @@ public class PaymentActivity extends AppCompatActivity {
             progressLoading = newProgress; // 0 to 100
             Log.d(logXDK, "Progress Percentage: " + progressLoading);
 
-            if (progressLoading < 80) {
-                pbLoading.setVisibility(View.VISIBLE);
-            } else {
-                pbLoading.setVisibility(View.GONE);
+            // Any progress means the connection is alive — do not hard-timeout.
+            if (newProgress > 0) {
+                markMainUiStarted();
+            }
+            if (newProgress >= 100) {
+                timeoutHandler.removeCallbacks(heavyTrafficRunnable);
             }
         }
 
@@ -885,6 +960,12 @@ public class PaymentActivity extends AppCompatActivity {
            // Log.e(logXDK, "TNG: ", e);
             closepayment();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        clearLoadWatchdogs();
+        super.onDestroy();
     }
 
 

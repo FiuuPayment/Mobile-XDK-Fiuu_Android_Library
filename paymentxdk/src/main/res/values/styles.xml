@@ -1,8 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Fullscreen" parent="Theme.AppCompat.Light">
+    <!-- Default XDK payment chrome: no system ActionBar; optional in-layout Toolbar. -->
+    <style name="Theme.Xdk" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="colorPrimary">#0038a3</item>
+        <item name="colorPrimaryDark">#0038a3</item>
+        <item name="android:actionMenuTextColor">#00d600</item>
+        <item name="actionMenuTextColor">#00d600</item>
+    </style>
+
+    <style name="Theme.Fullscreen" parent="Theme.Xdk">
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
-<!--        <item name="android:windowNoTitle">true</item>-->
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
     </style>
 </resources>

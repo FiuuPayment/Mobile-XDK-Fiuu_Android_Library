@@ -51,7 +51,7 @@ group = findProperty('group') ?: 'com.github.FiuuPayment'
 def resolvedVersion = findProperty('version')
 version = (resolvedVersion && resolvedVersion.toString() != 'unspecified')
         ? resolvedVersion
-        : '3.34.38'
+        : '3.34.40'
 
 afterEvaluate {
     publishing {
