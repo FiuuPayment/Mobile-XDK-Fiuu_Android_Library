@@ -6,6 +6,7 @@ package com.fiuu.xdk.googlepay;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -32,8 +33,8 @@ import androidx.appcompat.widget.AppCompatTextView;
 import androidx.appcompat.widget.Toolbar;
 
 import com.fiuu.xdk.R;
-import com.google.android.gms.wallet.WalletConstants;
 import com.fiuu.xdk.googlepay.Helper.GooglePayHelper;
+import com.google.android.gms.wallet.WalletConstants;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONException;
@@ -475,12 +476,31 @@ public class WebActivity extends AppCompatActivity {
         wvGateway.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                if (uri != null) {
+                    String url = uri.toString();
+                    String host = uri.getHost();
+                    String path = uri.getPath();
+                    if (host != null && path != null) {
+                        String hostLower = host.toLowerCase(java.util.Locale.US);
+                        String pathLower = path.toLowerCase(java.util.Locale.US);
+                        if ((hostLower.equals("fiuu.com") || hostLower.equals("www.fiuu.com"))
+                                && (pathLower.startsWith("/privacy-policy")
+                                || pathLower.startsWith("/terms-of-services"))) {
+                            try {
+                                startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                            } catch (Exception ignored) {
+                            }
+                            return true;
+                        }
+                    }
 
-                if (request.getUrl().toString().contains("result.php")) {
-                    statCodeValueSuccess = true;
-                    pbLoading.setVisibility(View.VISIBLE);
-                    tvLoading.setVisibility(View.VISIBLE);
-                    wvGateway.setVisibility(View.GONE);
+                    if (url.contains("result.php")) {
+                        statCodeValueSuccess = true;
+                        pbLoading.setVisibility(View.VISIBLE);
+                        tvLoading.setVisibility(View.VISIBLE);
+                        wvGateway.setVisibility(View.GONE);
+                    }
                 }
 
                 return super.shouldOverrideUrlLoading(view, request);
