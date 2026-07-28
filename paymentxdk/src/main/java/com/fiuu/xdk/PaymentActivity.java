@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -13,19 +14,12 @@ import android.graphics.BitmapFactory;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.net.http.SslError;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Message;
 import android.os.Handler;
-
-import androidx.activity.OnBackPressedCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
+import android.os.Message;
+import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
@@ -47,11 +41,19 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import com.google.gson.Gson;
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+
 import com.fiuu.xdk.googlepay.ActivityGP;
 import com.fiuu.xdk.models.DeviceInfo;
 import com.fiuu.xdk.utils.DeviceInfoUtil;
-
+import com.google.gson.Gson;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -59,8 +61,10 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -265,15 +269,40 @@ public class PaymentActivity extends AppCompatActivity {
         }
     }
 
+    private boolean isClosingPayment = false;
+
+    /**
+     * Close behavior:
+     * - WebView / payment JS not ready yet → cancel immediately (Close must always work).
+     * - Channel/bank overlay open → dismiss it, then {@code javascript:closemolpay()} in one tap.
+     * - Fully loaded → {@code javascript:closemolpay()}.
+     */
     private void closepayment() {
+        if (isFinishing()) {
+            return;
+        }
+
+        // Ignore re-entry from bank WebView onCloseWindow while we are already closing.
+        if (isClosingPayment) {
+            return;
+        }
+
         if (isClosingReceipt) {
+            clearLoadWatchdogs();
             finish();
             return;
         }
 
-        if (!isPageLoaded || networkIssue) {
-            // If the page hasn't loaded yet, or there's a network issue,
-            // exit the activity with a cancelled/error payload.
+        // isMainUILoaded is set only after updateSdkData is injected — that is when closemolpay() exists.
+        boolean paymentJsReady = Boolean.TRUE.equals(isMainUILoaded)
+                && isPageLoaded
+                && mpMainUI != null
+                && !networkIssue;
+
+        if (!paymentJsReady) {
+            clearLoadWatchdogs();
+            isClosingPayment = true;
+            dismissChannelOverlays();
             String errorMsg = networkIssue ? "Network Issue" : "Transaction Cancelled";
             String dataString = "{ \"error\" : \"" + errorMsg + "\"  }";
             Intent result = new Intent();
@@ -283,8 +312,41 @@ public class PaymentActivity extends AppCompatActivity {
             return;
         }
 
-        // If the page is loaded and we're not in receipt mode, attempt a graceful close via JavaScript
+        isClosingPayment = true;
+        // Selecting a channel opens mpPaymentUI / mpBankUI on top of mpMainUI. One Close must
+        // dismiss those overlays and invoke closemolpay — otherwise the first tap appears ignored.
+        dismissChannelOverlays();
         mpMainUI.loadUrl("javascript:closemolpay()");
+        // Allow a later Close if JS did not finish the activity (e.g. confirmation still open).
+        mpMainUI.postDelayed(() -> isClosingPayment = false, 600);
+    }
+
+    /** Tear down channel/bank overlays without relying on a second Close tap. */
+    private void dismissChannelOverlays() {
+        if (mpBankUI != null) {
+            try {
+                mpBankUI.stopLoading();
+                mpBankUI.loadUrl("about:blank");
+                mpBankUI.setVisibility(View.GONE);
+                mpBankUI.clearCache(true);
+                mpBankUI.clearHistory();
+                mpBankUI.removeAllViews();
+                if (mpBankUI.getParent() != null) {
+                    ((ViewGroup) mpBankUI.getParent()).removeView(mpBankUI);
+                }
+                mpBankUI.destroy();
+            } catch (Exception ignored) {
+            }
+            mpBankUI = null;
+        }
+        if (mpPaymentUI != null && mpPaymentUI.getVisibility() == View.VISIBLE) {
+            try {
+                mpPaymentUI.stopLoading();
+                mpPaymentUI.loadUrl("about:blank");
+                mpPaymentUI.setVisibility(View.GONE);
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     @Override
@@ -486,6 +548,43 @@ public class PaymentActivity extends AppCompatActivity {
         mpMainUI.loadUrl("javascript:nativeWebRequestUrlUpdates(" + json + ")");
     }
 
+    /**
+     * Privacy Policy / Terms must open in an external browser so the payment WebView
+     * is not replaced and the user does not get stuck outside the payment flow.
+     *
+     * @return true if the URL was handled externally (caller should return true from shouldOverrideUrlLoading)
+     */
+    private boolean openExternalBrowserForLegalUrl(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return false;
+        }
+        Uri uri = Uri.parse(url);
+        String host = uri.getHost();
+        if (host == null) {
+            return false;
+        }
+        String hostLower = host.toLowerCase(Locale.US);
+        if (!hostLower.equals("fiuu.com") && !hostLower.equals("www.fiuu.com")) {
+            return false;
+        }
+        String path = uri.getPath();
+        if (path == null) {
+            return false;
+        }
+        String pathLower = path.toLowerCase(Locale.US);
+        if (!pathLower.startsWith("/privacy-policy") && !pathLower.startsWith("/terms-of-services")) {
+            return false;
+        }
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+           // Log.e(logXDK, "No browser available for legal URL", e);
+            return false;
+        }
+        return true;
+    }
+
 //    private void nativeWebRequestUrlUpdatesOnFinishLoad(String url) {
 //       // Log.d(logXDK, "nativeWebRequestUrlUpdatesOnFinishLoad url = " + url);
 //
@@ -530,6 +629,11 @@ public class PaymentActivity extends AppCompatActivity {
             String url = uri.toString();
 
            // Log.d(logXDK, tagString + " shouldOverrideUrlLoading url = " + url);
+
+            // Keep payment WebView intact — open legal pages in the system browser.
+            if (openExternalBrowserForLegalUrl(url)) {
+                return true;
+            }
 
             if(tagString.equals("mpPaymentUI")){
                 if (url.contains("scbeasy/easy_app_link.html")) {
@@ -842,11 +946,15 @@ public class PaymentActivity extends AppCompatActivity {
             // This is the simplest way - if this triggers, loadURL failed
             if (!request.isForMainFrame()) return;
 
-            networkIssue = true;
-            // Avoid a misleading "Timeout" after a real load failure.
-            timeoutHandler.removeCallbacks(connectionTimeoutRunnable);
-
             String tagString = (String) webView.getTag();
+            // Only main payment UI network failures should block closemolpay() / mark networkIssue.
+            // Channel/bank pages often emit main-frame errors (custom schemes, app links) and must not
+            // force Close into the cancel path.
+            if ("mpMainUI".equals(tagString)) {
+                networkIssue = true;
+                timeoutHandler.removeCallbacks(connectionTimeoutRunnable);
+            }
+
             int errorCode = error.getErrorCode();
             Uri uri = request.getUrl();
             String url = uri.toString();
@@ -941,10 +1049,20 @@ public class PaymentActivity extends AppCompatActivity {
         public void onCloseWindow(WebView webView) {
             String tagString = (String) webView.getTag();
 
-            if(tagString.equals("mpBankUI")){
-                closepayment();
+            // Only clean up the bank window. Do not call closepayment() here — that caused
+            // Close to need two taps (first closed the popup, second ran closemolpay).
+            if ("mpBankUI".equals(tagString)) {
+                if (mpBankUI != null && webView == mpBankUI) {
+                    try {
+                        if (mpBankUI.getParent() != null) {
+                            ((ViewGroup) mpBankUI.getParent()).removeView(mpBankUI);
+                        }
+                        mpBankUI.destroy();
+                    } catch (Exception ignored) {
+                    }
+                    mpBankUI = null;
+                }
             }
-
         }
     }
 
@@ -1011,42 +1129,83 @@ public class PaymentActivity extends AppCompatActivity {
     }
 
     private void storeImage(Bitmap image) {
-        String fullPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
+        if (image == null || filename == null || filename.trim().isEmpty()) {
+            showImageSaveToast("Image not saved");
+            return;
+        }
 
         try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Scoped storage: no WRITE_EXTERNAL_STORAGE prompt; write via MediaStore.
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Downloads.DISPLAY_NAME, filename);
+                values.put(MediaStore.Downloads.MIME_TYPE, "image/png");
+                values.put(MediaStore.Downloads.IS_PENDING, 1);
 
-            FileOutputStream fOut;
-            File file = new File(fullPath, filename);
-            file.createNewFile();
-            fOut = new FileOutputStream(file);
+                Uri collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+                Uri itemUri = getContentResolver().insert(collection, values);
+                if (itemUri == null) {
+                    throw new IllegalStateException("Failed to create MediaStore entry");
+                }
 
-            image.compress(Bitmap.CompressFormat.PNG, 100, fOut);
-            fOut.flush();
-            fOut.close();
+                try (OutputStream out = getContentResolver().openOutputStream(itemUri)) {
+                    if (out == null || !image.compress(Bitmap.CompressFormat.PNG, 100, out)) {
+                        throw new IllegalStateException("Failed to write image");
+                    }
+                }
 
-            MediaScannerConnection.scanFile(this, new String[]{file.toString()}, null, null);
+                values.clear();
+                values.put(MediaStore.Downloads.IS_PENDING, 0);
+                getContentResolver().update(itemUri, values, null, null);
+            } else {
+                String fullPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
+                File file = new File(fullPath, filename);
+                File parent = file.getParentFile();
+                if (parent != null) {
+                    //noinspection ResultOfMethodCallIgnored
+                    parent.mkdirs();
+                }
+                try (FileOutputStream fOut = new FileOutputStream(file)) {
+                    if (!image.compress(Bitmap.CompressFormat.PNG, 100, fOut)) {
+                        throw new IllegalStateException("Failed to write image");
+                    }
+                    fOut.flush();
+                }
+                MediaScannerConnection.scanFile(this, new String[]{file.toString()}, null, null);
+            }
 
-            Toast toast = Toast.makeText(this, "Image saved", Toast.LENGTH_LONG);
-            toast.setGravity(Gravity.CENTER, 0, 0);
-            toast.show();
-
+            showImageSaveToast("Image saved");
         } catch (Exception e) {
            // Log.d(logXDK, "MPMainUIWebClient storeImage error = " + e.getMessage());
-            Toast toast = Toast.makeText(this, "Image not saved", Toast.LENGTH_LONG);
-            toast.setGravity(Gravity.CENTER, 0, 0);
-            toast.show();
+            showImageSaveToast("Image not saved");
         }
     }
 
+    private void showImageSaveToast(String message) {
+        Toast toast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        toast.setGravity(Gravity.CENTER, 0, 0);
+        toast.show();
+    }
+
+    /**
+     * Saves QR/instruction image. On API 29+ MediaStore needs no storage runtime permission
+     * (WRITE_EXTERNAL_STORAGE is ignored and will not show a system prompt). On API 28 and
+     * below, request WRITE_EXTERNAL_STORAGE before writing to public Downloads.
+     */
     public void isStoragePermissionGranted() {
-        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-           // Log.d(logXDK, "isStoragePermissionGranted Permission granted");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             storeImage(imgBitmap);
-        } else {
-           // Log.d(logXDK, "isStoragePermissionGranted Permission revoked");
-            ActivityCompat.requestPermissions(PaymentActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_EXTERNAL_STORAGE);
+            return;
         }
 
+        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            storeImage(imgBitmap);
+        } else {
+            ActivityCompat.requestPermissions(
+                    PaymentActivity.this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    REQUEST_EXTERNAL_STORAGE);
+        }
     }
 
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
@@ -1055,17 +1214,13 @@ public class PaymentActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (requestCode == REQUEST_EXTERNAL_STORAGE) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-               // Log.d(logXDK, "onRequestPermissionsResult Permission: " + permissions[0] + "was " + grantResults[0]);
-                //resume tasks needing this permission
-
-                storeImage(imgBitmap);
-
-            } else {
-               // Log.d(logXDK, "onRequestPermissionsResult EXTERNAL_STORAGE permission was NOT granted.");
-                Toast.makeText(this, "Image not saved", Toast.LENGTH_LONG).show();
-            }
+        if (requestCode != REQUEST_EXTERNAL_STORAGE) {
+            return;
+        }
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            storeImage(imgBitmap);
+        } else {
+            Toast.makeText(this, "Image not saved", Toast.LENGTH_LONG).show();
         }
     }
 
