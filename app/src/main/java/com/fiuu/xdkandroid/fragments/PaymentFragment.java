@@ -1,6 +1,8 @@
 package com.fiuu.xdkandroid.fragments;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -111,11 +113,23 @@ public class PaymentFragment extends Fragment {
 
         edtMpChannel.setText(modelData.getChannel(), false);
 
-// Listen for selection
+// Listen for dropdown selection
         edtMpChannel.setOnItemClickListener((parent, v2, position, id) -> {
             String mp_channel = adapter.getItem(position);
             modelData.setChannel(mp_channel);
             viewModel.setPaymentData(modelData);
+        });
+
+        // Listen for manual text input
+        edtMpChannel.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                modelData.setChannel(s.toString());
+                viewModel.setPaymentData(modelData);
+            }
         });
 
     }
