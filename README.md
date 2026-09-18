@@ -6,9 +6,9 @@ This is a fully functional Fiuu Android payment library designed for seamless in
 It can be integrated using the `com.fiuu.xdk` package via Gradle, sourced from [JitPack](https://jitpack.io/#FiuuPayment/Mobile-XDK-Fiuu_Android_Library).
 For reference, this repository includes a sample application (`app` / `com.fiuu.xdkandroid`) that demonstrates integration with the Fiuu Android payment library (`paymentxdk` module).
 
-**Current library version:** `3.34.41`
+**Current library version:** `3.34.42`
 
-## What's new in 3.34.41
+## What's new in 3.34.42
 
 - **Google Pay BIN lock:** `mp_bin_lock` and `mp_bin_lock_err_msg` are forwarded on Google Pay CreateTxn / GetPaymentRequest (same keys as WebView checkout).
 - **Merchant close:** hosts can call `PaymentActivity.closePayment()` after their own process finishes. It is a no-op if WebView checkout is not showing and does not close `ActivityGP` / `WebActivity`.
@@ -94,11 +94,11 @@ Add the dependency in your app module `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:3.34.41'
+    implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:3.34.42'
 }
 ```
 
-Replace `3.34.41` with the [latest release tag](https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library/releases) if a newer version is available.
+Replace `3.34.42` with the [latest release tag](https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library/releases) if a newer version is available.
 
 ### AndroidManifest
 
