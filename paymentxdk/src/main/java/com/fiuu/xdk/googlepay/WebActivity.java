@@ -667,7 +667,9 @@ public class WebActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.closeBtn || Objects.equals(item.getTitle(), "Close")) {
-            setResult(RESULT_CANCELED, null);
+            Intent intent = new Intent();
+            intent.putExtra("response", "{ \"error\" : \"Payment cancelled\"  }");
+            setResult(RESULT_CANCELED, intent);
             finish();
             return true;
         }

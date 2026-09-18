@@ -27,10 +27,12 @@ import com.google.android.gms.wallet.WalletConstants;
 import com.google.android.gms.wallet.contract.TaskResultContracts;
 import com.google.gson.Gson;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -479,6 +481,19 @@ public class ActivityGP extends AppCompatActivity {
                     paymentInput.put("isSandbox", paymentDetails.get("mp_sandbox_mode"));
                 }
 
+                List<String> binLock = ApiRequestService.extractBinLockList(
+                        paymentDetails.get(PaymentActivity.mp_bin_lock));
+                if (!binLock.isEmpty()) {
+                    paymentInput.put(PaymentActivity.mp_bin_lock, new JSONArray(binLock));
+                }
+                Object binLockErrMsg = paymentDetails.get(PaymentActivity.mp_bin_lock_err_msg);
+                if (binLockErrMsg != null) {
+                    String errMsg = binLockErrMsg.toString().trim();
+                    if (!errMsg.isEmpty()) {
+                        paymentInput.put(PaymentActivity.mp_bin_lock_err_msg, errMsg);
+                    }
+                }
+
                 JSONObject paymentInputObj = paymentInput;
 
                 String paymentInput = paymentInputObj.toString();
@@ -589,13 +604,33 @@ public class ActivityGP extends AppCompatActivity {
             }
         }
         else if (requestCode == CANCEL_GPAY_TXN) {
-            assert data != null;
-            response = data.getStringExtra("response");
+            // 997 is already the result of the cancel WebActivity — do not call CancelGPay("") again.
+            if (data != null) {
+                response = data.getStringExtra("response");
+            } else {
+                response = null;
+            }
+            if (response == null || response.isEmpty()) {
+                // Treat 997 like 998: if data is null or "response" is missing, build a cancel JSON.
+                response = buildCancelJson();
+            }
             Intent resultCancel = new Intent();
             resultCancel.putExtra(PaymentActivity.XDKTransactionResult, response);
             Log.e("logGooglePay", "RESULT_CANCELED ActivityGP 2");
             setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
             finish(); // finish ActivityGP
+        }
+    }
+
+    private String buildCancelJson() {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("StatCode", "11");
+            json.put("StatName", "failed");
+            json.put("ErrorDesc", "Payment cancelled");
+            return json.toString();
+        } catch (JSONException e) {
+            return "{ \"error\" : \"Payment cancelled\"  }";
         }
     }
 }

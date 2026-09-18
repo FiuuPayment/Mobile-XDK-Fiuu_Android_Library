@@ -62,6 +62,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Locale;
@@ -137,7 +138,8 @@ public class PaymentActivity extends AppCompatActivity {
     private final static String mpclickgpbutton = "mpclickgpbutton://";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "41";
+    private final static String wrapperVersion = "42a";
+    private static final String TNG_EWALLET_PACKAGE = "my.com.tngdigital.ewallet";
 
     private String filename;
     private Bitmap imgBitmap;
@@ -151,9 +153,15 @@ public class PaymentActivity extends AppCompatActivity {
     private String setMPMainUI = "";
     private Boolean isTNGResult = false;
     private Boolean networkIssue = false;
+    /** Extract TNG systembrowserurl only once — iframe result.php can re-fire onPageFinished. */
+    private boolean tngIntermediateHandled = false;
+    /** Forward RMS/MOLPay result.php to mpMainUI only once (iframe loads skip onPageStarted). */
+    private boolean fiuuResultNotified = false;
 
     private static final Gson gson =  new Gson();
     private static DeviceInfo deviceInfo;
+    /** Visible WebView checkout only; cleared in {@link #onDestroy()}. */
+    private static WeakReference<PaymentActivity> sCurrent;
     private final Handler timeoutHandler = new Handler();
     /** True once mpMainUI begins loading (connection is alive). */
     private boolean hasPageStarted = false;
@@ -272,6 +280,22 @@ public class PaymentActivity extends AppCompatActivity {
     private boolean isClosingPayment = false;
 
     /**
+     * Dismiss the visible WebView checkout using the same path as Close / Back.
+     * No-op if {@link PaymentActivity} is not showing. Does not close Google Pay.
+     *
+     * @return {@code true} if a live activity was asked to close
+     */
+    public static boolean closePayment() {
+        WeakReference<PaymentActivity> current = sCurrent;
+        PaymentActivity activity = current != null ? current.get() : null;
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
+            return false;
+        }
+        activity.runOnUiThread(activity::closepayment);
+        return true;
+    }
+
+    /**
      * Close behavior:
      * - WebView / payment JS not ready yet → cancel immediately (Close must always work).
      * - Channel/bank overlay open → dismiss it, then {@code javascript:closemolpay()} in one tap.
@@ -376,6 +400,8 @@ public class PaymentActivity extends AppCompatActivity {
         // For submodule wrappers
         boolean is_submodule = false;
         isTNGResult = false;
+        tngIntermediateHandled = false;
+        fiuuResultNotified = false;
 
         if (paymentDetails != null) {
 
@@ -451,7 +477,20 @@ public class PaymentActivity extends AppCompatActivity {
             return;
         }
 
-        setContentView(R.layout.activity_payment);
+        sCurrent = new WeakReference<>(this);
+
+        try {
+            setContentView(R.layout.activity_payment);
+        } catch (RuntimeException e) {
+            Log.e(logXDK, "Failed to inflate activity_payment layout", e);
+            String dataString = "{ \"error\" : \" Payment UI initialization failed.\"  }";
+            Intent result = new Intent();
+            result.putExtra(XDKTransactionResult, dataString);
+            setResult(RESULT_OK, result);
+            finish();
+            return;
+        }
+
 
         paymentToolbar = findViewById(R.id.paymentToolbar);
         applyCloseButtonChrome();
@@ -585,6 +624,131 @@ public class PaymentActivity extends AppCompatActivity {
         return true;
     }
 
+    private static boolean isTngCashierUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return false;
+        }
+        String lower = url.toLowerCase(Locale.US);
+        return lower.contains("tngdigital.com.my") && lower.contains("/s/cashier/");
+    }
+
+    /**
+     * Launch Touch 'n Go eWallet for a cashier URL. False means the app is missing —
+     * keep the cashier in WebView (TNG web) instead of swallowing the navigation.
+     */
+    private boolean tryOpenTngApp(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            intent.setPackage(TNG_EWALLET_PACKAGE);
+            if (intent.resolveActivity(getPackageManager()) == null) {
+                return false;
+            }
+            startActivity(intent);
+            return true;
+        } catch (ActivityNotFoundException | SecurityException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Wallet / app-link URLs from {@code mpPaymentUI}.
+     *
+     * @return true if consumed (do not load in WebView)
+     */
+    private boolean handleWalletExternalUrl(WebView webView, String url) {
+        if (url.startsWith("intent:") || url.startsWith("android-app:")) {
+            return handleIntentSchemeUrl(webView, url);
+        }
+        if (isTngCashierUrl(url)) {
+            if (tryOpenTngApp(url)) {
+                isTNGResult = true;
+                return true;
+            }
+            return false;
+        }
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (ActivityNotFoundException e) {
+            if (url.startsWith("http://") || url.startsWith("https://")) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean handleIntentSchemeUrl(WebView webView, String url) {
+        try {
+            Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivity(intent);
+                if (TNG_EWALLET_PACKAGE.equals(intent.getPackage())) {
+                    isTNGResult = true;
+                }
+                return true;
+            }
+            String fallback = intent.getStringExtra("browser_fallback_url");
+            if (fallback != null && !fallback.isEmpty()) {
+                if (isTngCashierUrl(fallback) && tryOpenTngApp(fallback)) {
+                    isTNGResult = true;
+                    return true;
+                }
+                webView.loadUrl(fallback);
+                return true;
+            }
+        } catch (Exception ignored) {
+        }
+        return true;
+    }
+
+    private static String unwrapJsEvaluateResult(String value) {
+        if (value == null || value.isEmpty() || "null".equals(value) || "\"null\"".equals(value)) {
+            return "";
+        }
+        String unquoted = value.trim();
+        if (unquoted.length() >= 2 && unquoted.startsWith("\"") && unquoted.endsWith("\"")) {
+            unquoted = unquoted.substring(1, unquoted.length() - 1);
+        }
+        return unquoted.replace("\\n", "").replace("\\r", "").trim();
+    }
+
+    private static boolean isIntermediateTngPage(String url) {
+        return url != null && (url.contains("intermediate_appTNG-EWALLET.php")
+                || url.contains("intermediate_app/processing.php")
+                || url.contains("intermediate_app/process.php"));
+    }
+
+    /**
+     * Fiuu/MOLPay/RMS payment result page. XDK JS {@code nativeWebRequestUrlUpdates}
+     * only completes checkout when it sees {@code MOLPay/result.php} or {@code RMS/result.php}.
+     */
+    private static boolean isFiuuPaymentResultUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return false;
+        }
+        String lower = url.toLowerCase(Locale.US);
+        int query = lower.indexOf('?');
+        String path = query >= 0 ? lower.substring(0, query) : lower;
+        boolean gatewayHost = lower.contains("fiuu.com")
+                || lower.contains("molpay.com")
+                || lower.contains("razer.com")
+                || path.contains("/rms/")
+                || path.contains("/molpay/");
+        return gatewayHost && (path.contains("molpay/result.php")
+                || path.contains("rms/result.php")
+                || path.contains("/result.php"));
+    }
+
+    private void notifyFiuuResultUrl(String url) {
+        if (fiuuResultNotified || url == null || mpMainUI == null) {
+            return;
+        }
+        fiuuResultNotified = true;
+        nativeWebRequestUrlUpdates(url);
+    }
+
 //    private void nativeWebRequestUrlUpdatesOnFinishLoad(String url) {
 //       // Log.d(logXDK, "nativeWebRequestUrlUpdatesOnFinishLoad url = " + url);
 //
@@ -614,6 +778,11 @@ public class PaymentActivity extends AppCompatActivity {
                 return;
             }
 
+            if (isFiuuPaymentResultUrl(url)) {
+                notifyFiuuResultUrl(url);
+                return;
+            }
+
             nativeWebRequestUrlUpdates(url);
 
         }
@@ -636,6 +805,10 @@ public class PaymentActivity extends AppCompatActivity {
             }
 
             if(tagString.equals("mpPaymentUI")){
+                if (isFiuuPaymentResultUrl(url)) {
+                    notifyFiuuResultUrl(url);
+                    return false;
+                }
                 if (url.contains("scbeasy/easy_app_link.html")) {
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
@@ -653,18 +826,11 @@ public class PaymentActivity extends AppCompatActivity {
                 if (url.contains("atome-my.onelink.me") ||
                         url.contains("myboost.app") ||
                         url.contains("market://") ||
-                        url.contains("intent://") ||
+                        url.startsWith("intent:") ||
                         url.contains("alipays://") ||
                         url.contains("https://app.shopback.com/pay") ||
-                        url.contains("https://m.tngdigital.com.my/s/cashier/")) {
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                        startActivity(intent);
-                    } catch (ActivityNotFoundException e) {
-                        // Define what your app should do if no activity can handle the intent.
-                       // Log.e(logXDK, "molPay: ", e);
-                    }
-                    return true;
+                        isTngCashierUrl(url)) {
+                    return handleWalletExternalUrl(webView, url);
                 }
             }
             if(tagString.equals("mpMainUI")){
@@ -879,6 +1045,18 @@ public class PaymentActivity extends AppCompatActivity {
 
             return false;
         }
+
+        @Override
+        public WebResourceResponse shouldInterceptRequest(WebView webView, WebResourceRequest request) {
+            if (request != null && request.getUrl() != null) {
+                final String interceptUrl = request.getUrl().toString();
+                if (isFiuuPaymentResultUrl(interceptUrl)) {
+                    webView.post(() -> notifyFiuuResultUrl(interceptUrl));
+                }
+            }
+            return super.shouldInterceptRequest(webView, request);
+        }
+
         @Override
         public void onPageFinished (WebView webView, String url) {
             String tagString = (String) webView.getTag();
@@ -889,30 +1067,45 @@ public class PaymentActivity extends AppCompatActivity {
            // Log.d(logXDK, tagString + " onPageFinished url = " + url);
 
             if(tagString.equals("mpPaymentUI")){
-                //            nativeWebRequestUrlUpdates(url);
+                if (isFiuuPaymentResultUrl(url)) {
+                    notifyFiuuResultUrl(url);
+                    return;
+                }
 
-                if (url.contains("intermediate_appTNG-EWALLET.php") || url.contains("intermediate_app/processing.php")|| url.contains("intermediate_app/process.php") ) {
+                if (isIntermediateTngPage(url) && !tngIntermediateHandled) {
+                    tngIntermediateHandled = true;
 
                     webView.evaluateJavascript("document.getElementById(\"systembrowserurl\").innerHTML", s -> {
-                       // Log.d(logXDK, "MPMOLPayUIWebClient base64String = " + s);
-                        // Decode base64
-                        byte[] data = Base64.decode(s, Base64.DEFAULT);
-                        String dataString = new String(data);
-                       // Log.d(logXDK, "MPBankUIWebClient dataString = " + dataString);
-
-                        if (!s.isEmpty()) {
-                           // Log.d(logXDK, "MPMOLPayUIWebClient success");
-                            isTNGResult = true;
-                            Intent intent= new Intent(Intent.ACTION_VIEW, Uri.parse(dataString));
-                            startActivity(intent);
-                        } else {
-                           // Log.d(logXDK, "MPMOLPayUIWebClient empty dataString");
+                        if (fiuuResultNotified) {
+                            return;
+                        }
+                        String payload = unwrapJsEvaluateResult(s);
+                        if (payload.isEmpty()) {
+                            tngIntermediateHandled = false;
+                            return;
+                        }
+                        final String dataString;
+                        try {
+                            dataString = new String(Base64.decode(payload, Base64.DEFAULT)).trim();
+                        } catch (IllegalArgumentException e) {
+                            tngIntermediateHandled = false;
+                            return;
+                        }
+                        if (dataString.isEmpty()) {
+                            tngIntermediateHandled = false;
+                            return;
+                        }
+                        if (isFiuuPaymentResultUrl(dataString)) {
+                            notifyFiuuResultUrl(dataString);
+                            return;
+                        }
+                        if (handleWalletExternalUrl(webView, dataString)) {
+                            return;
+                        }
+                        if (dataString.startsWith("http://") || dataString.startsWith("https://")) {
+                            webView.loadUrl(dataString);
                         }
                     });
-
-                }
-                if(url.contains("https://m.tngdigital.com.my/s/cashier/")){
-                    isTNGResult = true;
 
                 }
                 return;
@@ -1083,6 +1276,10 @@ public class PaymentActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         clearLoadWatchdogs();
+        WeakReference<PaymentActivity> current = sCurrent;
+        if (current != null && current.get() == this) {
+            sCurrent = null;
+        }
         super.onDestroy();
     }
 

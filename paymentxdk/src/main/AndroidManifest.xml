@@ -7,6 +7,10 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
+    <!-- API 30+ package visibility: detect TNG eWallet so cashier can fall back to web. -->
+    <queries>
+        <package android:name="my.com.tngdigital.ewallet" />
+    </queries>
 
     <application>
         <activity android:name=".PaymentActivity"

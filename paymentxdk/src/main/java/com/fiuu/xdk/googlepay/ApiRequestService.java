@@ -11,6 +11,7 @@ import com.fiuu.xdk.PaymentActivity;
 import com.fiuu.xdk.googlepay.Helper.ApplicationHelper;
 import com.google.android.gms.wallet.WalletConstants;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -26,9 +27,12 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 import javax.net.ssl.SSLHandshakeException;
@@ -221,6 +225,8 @@ public class ApiRequestService {
                 formBuilder.add("paymentMethods[" + 2 + "]", "SHOPEEPAY");
             }
 
+            appendBinLockFields(formBuilder, paymentDetails);
+
             formBody = formBuilder.build();
 
             // Log all fields
@@ -350,6 +356,8 @@ public class ApiRequestService {
             Log.e("logGooglePay", "mpsl_version = 2");
             Log.e("logGooglePay", "requery = " + requery);
             Log.e("logGooglePay", "GooglePay = " + GooglePayBase64);
+            Log.e("logGooglePay", "mp_bin_lock = " + paymentInput.opt("mp_bin_lock"));
+            Log.e("logGooglePay", "mp_bin_lock_err_msg = " + paymentInput.optString("mp_bin_lock_err_msg", ""));
 
             Uri.Builder builder = new Uri.Builder()
                     .appendQueryParameter("MerchantID", merchantId)
@@ -367,6 +375,8 @@ public class ApiRequestService {
                     .appendQueryParameter("requery", requery)
                     .appendQueryParameter("GooglePay", GooglePayBase64);
 
+            appendBinLockFields(builder, paymentInput);
+
             WebActivity.paymentV2Requery = "0";
 
                 return postRequest(uri, builder);
@@ -374,6 +384,100 @@ public class ApiRequestService {
             e.printStackTrace();
         }
         return null;
+    }
+
+    /**
+     * Forward merchant BIN lock from paymentDetails onto Google Pay form posts.
+     * Accepts String[], Collection, JSONArray, JSON string, or comma-separated string.
+     */
+    static void appendBinLockFields(FormBody.Builder formBuilder, HashMap<String, Object> paymentDetails) {
+        if (formBuilder == null || paymentDetails == null) {
+            return;
+        }
+        List<String> bins = extractBinLockList(paymentDetails.get(PaymentActivity.mp_bin_lock));
+        for (int i = 0; i < bins.size(); i++) {
+            formBuilder.add("mp_bin_lock[" + i + "]", bins.get(i));
+        }
+        Object errMsg = paymentDetails.get(PaymentActivity.mp_bin_lock_err_msg);
+        if (errMsg != null) {
+            String msg = errMsg.toString().trim();
+            if (!msg.isEmpty()) {
+                formBuilder.add("mp_bin_lock_err_msg", msg);
+            }
+        }
+    }
+
+    static void appendBinLockFields(Uri.Builder builder, JSONObject paymentInput) {
+        if (builder == null || paymentInput == null) {
+            return;
+        }
+        List<String> bins = extractBinLockList(paymentInput.opt("mp_bin_lock"));
+        for (int i = 0; i < bins.size(); i++) {
+            builder.appendQueryParameter("mp_bin_lock[" + i + "]", bins.get(i));
+        }
+        String errMsg = paymentInput.optString("mp_bin_lock_err_msg", "").trim();
+        if (!errMsg.isEmpty()) {
+            builder.appendQueryParameter("mp_bin_lock_err_msg", errMsg);
+        }
+    }
+
+    static List<String> extractBinLockList(Object raw) {
+        List<String> bins = new ArrayList<>();
+        if (raw == null) {
+            return bins;
+        }
+        if (raw instanceof String[]) {
+            for (String value : (String[]) raw) {
+                addBinValue(bins, value);
+            }
+            return bins;
+        }
+        if (raw instanceof Collection) {
+            for (Object value : (Collection<?>) raw) {
+                addBinValue(bins, value);
+            }
+            return bins;
+        }
+        if (raw instanceof JSONArray) {
+            JSONArray array = (JSONArray) raw;
+            for (int i = 0; i < array.length(); i++) {
+                addBinValue(bins, array.optString(i, null));
+            }
+            return bins;
+        }
+        String text = raw.toString().trim();
+        if (text.isEmpty()) {
+            return bins;
+        }
+        if (text.startsWith("[")) {
+            try {
+                JSONArray array = new JSONArray(text.replace('\'', '"'));
+                for (int i = 0; i < array.length(); i++) {
+                    addBinValue(bins, array.optString(i, null));
+                }
+                return bins;
+            } catch (JSONException ignored) {
+                // Fall through to comma-separated parsing.
+            }
+        }
+        if (text.contains(",")) {
+            for (String part : text.split(",")) {
+                addBinValue(bins, part);
+            }
+            return bins;
+        }
+        addBinValue(bins, text);
+        return bins;
+    }
+
+    private static void addBinValue(List<String> bins, Object value) {
+        if (value == null) {
+            return;
+        }
+        String bin = value.toString().trim();
+        if (!bin.isEmpty()) {
+            bins.add(bin);
+        }
     }
 
     public Object GetPaymentResult(JSONObject transaction ) {
