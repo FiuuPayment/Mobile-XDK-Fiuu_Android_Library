@@ -1192,18 +1192,6 @@ public class PaymentActivity extends AppCompatActivity {
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
             super.onReceivedSslError(view, handler, error);
-            //            clearLoadWatchdogs();
-//            networkIssue = true;
-//            new AlertDialog.Builder(PaymentActivity.this)
-//                    .setTitle("Security Error")
-//                    .setMessage("A secure connection could not be established (SSL Error). For your security, the transaction cannot proceed.")
-//                    .setCancelable(false)
-//                    .setPositiveButton("OK", (dialog, which) -> {
-//                        handler.cancel();
-//                        closepayment();
-//                    })
-//                    .show();
-
             Log.e(logXDK, "OnReceivedSslError: A secure connection could not be established (SSL Error). For your security, the transaction cannot proceed. " + error.toString());
         }
 
