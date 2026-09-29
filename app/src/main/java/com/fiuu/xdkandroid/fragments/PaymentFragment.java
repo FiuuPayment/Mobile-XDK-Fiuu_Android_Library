@@ -1,6 +1,8 @@
 package com.fiuu.xdkandroid.fragments;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -118,9 +120,21 @@ public class PaymentFragment extends Fragment {
             viewModel.setPaymentData(modelData);
         });
 
+        edtMpChannel.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                modelData.setChannel(s.toString());
+                viewModel.setPaymentData(modelData);
+            }
+        });
+
     }
     private void expressModeToggle(View v1){
         SwitchMaterial switchMaterial  = v1.findViewById(R.id.switch_material);
+        switchMaterial.setChecked(Boolean.TRUE.equals(modelData.getIsExpressMode()));
 
         switchMaterial.setOnCheckedChangeListener((buttonView, isChecked) -> {
             modelData.setIsExpressMode(isChecked);

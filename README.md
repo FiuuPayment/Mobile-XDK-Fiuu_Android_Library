@@ -6,7 +6,17 @@ This is a fully functional Fiuu Android payment library designed for seamless in
 It can be integrated using the `com.fiuu.xdk` package via Gradle, sourced from [JitPack](https://jitpack.io/#FiuuPayment/Mobile-XDK-Fiuu_Android_Library).
 For reference, this repository includes a sample application (`app` / `com.fiuu.xdkandroid`) that demonstrates integration with the Fiuu Android payment library (`paymentxdk` module).
 
-**Current library version:** `3.34.40`
+**Current library version:** `3.34.44`
+
+## Security and payment updates (v3.34.44)
+
+Synced from the Android XDK UAT line:
+
+- Gateway hosts are checked before the payment WebView follows an HTTP(S) navigation.
+- Payment signatures and gateway paths are computed in native code, with a Java fallback when the native library cannot load.
+- Google Pay validates `mp_bin_lock` and forwards it with the payment request.
+- Bank-page certificate errors are recorded and no longer block checkout with a dialog.
+- Payment activities are not exported, and legacy storage access is limited to API 28 and below.
 
 ## Performance and Stability Improvements (v3.34.40+)
 
@@ -85,11 +95,11 @@ Add the dependency in your app module `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:3.34.40'
+    implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:3.34.44'
 }
 ```
 
-Replace `3.34.40` with the [latest release tag](https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library/releases) if a newer version is available.
+Replace `3.34.44` with the [latest release tag](https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library/releases) if a newer version is available.
 
 ### AndroidManifest
 

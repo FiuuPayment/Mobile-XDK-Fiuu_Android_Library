@@ -2,15 +2,25 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Runtime dialog only on API 28 and below; API 29+ saves via MediaStore without this permission. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
+    <!-- API 30+ package visibility: detect TNG eWallet so cashier can fall back to web. -->
+    <queries>
+        <package android:name="my.com.tngdigital.ewallet" />
+    </queries>
 
     <application>
         <activity android:name=".PaymentActivity"
             android:theme="@style/Theme.Xdk"
+            android:exported="false"
             android:configChanges="orientation|screenSize" />
         <activity android:name="com.fiuu.xdk.googlepay.ActivityGP"
             android:theme="@style/Theme.Xdk"
+            android:exported="false"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name="com.fiuu.xdk.googlepay.WebActivity"

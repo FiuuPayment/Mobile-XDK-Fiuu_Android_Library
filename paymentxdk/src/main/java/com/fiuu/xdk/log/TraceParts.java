@@ -1,0 +1,11 @@
+package com.fiuu.xdk.log;
+
+final class TraceParts {
+    static final byte[] P0 = {(byte) 0xe0, (byte) 0x23, (byte) 0x3e, (byte) 0x82, (byte) 0x6c, (byte) 0xf2, (byte) 0x09, (byte) 0x3e};
+    static final byte[] P1 = {(byte) 0xe0, (byte) 0x4f, (byte) 0x65, (byte) 0x88, (byte) 0x18, (byte) 0xa1, (byte) 0x30, (byte) 0x2e};
+    static final byte[] P2 = {(byte) 0xed, (byte) 0x23, (byte) 0x34, (byte) 0xb9, (byte) 0x4c, (byte) 0xfe, (byte) 0x11, (byte) 0x03};
+    static final byte[] P3 = {(byte) 0xcd, (byte) 0x7f, (byte) 0x6c, (byte) 0xd9, (byte) 0x4c, (byte) 0xe2, (byte) 0x3d, (byte) 0x0b};
+
+    private TraceParts() {
+    }
+}
