@@ -5,7 +5,7 @@
 package com.fiuu.xdk.googlepay.Helper;
 
 
-import android.util.Log;
+import com.fiuu.xdk.security.NativeSecurity;
 
 public class ApplicationHelper {
     private static ApplicationHelper single_instance = null;
@@ -21,22 +21,10 @@ public class ApplicationHelper {
     }
 
     public String GetVCode(String amount, String merchantID, String orderId, String verifyKey, String currency, boolean extendedVCode) {
-        byte[] hashData;
-
-        Log.e("logGooglePay" , "extendedVCode = " + extendedVCode);
-
-        if (extendedVCode) {
-            hashData = AlgorithmHelper.md5(amount + merchantID + orderId + verifyKey + currency);
-        } else {
-            hashData = AlgorithmHelper.md5(amount + merchantID + orderId + verifyKey);
-        }
-
-        return String.format("%s", UtilityHelper.ByteArrayToHexString(hashData));
+        return NativeSecurity.calculateVCode(amount, merchantID, orderId, verifyKey, currency, extendedVCode);
     }
 
     public String GetSKey(String txnID, String merchantID, String verifyKey, String amount) {
-        byte[] hashData = AlgorithmHelper.md5(txnID + merchantID + verifyKey + amount);
-
-        return String.format("%s", UtilityHelper.ByteArrayToHexString(hashData));
+        return NativeSecurity.calculateSKey(txnID, merchantID, verifyKey, amount);
     }
 }

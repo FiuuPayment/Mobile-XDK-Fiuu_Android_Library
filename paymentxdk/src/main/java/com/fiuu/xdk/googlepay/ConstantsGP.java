@@ -34,6 +34,7 @@ public class ConstantsGP {
     public static final List<String> SUPPORTED_NETWORKS = Arrays.asList(
             "AMEX",
             "DISCOVER",
+            "INTERAC",
             "JCB",
             "MASTERCARD",
             "VISA");

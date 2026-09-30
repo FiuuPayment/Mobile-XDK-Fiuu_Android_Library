@@ -11,3 +11,17 @@ MOLPayXDKProject/java_pid16100.hprof
 MOLPayXDKProject/key.properties
 app/release/
 key.properties
+*.keystore
+*.jks
+.DS_Store
+*/.DS_Store
+build/
+.cxx/
+paymentxdk/.cxx/
+.env
+*.env
+env.properties
+*.hprof
+*.apk
+*.aar
+.externalNativeBuild/
