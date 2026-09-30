@@ -157,7 +157,7 @@ public class PaymentActivity extends AppCompatActivity {
                     + "return nativeSubmit.apply(this,arguments);};})();";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "42a";
+    private final static String wrapperVersion = "43a";
     private static final String TNG_EWALLET_PACKAGE = "my.com.tngdigital.ewallet";
 
     private String filename;
@@ -597,7 +597,7 @@ public class PaymentActivity extends AppCompatActivity {
             mpPaymentUI.evaluateJavascript("document.getElementById(\"qrcode_img\").src", qrdata -> {
                // Log.d(logXDK, "QR data = " + qrdata);
                 if (qrdata != null && !qrdata.equals("null")) {
-                    String imageQrCode = qrdata.replaceAll("data:image/png;base64,", "");
+                    String imageQrCode = qrdata.replace("data:image/png;base64,", "");
                    // Log.d(logXDK, "imageQrCode = " + imageQrCode);
                     byte[] decodedBytes = Base64.decode(imageQrCode, 0);
                     imgBitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
@@ -838,7 +838,7 @@ public class PaymentActivity extends AppCompatActivity {
         @Override
         public void onPageStarted(WebView webView, String url, Bitmap favicon) {
             String tagString = (String) webView.getTag();
-            if (url == null || url.trim().isEmpty() || url == "about:blank") {
+            if (url == null || url.trim().isEmpty() || url.equals("about:blank")) {
                // Log.d(logXDK, "Invalid WebResourceRequest or null URL");
                 return; // Let WebView handle null cases
             }
@@ -928,10 +928,10 @@ public class PaymentActivity extends AppCompatActivity {
                                 mpPaymentUI.post(() -> mpPaymentUI.loadDataWithBaseURL(env.getPaymentBase(), finalDataString, "text/html", "UTF-8", ""));
                             }
                         } else {
-                           // Log.d(logXDK, "mpPaymentUI NULL avoid crash");
+                            Log.d(logXDK, "mpPaymentUI NULL avoid crash");
                         }
                     } else {
-                       // Log.d(logXDK, "MPMainUIWebClient mpopenpaymentwindow empty dataString");
+                        Log.d(logXDK, "MPMainUIWebClient mpopenpaymentwindow empty dataString");
                     }
                     return true;
                 }
@@ -997,7 +997,7 @@ public class PaymentActivity extends AppCompatActivity {
                             finish();
                         }
                     } else {
-                       // Log.d(logXDK, "json not valid dont setResult");
+                        Log.d(logXDK, "json not valid dont setResult");
 //                    setResult(RESULT_CANCELED, result);
                     }
 
@@ -1086,9 +1086,7 @@ public class PaymentActivity extends AppCompatActivity {
                         }
                     }
 
-                    if (paymentDetails.get(PaymentActivity.mp_closebutton_display) == null) {
-                        paymentDetails.put(PaymentActivity.mp_closebutton_display, false);
-                    }
+                    paymentDetails.putIfAbsent(PaymentActivity.mp_closebutton_display, false);
 
                     // Required for Google Pay — same open path when present; error result instead of NPE when missing.
                     String[] requiredGpKeys = {

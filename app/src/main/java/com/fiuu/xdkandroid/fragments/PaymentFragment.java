@@ -113,7 +113,7 @@ public class PaymentFragment extends Fragment {
 
         edtMpChannel.setText(modelData.getChannel(), false);
 
-// Listen for selection
+// Listen for dropdown selection
         edtMpChannel.setOnItemClickListener((parent, v2, position, id) -> {
             String mp_channel = adapter.getItem(position);
             modelData.setChannel(mp_channel);
