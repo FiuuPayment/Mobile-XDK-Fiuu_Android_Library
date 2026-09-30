@@ -20,6 +20,7 @@ build/
 paymentxdk/.cxx/
 .env
 *.env
+env.properties
 *.hprof
 *.apk
 *.aar
