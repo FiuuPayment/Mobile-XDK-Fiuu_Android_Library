@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,7 +15,11 @@ import androidx.lifecycle.ViewModelProvider;
 import com.fiuu.xdkandroid.R;
 import com.fiuu.xdkandroid.SharedViewModel;
 import com.fiuu.xdkandroid.models.Merchant;
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class MerchantFragment extends Fragment {
     private SharedViewModel viewModel;
@@ -37,6 +42,7 @@ public class MerchantFragment extends Fragment {
         appnameInput(view);
         merchantidInput(view);
         vkeyInput(view);
+        coreEnvDropDown(view);
     }
 
     private void usernameInput(View v1) {
@@ -145,5 +151,58 @@ public class MerchantFragment extends Fragment {
             @Override
             public void afterTextChanged(android.text.Editable s) { }
         });
+    }
+
+    private void coreEnvDropDown(View v1) {
+        MaterialAutoCompleteTextView edtMpCoreEnv = v1.findViewById(R.id.edt_mp_core_env);
+
+        List<CoreEnvItem> envList = Arrays.asList(
+                new CoreEnvItem("2", "2 - Production - V2"),
+                new CoreEnvItem("4", "4 - Sandbox - V2"),
+                new CoreEnvItem("3", "3 - UAT - V2"),
+                new CoreEnvItem("1", "1 - Production - V1")
+        );
+
+        ArrayAdapter<CoreEnvItem> adapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_list_item_1,
+                envList
+        );
+        edtMpCoreEnv.setAdapter(adapter);
+
+        String currentEnv = modelData != null ? modelData.getCoreEnv() : "2";
+        if (currentEnv == null || currentEnv.isEmpty()) {
+            currentEnv = "2";
+        }
+        for (CoreEnvItem item : envList) {
+            if (item.code.equals(currentEnv)) {
+                edtMpCoreEnv.setText(item.label, false);
+                break;
+            }
+        }
+
+        edtMpCoreEnv.setOnItemClickListener((parent, view, position, id) -> {
+            CoreEnvItem selected = (CoreEnvItem) parent.getItemAtPosition(position);
+            if (selected != null && modelData != null) {
+                modelData.setCoreEnv(selected.code);
+                viewModel.setMerchantData(modelData);
+            }
+        });
+    }
+
+    private static class CoreEnvItem {
+        final String code;
+        final String label;
+
+        CoreEnvItem(String code, String label) {
+            this.code = code;
+            this.label = label;
+        }
+
+        @NonNull
+        @Override
+        public String toString() {
+            return label;
+        }
     }
 }

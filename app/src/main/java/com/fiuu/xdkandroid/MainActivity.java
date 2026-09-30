@@ -25,6 +25,7 @@ import com.google.android.material.tabs.TabLayout;
 
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Objects;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -47,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private String mp_appname = "";
     private String mp_merchantid = "";
     private String mp_verificationKey = "";
+    private String mp_core_env = "2";
 
     private String mp_description = "";
     private String mp_payername ="";
@@ -90,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
-                tabLayout.getTabAt(position).select();
+                Objects.requireNonNull(tabLayout.getTabAt(position)).select();
             }
         });
 
@@ -119,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
             model.setAppname("");
             model.setMerchantid("");
             model.setVerificationKey("");
+            model.setCoreEnv("2");
             viewModel.setMerchantData(model);
         }
 
@@ -144,6 +147,7 @@ public class MainActivity extends AppCompatActivity {
             mp_appname = modelData.getAppname();
             mp_merchantid = modelData.getMerchantid();
             mp_verificationKey = modelData.getVerificationKey();
+            mp_core_env = modelData.getCoreEnv();
         });
 
         boolean isRooted = PaymentActivity.isDeviceRooted(MainActivity.this);
@@ -265,8 +269,8 @@ public class MainActivity extends AppCompatActivity {
 
         // -------------------------------- Most commonly used -------------------------------------
 
-        // Optional, set Environment for Webview Core URL
-        paymentDetails.put(PaymentActivity.mp_core_env, "2"); //default
+        String selectedEnv = !TextUtils.isEmpty(mp_core_env) ? mp_core_env : "2";
+        paymentDetails.put(PaymentActivity.mp_core_env, selectedEnv);
 
         // To pre-select channel, please refer to column mp_channel in https://github.com/RazerMS/Mobile-XDK-RazerMS_Examples/blob/master/channel-list.md
 //        paymentDetails.put(PaymentActivity.mp_channel, "RPP_RTP_ABB");

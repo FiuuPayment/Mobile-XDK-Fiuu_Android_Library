@@ -33,6 +33,7 @@ import androidx.appcompat.widget.AppCompatTextView;
 import androidx.appcompat.widget.Toolbar;
 
 import com.fiuu.xdk.R;
+import com.fiuu.xdk.log.ActivityLog;
 import com.fiuu.xdk.googlepay.Helper.GooglePayHelper;
 import com.google.android.gms.wallet.WalletConstants;
 
@@ -122,8 +123,8 @@ public class WebActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        Log.e("logGooglePay" , "WebActivity");
+        getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE,
+                android.view.WindowManager.LayoutParams.FLAG_SECURE);
 
         setContentView(R.layout.activity_web);
 
@@ -135,8 +136,6 @@ public class WebActivity extends AppCompatActivity {
         paymentToolbar = findViewById(R.id.paymentToolbar);
         applyCloseButtonChrome();
 
-        Log.e("logGooglePay" , "after getStringExtra 1");
-
         if (paymentInput != null) {
             // Transcation model from paymentInput
             JSONObject paymentInputObj = null;
@@ -144,9 +143,14 @@ public class WebActivity extends AppCompatActivity {
                 paymentInputObj = new JSONObject(paymentInput);
                 transaction.setVkey(paymentInputObj.getString("verificationKey"));
                 isSandbox = paymentInputObj.getString("isSandbox");
-                Log.e("logGooglePay" , "WebActivity isSandbox = " + isSandbox);
             } catch (JSONException e) {
                 e.printStackTrace();
+            }
+        }
+        if (intent != null && intent.hasExtra("verificationKey")) {
+            String vkeyExtra = intent.getStringExtra("verificationKey");
+            if (vkeyExtra != null && !vkeyExtra.isEmpty()) {
+                transaction.setVkey(vkeyExtra);
             }
         }
 
@@ -156,7 +160,10 @@ public class WebActivity extends AppCompatActivity {
         wvGateway.setBackgroundColor(Color.WHITE);
         wvGateway.getSettings().setDomStorageEnabled(true);
         wvGateway.getSettings().setJavaScriptEnabled(true);
-        wvGateway.getSettings().setAllowUniversalAccessFromFileURLs(true);
+        wvGateway.getSettings().setAllowUniversalAccessFromFileURLs(false);
+        wvGateway.getSettings().setAllowFileAccessFromFileURLs(false);
+        wvGateway.getSettings().setAllowFileAccess(false);
+        wvGateway.getSettings().setAllowContentAccess(false);
         wvGateway.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         wvGateway.getSettings().setSupportMultipleWindows(true);
 
@@ -167,27 +174,19 @@ public class WebActivity extends AppCompatActivity {
         wvGateway.getSettings().setBuiltInZoomControls(true);
         wvGateway.getSettings().setDisplayZoomControls(false);
 
-        Log.e("logGooglePay" , "before get cancelResponse");
-
         String cancelResponse = intent.getStringExtra("cancelResponse");
 
         if (cancelResponse != null) {
-            Log.e("logGooglePay" , "cancelResponse != null");
-
             try {
                 // Convert the JSON string into a JSONObject
                 JSONObject responseBody = new JSONObject(cancelResponse);
-                Log.e("logGooglePay", "-1 set minTimeOut 60000");
                 ActivityGP.minTimeOut = 60000;
                 onRequestData(responseBody);
-                Log.e("logGooglePay" , "cancelResponse = " + cancelResponse);
                 return;
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-
-        Log.e("logGooglePay" , "bypass return cancelResponse");
 
         runPaymentThread ();
 
@@ -238,7 +237,6 @@ public class WebActivity extends AppCompatActivity {
                 JSONObject paymentResult = new JSONObject(new JSONObject(threadValue).getString("responseBody"));
 
                 runOnUiThread(() -> {
-                    Log.e("logGooglePay", "thread paymentResult = " + paymentResult);
                     onRequestData(paymentResult); // Restart polling logic
                 });
 
@@ -259,8 +257,6 @@ public class WebActivity extends AppCompatActivity {
         long interval = 3000;
         final String[] queryResultStr = {null};
         final String[] trasactionJsonStr = {null};
-
-        Log.e("logGooglePay" , "onStartTimOut ActivityGP.minTimeOut = " + ActivityGP.minTimeOut);
 
         // Query Transaction ID for every 3 second in 1 minute
         countDownTimer = new CountDownTimer(ActivityGP.minTimeOut, interval) {
@@ -305,11 +301,8 @@ public class WebActivity extends AppCompatActivity {
 //                                    statCodeValue = "00";
 //                                }
 
-                                Log.e("logGooglePay" , "statCodeValue " + statCodeValue);
-
                                 if (statCodeValue.equals("00")) {
                                     if (statCodeValueSuccess) {
-                                        Log.e("logGooglePay" , "statCodeValueSuccess finish");
                                         onFinish();
                                     }
                                 } else if (statCodeValue.equals("11")) {
@@ -321,7 +314,6 @@ public class WebActivity extends AppCompatActivity {
                                     String errorDesc = responseBodyObj.optString("ErrorDesc", "Unknown error");
 
                                     if (errorCode.equalsIgnoreCase("GOOGLEPAY_C1")) {
-                                        Log.e("logGooglePay", "Send cancel response = " + responseBodyObj);
                                         Intent resultCancel = new Intent();
                                         resultCancel.putExtra("response", String.valueOf(responseBodyObj));
                                         setResult(RESULT_CANCELED, resultCancel);
@@ -330,16 +322,13 @@ public class WebActivity extends AppCompatActivity {
                                         // FIXME: Fix new sandbox domain flow
                                         if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
                                             // Temporary workaround for sandbox backend issue to support Google Pay production access applications per https://developers.google.com/pay/api/android/guides/test-and-deploy/request-prod-access
-                                            Log.e("logGooglePay" , "New Sandbox finish");
                                             onFinish();
                                         } else {
-                                            Log.e("logGooglePay" , "Proceed show error text");
                                             new AlertDialog.Builder(WebActivity.this)
                                                     .setTitle("Payment Failed")
                                                     .setMessage(errorCode + " : " + errorDesc)
                                                     .setCancelable(false)
                                                     .setPositiveButton("CLOSE", (dialog, which) -> {
-                                                        Log.e("logGooglePay" , "RESULT_CANCELED WebActivity 1 responseBodyObj = " + responseBodyObj);
                                                         Intent resultCancel = new Intent();
                                                         resultCancel.putExtra("response", String.valueOf(responseBodyObj));
                                                         setResult(RESULT_CANCELED, resultCancel);
@@ -349,7 +338,6 @@ public class WebActivity extends AppCompatActivity {
                                     }
                                 }  else if (statCodeValue.equals("22")) {
                                     if (channelValue.contains("ShopeePay") || channelValue.contains("TNG-EWALLET")) {
-                                        Log.e("logGooglePay", "E-Wallet - need requery payment_v2");
                                         countDownTimer.cancel(); // Stop current countdown
 
                                         if (millisUntilFinished > 3000) {
@@ -365,8 +353,6 @@ public class WebActivity extends AppCompatActivity {
 
                                         } else {
                                             // Timeout too short, cancel payment
-                                            Log.e("logGooglePay", "Timeout too short, canceling payment");
-                                            Log.e("logGooglePay", "responseBodyObj = " + responseBodyObj);
                                             Intent resultCancel = new Intent();
                                             resultCancel.putExtra("response", String.valueOf(responseBodyObj));
                                             setResult(RESULT_CANCELED, resultCancel);
@@ -375,7 +361,6 @@ public class WebActivity extends AppCompatActivity {
                                     }
                                     else {
                                         // Do Nothing - It will auto handle q_by_tid.php
-                                        Log.e("logGooglePay" , "CARD - Do Nothing it will auto handle by q_by_tid.php");
                                     }
                                 }
                             } else {
@@ -418,8 +403,6 @@ public class WebActivity extends AppCompatActivity {
                     Intent intent = new Intent();
                     intent.putExtra("response", String.valueOf(responseBodyObj));
 
-                    Log.e("logGooglePay" , "onFinish response = " + String.valueOf(responseBodyObj));
-
                     // If timeout / cancel
                     if (!responseBodyObj.has("StatCode")){
                         setResult(RESULT_CANCELED, intent);
@@ -456,14 +439,11 @@ public class WebActivity extends AppCompatActivity {
 
         String encodedHtml = Base64.encodeToString(plainHtml.getBytes(), Base64.NO_PADDING);
 
-        Log.e("logGooglePay" , "plainHtml = " + plainHtml);
-
         if (plainHtml.contains("xdkHTMLRedirection")) {
             xdkHTMLRedirection = StringUtils.substringBetween(plainHtml, "xdkHTMLRedirection' value='", "'");
             wvGateway.loadData(xdkHTMLRedirection, "text/html", "base64");
         } else if (requestType.equalsIgnoreCase("REDIRECT")) {
             wvGateway.loadData(encodedHtml, "text/html", "base64");
-            Log.e("logGooglePay" , "requeryPaymentV2 = " + requeryPaymentV2);
             if ( ! requeryPaymentV2 ) {
                 pbLoading.setVisibility(View.GONE);
                 tvLoading.setVisibility(View.GONE);
@@ -513,16 +493,32 @@ public class WebActivity extends AppCompatActivity {
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                if (request != null && request.isForMainFrame()) {
+                    Uri uri = request.getUrl();
+                    String host = uri == null || uri.getHost() == null ? "" : uri.getHost();
+                    ActivityLog.error(WebActivity.this, "googlePayWebError",
+                            "code=" + error.getErrorCode() + " " + error.getDescription() + " host=" + host);
+                }
                 super.onReceivedError(view, request, error);
             }
 
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                if (request != null && request.isForMainFrame() && errorResponse != null
+                        && errorResponse.getStatusCode() >= 400) {
+                    Uri uri = request.getUrl();
+                    String host = uri == null || uri.getHost() == null ? "" : uri.getHost();
+                    ActivityLog.error(WebActivity.this, "googlePayWebHttp",
+                            "status=" + errorResponse.getStatusCode()
+                                    + " " + errorResponse.getReasonPhrase()
+                                    + " host=" + host);
+                }
                 super.onReceivedHttpError(view, request, errorResponse);
             }
 
             @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                ActivityLog.error(WebActivity.this, "googlePayWebSsl", ActivityLog.sslDetail(error));
                 super.onReceivedSslError(view, handler, error);
             }
         });
@@ -543,7 +539,18 @@ public class WebActivity extends AppCompatActivity {
                     transaction.setTxID(response.getString("TxnID"));
                     transaction.setDomain(response.getString("MerchantID"));
                     transaction.setAmount(response.getString("TxnAmount"));
-                    transaction.setVkey(ActivityGP.verificationKey);
+                    if (transaction.getVkey() == null || transaction.getVkey().isEmpty()) {
+                        if (getIntent() != null && getIntent().hasExtra("verificationKey")
+                                && getIntent().getStringExtra("verificationKey") != null) {
+                            transaction.setVkey(getIntent().getStringExtra("verificationKey"));
+                        } else if (paymentInput != null) {
+                            try {
+                                JSONObject pInput = new JSONObject(paymentInput);
+                                transaction.setVkey(pInput.optString("verificationKey", ""));
+                            } catch (Exception ignored) {
+                            }
+                        }
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -679,8 +686,19 @@ public class WebActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         if (countDownTimer != null) {
-            Log.e("logGooglePay", "onDestroy countDownTimer NOT NULL");
             countDownTimer.cancel();
+        }
+        if (wvGateway != null) {
+            wvGateway.clearHistory();
+            wvGateway.clearCache(true);
+            wvGateway.loadUrl("about:blank");
+            wvGateway.onPause();
+            wvGateway.removeAllViews();
+            wvGateway.destroyDrawingCache();
+            wvGateway.destroy();
+        }
+        if (transaction != null) {
+            transaction.setVkey("");
         }
         super.onDestroy();
     }

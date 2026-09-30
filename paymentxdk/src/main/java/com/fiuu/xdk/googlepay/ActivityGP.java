@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.fiuu.xdk.log.ActivityLog;
 import com.fiuu.xdk.PaymentActivity;
 import com.fiuu.xdk.R;
 import com.fiuu.xdk.databinding.ActivityGooglepayBinding;
@@ -57,11 +58,10 @@ public class ActivityGP extends AppCompatActivity {
     public static String MerchantID = "";
     public static String COUNTRY_CODE = "MY";
     public static String CURRENCY_CODE = "MYR";
-    public static int PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_PRODUCTION; // 3 = TEST & 1 = PRODUCTION
+    public static int PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_TEST; // 3 = TEST & 1 = PRODUCTION
 
     public static String createTxnResult;
     public static String tranID = "";
-    public static String verificationKey = "";
     public static long minTimeOut = 60000;
 
     private Boolean isEnableFullscreen = false;
@@ -103,16 +103,18 @@ public class ActivityGP extends AppCompatActivity {
 
                 runOnUiThread(() -> {
                     // Safely update UI here
-                    Log.e("logGooglePay", "onSuccess = " + responseJson);
                     Intent i = new Intent(ActivityGP.this, WebActivity.class); // Redirect To WebActivity (RMS library)
                     i.putExtra("cancelResponse", responseJson);
+                    if (paymentDetails != null && paymentDetails.get("mp_verification_key") != null) {
+                        i.putExtra("verificationKey", String.valueOf(paymentDetails.get("mp_verification_key")));
+                    }
                     startActivityForResult(i, CANCEL_GPAY_TXN);
                 });
             }
 
             @Override
             public void onFailure(String error) {
-                Log.e("logGooglePay", "ActivityGP ApiRequestService.CancelTxn onFailure = " + error);
+                Log.e("logGooglePay", "ActivityGP ApiRequestService.CancelTxn onFailure");
 
                 if (error != null) {
                     if ( ! error.isEmpty()) {
@@ -130,6 +132,8 @@ public class ActivityGP extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE,
+                android.view.WindowManager.LayoutParams.FLAG_SECURE);
 
         boolean isRooted = PaymentActivity.isDeviceRooted(ActivityGP.this);
         if (isRooted) {
@@ -196,7 +200,7 @@ public class ActivityGP extends AppCompatActivity {
             Object countryValue = paymentDetails.get("mp_country");
             Object currencyValue = paymentDetails.get("mp_currency");
             Object vkeyValue = paymentDetails.get(PaymentActivity.mp_verification_key);
-            if (countryValue == null || currencyValue == null || vkeyValue == null) {
+            if (countryValue == null || currencyValue == null || vkeyValue == null || vkeyValue.toString().trim().isEmpty()) {
                 sendCustomFailResponse("Payment aborted. Error : missing required payment fields");
                 return;
             }
@@ -207,14 +211,17 @@ public class ActivityGP extends AppCompatActivity {
                 paymentDetails.put(PaymentActivity.mp_gpay_channel, new String[] { "CC" });
             }
 
-            verificationKey = vkeyValue.toString();
-
             if (Boolean.parseBoolean(String.valueOf(paymentDetails.get("mp_sandbox_mode")))
                     || "4".equalsIgnoreCase(String.valueOf(paymentDetails.get("mp_core_env")))) {
                 PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_TEST;
             } else {
                 PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_PRODUCTION;
             }
+            ActivityLog.bindSession(
+                    String.valueOf(paymentDetails.get(PaymentActivity.mp_order_ID)),
+                    MerchantID,
+                    COUNTRY_CODE);
+            ActivityLog.event(this, "googlePayStart", "Google Pay session started");
         }
 
         if (PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
@@ -242,7 +249,6 @@ public class ActivityGP extends AppCompatActivity {
 
                 runOnUiThread(() -> {
                     // Safely update UI here
-                    Log.e("logGooglePay", "CreateTxn onSuccess = " + responseJson);
 
                     try {
                         JSONObject jsonObject = new JSONObject(responseJson);
@@ -267,6 +273,7 @@ public class ActivityGP extends AppCompatActivity {
                     }
 
                     createTxnResult = responseJson;
+                    ActivityLog.event(ActivityGP.this, "googlePayCreateTxn", "Create transaction succeeded");
 
                     // Check Google Pay availability
                     model = new ViewModelProvider(ActivityGP.this).get(ViewModelGP.class);
@@ -291,7 +298,7 @@ public class ActivityGP extends AppCompatActivity {
 
             @Override
             public void onFailure(String error) {
-                Log.e("logGooglePay", "ActivityGP createTxn.php onFailure = " + error);
+                Log.e("logGooglePay", "ActivityGP createTxn.php onFailure");
                 // Send custom failed response
                 if (error != null) {
                     if ( ! error.isEmpty()) {
@@ -308,6 +315,7 @@ public class ActivityGP extends AppCompatActivity {
 
     private void sendCustomFailResponse(String failMessage) {
         Log.e("logGooglePay", "sendCustomFailResponse");
+        ActivityLog.error(this, "googlePayError", failMessage);
         if (paymentDetails == null) {
             Intent resultCancel = new Intent();
             resultCancel.putExtra(PaymentActivity.XDKTransactionResult,
@@ -355,8 +363,6 @@ public class ActivityGP extends AppCompatActivity {
         Gson gson = new Gson();
         String jsonGPayCancel = gson.toJson(data);
 
-        Log.e("logGooglePay", "jsonGPayCancel = " + jsonGPayCancel);
-
         Intent resultCancel = new Intent();
         resultCancel.putExtra(PaymentActivity.XDKTransactionResult, jsonGPayCancel);
         setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
@@ -382,6 +388,7 @@ public class ActivityGP extends AppCompatActivity {
      */
     private void setGooglePayAvailable(Boolean available) {
         if (available) {
+            ActivityLog.event(this, "googlePaySheet", "Google Pay sheet requested");
             requestPayment();
         } else {
             Toast toast = Toast.makeText(getApplicationContext(),
@@ -400,8 +407,6 @@ public class ActivityGP extends AppCompatActivity {
             sendCustomFailResponse("Payment aborted. Error : missing payment amount");
             return;
         }
-        Log.e("logGooglePay", "mp_amount = " + paymentDetails.get("mp_amount").toString());
-        Log.e("logGooglePay", "totalPriceCents = " + paymentDetails.get("mp_amount").toString().replaceAll("[.,]", ""));
         // The price provided to the API should include taxes and shipping.
         // This price is not displayed to the user.
         String totalPriceCents = paymentDetails.get("mp_amount").toString().replaceAll("[,]", "");
@@ -481,8 +486,14 @@ public class ActivityGP extends AppCompatActivity {
                     paymentInput.put("isSandbox", paymentDetails.get("mp_sandbox_mode"));
                 }
 
-                List<String> binLock = ApiRequestService.extractBinLockList(
-                        paymentDetails.get(PaymentActivity.mp_bin_lock));
+                List<String> binLock;
+                try {
+                    binLock = ApiRequestService.extractBinLockList(
+                            paymentDetails.get(PaymentActivity.mp_bin_lock));
+                } catch (IllegalArgumentException e) {
+                    sendCustomFailResponse("Payment aborted. Error : " + e.getMessage());
+                    return;
+                }
                 if (!binLock.isEmpty()) {
                     paymentInput.put(PaymentActivity.mp_bin_lock, new JSONArray(binLock));
                 }
@@ -546,11 +557,9 @@ public class ActivityGP extends AppCompatActivity {
                     if (data != null) {
                         response = data.getStringExtra("response");
 
-                        Log.e("logGooglePay", "RESULT_OK response = " + response);
-
                         Intent result = new Intent();
                         result.putExtra(PaymentActivity.XDKTransactionResult, response);
-                        result.putExtra(PaymentActivity.XDKTransactionResult, response);
+                        ActivityLog.event(ActivityGP.this, "googlePayResult", "Google Pay completed");
                         setResult(RESULT_OK, result);
                         finish();
                     } else {
@@ -565,7 +574,6 @@ public class ActivityGP extends AppCompatActivity {
                     // Response Error CallBack
                     if (data != null) {
                         response = data.getStringExtra("response");
-                        Log.e("logGooglePay", "RESULT_CANCELED response = " + response);
                         assert response != null;
                         if (response.contains("StatCode")) {
                             try {
@@ -617,6 +625,7 @@ public class ActivityGP extends AppCompatActivity {
             Intent resultCancel = new Intent();
             resultCancel.putExtra(PaymentActivity.XDKTransactionResult, response);
             Log.e("logGooglePay", "RESULT_CANCELED ActivityGP 2");
+            ActivityLog.error(this, "googlePayCancel", "Google Pay cancelled");
             setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
             finish(); // finish ActivityGP
         }
@@ -631,6 +640,14 @@ public class ActivityGP extends AppCompatActivity {
             return json.toString();
         } catch (JSONException e) {
             return "{ \"error\" : \"Payment cancelled\"  }";
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (paymentDetails != null) {
+            paymentDetails.clear();
         }
     }
 }

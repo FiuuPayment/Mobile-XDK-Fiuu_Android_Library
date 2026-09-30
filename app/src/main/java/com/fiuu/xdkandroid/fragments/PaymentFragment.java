@@ -120,7 +120,6 @@ public class PaymentFragment extends Fragment {
             viewModel.setPaymentData(modelData);
         });
 
-        // Listen for manual text input
         edtMpChannel.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void afterTextChanged(Editable s) {}
@@ -135,6 +134,7 @@ public class PaymentFragment extends Fragment {
     }
     private void expressModeToggle(View v1){
         SwitchMaterial switchMaterial  = v1.findViewById(R.id.switch_material);
+        switchMaterial.setChecked(Boolean.TRUE.equals(modelData.getIsExpressMode()));
 
         switchMaterial.setOnCheckedChangeListener((buttonView, isChecked) -> {
             modelData.setIsExpressMode(isChecked);

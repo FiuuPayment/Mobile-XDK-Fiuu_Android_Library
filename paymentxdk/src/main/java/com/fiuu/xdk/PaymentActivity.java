@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
@@ -52,7 +53,11 @@ import androidx.core.app.ActivityCompat;
 
 import com.fiuu.xdk.googlepay.ActivityGP;
 import com.fiuu.xdk.models.DeviceInfo;
+import com.fiuu.xdk.network.GatewayEndpoints;
+import com.fiuu.xdk.log.ActivityLog;
+import com.fiuu.xdk.network.PaymentEnvironment;
 import com.fiuu.xdk.utils.DeviceInfoUtil;
+import com.fiuu.xdk.utils.SecurityUtils;
 import com.google.gson.Gson;
 
 import org.json.JSONArray;
@@ -136,6 +141,20 @@ public class PaymentActivity extends AppCompatActivity {
     private final static String mprunscriptonpopup = "mprunscriptonpopup://";
     private final static String mppinstructioncapture = "mppinstructioncapture://";
     private final static String mpclickgpbutton = "mpclickgpbutton://";
+    private static final String MAIN_FRAME_FORM_GUARD =
+            "(function(){if(window.__fiuuFormGuard)return;window.__fiuuFormGuard=true;"
+                    + "function hostOk(action){try{var u=new URL(action,location.href);"
+                    + "if(u.protocol!=='https:')return false;var h=u.hostname.toLowerCase();"
+                    + "return h==='fiuu.com'||h.endsWith('.fiuu.com')||h==='molpay.com'||h.endsWith('.molpay.com');}"
+                    + "catch(e){return false;}}"
+                    + "function destination(form,submitter){var action=submitter&&submitter.getAttribute&&submitter.getAttribute('formaction');"
+                    + "return action||form.action||location.href;}"
+                    + "document.addEventListener('submit',function(ev){var form=ev.target;"
+                    + "if(!form||form.tagName!=='FORM')return;"
+                    + "if(!hostOk(destination(form,ev.submitter)))ev.preventDefault();},true);"
+                    + "var nativeSubmit=HTMLFormElement.prototype.submit;"
+                    + "HTMLFormElement.prototype.submit=function(){if(!hostOk(destination(this,null)))return;"
+                    + "return nativeSubmit.apply(this,arguments);};})();";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
     private final static String wrapperVersion = "43a";
@@ -153,6 +172,7 @@ public class PaymentActivity extends AppCompatActivity {
     private String setMPMainUI = "";
     private Boolean isTNGResult = false;
     private Boolean networkIssue = false;
+    private long lastCloseTapTime = 0;
     /** Extract TNG systembrowserurl only once — iframe result.php can re-fire onPageFinished. */
     private boolean tngIntermediateHandled = false;
     /** Forward RMS/MOLPay result.php to mpMainUI only once (iframe loads skip onPageStarted). */
@@ -188,6 +208,7 @@ public class PaymentActivity extends AppCompatActivity {
             mpMainUI.stopLoading();
         }
         String dataString = "{ \"error\" : \"Timeout\"  }";
+        ActivityLog.error(this, "webCoreTimeout", "Timer expired before the payment page started");
         Intent result = new Intent();
         result.putExtra(XDKTransactionResult, dataString);
         setResult(RESULT_OK, result);
@@ -212,6 +233,7 @@ public class PaymentActivity extends AppCompatActivity {
 
     private void markMainUiStarted() {
         hasPageStarted = true;
+        ActivityLog.event(this, "pageStarted", "Payment page started");
         // Connection is alive — cancel hard timeout so slow pages are never killed.
         timeoutHandler.removeCallbacks(connectionTimeoutRunnable);
     }
@@ -278,6 +300,8 @@ public class PaymentActivity extends AppCompatActivity {
     }
 
     private boolean isClosingPayment = false;
+    /** True if a bank or 3DS overlay was open before Close dismissed it. */
+    private boolean channelWasActive = false;
 
     /**
      * Dismiss the visible WebView checkout using the same path as Close / Back.
@@ -301,10 +325,64 @@ public class PaymentActivity extends AppCompatActivity {
      * - Channel/bank overlay open → dismiss it, then {@code javascript:closemolpay()} in one tap.
      * - Fully loaded → {@code javascript:closemolpay()}.
      */
+    private static String resultSummary(String dataString) {
+        try {
+            JSONObject json = new JSONObject(dataString);
+            if (json.has("error")) {
+                return "error=" + json.optString("error");
+            }
+            if (json.has("error_code")) {
+                return "error_code=" + json.optString("error_code");
+            }
+            if (json.has("StatCode")) {
+                return "StatCode=" + json.optString("StatCode");
+            }
+            return "result received";
+        } catch (JSONException e) {
+            return "result received";
+        }
+    }
+
+    private void forceCancelPayment(String errorMsg) {
+        clearLoadWatchdogs();
+        isClosingPayment = true;
+        dismissChannelOverlays();
+        String dataString = "{ \"error\" : \"" + errorMsg + "\"  }";
+        ActivityLog.error(this, "paymentCancel", errorMsg);
+        Intent result = new Intent();
+        result.putExtra(XDKTransactionResult, dataString);
+        setResult(RESULT_OK, result);
+        finish();
+    }
+
+    /**
+     * Close behavior:
+     * - Emergency double-tap within 1.5s -> force cancel immediately.
+     * - WebView / payment JS not ready yet -> cancel immediately.
+     * - Check if window.closemolpay is a function via evaluateJavascript. If not, cancel immediately.
+     * - Fully loaded and closemolpay exists -> dismiss overlays and invoke closemolpay().
+     */
     private void closepayment() {
         if (isFinishing()) {
             return;
         }
+
+        long now = SystemClock.elapsedRealtime();
+        if (now - lastCloseTapTime < 1500) {
+            // User tapped Close twice rapidly: emergency force exit
+            boolean channelActive = channelWasActive
+                    || isClosingPayment
+                    || isChannelUiActive();
+            if (channelActive) {
+                // Overlay/bank UI is active: transaction is likely in-flight.
+                // Exit with unknown status rather than assuming unbilled cancellation.
+                forceCancelPayment("Transaction status unknown");
+            } else {
+                forceCancelPayment(networkIssue ? "Network Issue" : "Transaction Cancelled");
+            }
+            return;
+        }
+        lastCloseTapTime = now;
 
         // Ignore re-entry from bank WebView onCloseWindow while we are already closing.
         if (isClosingPayment) {
@@ -324,29 +402,34 @@ public class PaymentActivity extends AppCompatActivity {
                 && !networkIssue;
 
         if (!paymentJsReady) {
-            clearLoadWatchdogs();
-            isClosingPayment = true;
-            dismissChannelOverlays();
-            String errorMsg = networkIssue ? "Network Issue" : "Transaction Cancelled";
-            String dataString = "{ \"error\" : \"" + errorMsg + "\"  }";
-            Intent result = new Intent();
-            result.putExtra(XDKTransactionResult, dataString);
-            setResult(RESULT_OK, result);
-            finish();
+            forceCancelPayment(networkIssue ? "Network Issue" : "Transaction Cancelled");
             return;
         }
 
         isClosingPayment = true;
-        // Selecting a channel opens mpPaymentUI / mpBankUI on top of mpMainUI. One Close must
-        // dismiss those overlays and invoke closemolpay — otherwise the first tap appears ignored.
         dismissChannelOverlays();
-        mpMainUI.loadUrl("javascript:closemolpay()");
-        // Allow a later Close if JS did not finish the activity (e.g. confirmation still open).
-        mpMainUI.postDelayed(() -> isClosingPayment = false, 600);
+
+        // Verify that closemolpay() actually exists in the loaded page
+        mpMainUI.evaluateJavascript("typeof closemolpay === 'function'", result -> {
+            if ("true".equalsIgnoreCase(result)) {
+                mpMainUI.loadUrl("javascript:closemolpay()");
+                mpMainUI.postDelayed(() -> isClosingPayment = false, 600);
+            } else {
+                // Page loaded was not the payment app (e.g. 404 or custom error)
+                forceCancelPayment(networkIssue ? "Network Issue" : "Transaction Cancelled");
+            }
+        });
+    }
+
+    private boolean isChannelUiActive() {
+        return (mpBankUI != null) || (mpPaymentUI != null && mpPaymentUI.getVisibility() == View.VISIBLE);
     }
 
     /** Tear down channel/bank overlays without relying on a second Close tap. */
     private void dismissChannelOverlays() {
+        if (isChannelUiActive()) {
+            channelWasActive = true;
+        }
         if (mpBankUI != null) {
             try {
                 mpBankUI.stopLoading();
@@ -420,28 +503,8 @@ public class PaymentActivity extends AppCompatActivity {
                 }
             }
 
-            setMPMainUI = "https://xdk.fiuu.com/";
-
-            if (paymentDetails.containsKey("mp_core_env")){
-                String coreEnv = Objects.requireNonNull(paymentDetails.get("mp_core_env")).toString();
-
-                switch (coreEnv){
-                    case "1":
-                        setMPMainUI = "https://pay.fiuu.com/RMS/API/xdk/";
-                        break;
-                    case "2":
-                        setMPMainUI = "https://xdk.fiuu.com/";
-                        break;
-                    case "3":
-                        setMPMainUI = "https://uat-xdk.fiuu.com/";
-                        break;
-                    case "4":
-                        setMPMainUI = "https://sandbox-xdk.fiuu.com/";
-                        break;
-                    default:
-                        break;
-                }
-            }
+            PaymentEnvironment env = PaymentEnvironment.resolve(paymentDetails);
+            setMPMainUI = env.getWebUiBase();
 
             if (paymentDetails.containsKey("is_submodule")) {
                 is_submodule = Boolean.parseBoolean(Objects.requireNonNull(paymentDetails.get("is_submodule")).toString());
@@ -462,10 +525,19 @@ public class PaymentActivity extends AppCompatActivity {
                 paymentDetails.put(wrapper_version, wrapperVersion);
             }
             paymentDetails.put(device_info, gson.toJson(DeviceInfoUtil.getDeviceInfo(this)));
+            ActivityLog.bindSession(
+                    String.valueOf(paymentDetails.get(mp_order_ID)),
+                    String.valueOf(paymentDetails.get(mp_merchant_ID)),
+                    String.valueOf(paymentDetails.get(mp_country)));
+            ActivityLog.event(this, "paymentStart",
+                    "channel=" + paymentDetails.get(mp_channel)
+                            + " amount=" + paymentDetails.get(mp_amount)
+                            + " currency=" + paymentDetails.get(mp_currency));
 
         }
 
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
 
         // Same error result as before, but stop init after finish to avoid crash/leak.
         if (paymentDetails == null) {
@@ -818,8 +890,8 @@ public class PaymentActivity extends AppCompatActivity {
                        // Log.e(logXDK, "scbeasy: ", e);
                     }
                     webView.evaluateJavascript("document.getElementById(\"ref_no\").value", ref_no -> {
-                       // Log.d(logXDK, "MPMOLPayUIWebClient trans_id = " + ref_no.replaceAll("\"", ""));
-                        webView.loadUrl("https://pay.merchant.razer.com/RMS/intermediate_app/loading.php?tranID=" + ref_no.replace("\"", ""));
+                        PaymentEnvironment env = PaymentEnvironment.resolve(paymentDetails);
+                        webView.loadUrl(GatewayEndpoints.getLoadingUrl(env, ref_no));
                     });
                     return true;
                 }
@@ -836,20 +908,15 @@ public class PaymentActivity extends AppCompatActivity {
             if(tagString.equals("mpMainUI")){
                 if (url.startsWith(mpopenpaymentwindow)) {
                     String base64String = url.replace(mpopenpaymentwindow, "");
-                   // Log.d(logXDK, "MPMainUIWebClient mpopenpaymentwindow base64String = " + base64String);
 
                     // Decode base64
                     byte[] data = Base64.decode(base64String, Base64.DEFAULT);
                     String dataString = new String(data);
-                   // Log.d(logXDK, "MPMainUIWebClient mpopenpaymentwindow dataString = " + dataString);
 
                     if (!dataString.isEmpty()) {
-                       // Log.d(logXDK, "MPMainUIWebClient mpopenpaymentwindow success");
-                        // Hide UI by default
-
                         if (mpPaymentUI != null) {
-                           // Log.d(logXDK, "mpPaymentUI opened");
                             mpPaymentUI.setVisibility(View.VISIBLE);
+                            ActivityLog.event(PaymentActivity.this, "channelScreen", "Channel screen opened");
                             String formAction = extractFormAction(dataString);
                             byte[] postData = buildPostData(dataString);
                             if (!formAction.isEmpty() && postData != null && postData.length > 0) {
@@ -857,7 +924,8 @@ public class PaymentActivity extends AppCompatActivity {
                             } else {
                                 CookieManager.getInstance().flush();
                                 final String finalDataString = dataString;
-                                mpPaymentUI.post(() -> mpPaymentUI.loadDataWithBaseURL("https://pay.fiuu.com", finalDataString, "text/html", "UTF-8", ""));
+                                PaymentEnvironment env = PaymentEnvironment.resolve(paymentDetails);
+                                mpPaymentUI.post(() -> mpPaymentUI.loadDataWithBaseURL(env.getPaymentBase(), finalDataString, "text/html", "UTF-8", ""));
                             }
                         } else {
                             Log.d(logXDK, "mpPaymentUI NULL avoid crash");
@@ -909,6 +977,7 @@ public class PaymentActivity extends AppCompatActivity {
 
                     if (isJSONValid(dataString)) {
                        // Log.d(logXDK, "isJSONValid setResult");
+                        ActivityLog.event(PaymentActivity.this, "paymentResult", resultSummary(dataString));
                         setResult(RESULT_OK, result);
 
                         // Check if mp_request_type is "Receipt", if it is, don't finish()
@@ -1039,6 +1108,12 @@ public class PaymentActivity extends AppCompatActivity {
                     openGPActivityWithResult();
                     return true;
                 }
+
+                if (request.isForMainFrame()
+                        && (url.startsWith("http://") || url.startsWith("https://"))
+                        && !SecurityUtils.isTrustedGatewayUrl(url)) {
+                    return true;
+                }
             }
 
             return false;
@@ -1046,7 +1121,7 @@ public class PaymentActivity extends AppCompatActivity {
 
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView webView, WebResourceRequest request) {
-            if (request != null && request.getUrl() != null) {
+            if (request != null && request.getUrl() != null && webView != null) {
                 final String interceptUrl = request.getUrl().toString();
                 if (isFiuuPaymentResultUrl(interceptUrl)) {
                     webView.post(() -> notifyFiuuResultUrl(interceptUrl));
@@ -1110,9 +1185,13 @@ public class PaymentActivity extends AppCompatActivity {
             }
             if(tagString.equals("mpMainUI")){
                 markMainUiLoaded();
+                if (!"about:blank".equals(url)) {
+                    webView.evaluateJavascript(MAIN_FRAME_FORM_GUARD, null);
+                }
                 if (!isMainUILoaded && !url.equals("about:blank")) {
                     if (paymentDetails != null) {
                         isMainUILoaded = true;
+                        ActivityLog.event(PaymentActivity.this, "pageReady", "Payment page ready");
                         JSONObject json = new JSONObject(paymentDetails);
                         //                   // Log.d(logXDK, "MPMainUIWebClient onPageFinished paymentDetails = " + json);
                         //                    Init javascript
@@ -1141,14 +1220,19 @@ public class PaymentActivity extends AppCompatActivity {
             // Only main payment UI network failures should block closemolpay() / mark networkIssue.
             // Channel/bank pages often emit main-frame errors (custom schemes, app links) and must not
             // force Close into the cancel path.
-            if ("mpMainUI".equals(tagString)) {
-                networkIssue = true;
-                timeoutHandler.removeCallbacks(connectionTimeoutRunnable);
-            }
-
             int errorCode = error.getErrorCode();
             Uri uri = request.getUrl();
             String url = uri.toString();
+            String detail = "code=" + errorCode
+                    + " " + error.getDescription()
+                    + " host=" + (uri.getHost() == null ? "" : uri.getHost());
+            if ("mpMainUI".equals(tagString)) {
+                networkIssue = true;
+                timeoutHandler.removeCallbacks(connectionTimeoutRunnable);
+                ActivityLog.error(PaymentActivity.this, "onReceivedError", detail);
+            } else {
+                ActivityLog.error(PaymentActivity.this, "onReceivedError", tagString + " " + detail);
+            }
 
            // Log.d(logXDK, tagString + " onPageFinished url = " + url);
            // Log.e(logXDK, "WebViewClient " + errorCode);
@@ -1166,8 +1250,18 @@ public class PaymentActivity extends AppCompatActivity {
             String url = uri.toString();
            // Log.e(logXDK, "Error statusCode: " + statusCode + " webView: " + tagString + " reasonPhrase: " + reasonPhrase + " url: " + url);
 
+            String httpDetail = "status=" + statusCode + " " + reasonPhrase
+                    + " host=" + (uri.getHost() == null ? "" : uri.getHost());
             //only handle error on fiuu side.
-            if(!tagString.equals("mpMainUI")) {return;}
+            if(!tagString.equals("mpMainUI")) {
+                ActivityLog.error(PaymentActivity.this, "onReceivedHttpError", tagString + " " + httpDetail);
+                return;
+            }
+            if (statusCode >= 400) {
+                networkIssue = true;
+                clearLoadWatchdogs();
+                ActivityLog.error(PaymentActivity.this, "onReceivedHttpError", httpDetail);
+            }
             if (statusCode == 503) {
                // Log.e("WebView", "HTTP 503 Service Unavailable");
                 String dataString = "{ \"error\" : \"HTTP 503 Service Unavailable\"  }";
@@ -1191,8 +1285,8 @@ public class PaymentActivity extends AppCompatActivity {
 
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-            super.onReceivedSslError(view, handler, error);
-            Log.e(logXDK, "OnReceivedSslError: A secure connection could not be established (SSL Error). For your security, the transaction cannot proceed. " + error.toString());
+            ActivityLog.error(PaymentActivity.this, "onReceivedSslError", ActivityLog.sslDetail(error));
+           super.onReceivedSslError(view, handler, error);
         }
 
     }
@@ -1221,6 +1315,7 @@ public class PaymentActivity extends AppCompatActivity {
             if(tagString.equals("mpPaymentUI")){
                 mpBankUI = new WebView(PaymentActivity.this);
                 mpBankUI.setTag("mpBankUI");
+                ActivityLog.event(PaymentActivity.this, "bankScreen", "Bank or 3DS screen opened");
                 createWebView(mpBankUI, resultMsg);
                 return true;
             }
@@ -1268,6 +1363,9 @@ public class PaymentActivity extends AppCompatActivity {
         WeakReference<PaymentActivity> current = sCurrent;
         if (current != null && current.get() == this) {
             sCurrent = null;
+        }
+        if (paymentDetails != null) {
+            paymentDetails.clear();
         }
         super.onDestroy();
     }
@@ -1471,7 +1569,8 @@ public class PaymentActivity extends AppCompatActivity {
         settings.setJavaScriptEnabled(true);
         if(tagString.equals("mpMainUI")){
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-            settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+            settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+            settings.setDomStorageEnabled(true);
             settings.setAllowFileAccess(false);
             settings.setAllowFileAccessFromFileURLs(false);
             settings.setAllowUniversalAccessFromFileURLs(false);
@@ -1480,7 +1579,11 @@ public class PaymentActivity extends AppCompatActivity {
         }
         if(tagString.equals("mpBankUI")){
             settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-            settings.setAllowUniversalAccessFromFileURLs(true);
+            settings.setAllowUniversalAccessFromFileURLs(false);
+            settings.setAllowFileAccessFromFileURLs(false);
+            settings.setAllowFileAccess(false);
+            settings.setAllowContentAccess(false);
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
             settings.setJavaScriptCanOpenWindowsAutomatically(true);
             settings.setSupportMultipleWindows(true);
             webView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
@@ -1493,11 +1596,11 @@ public class PaymentActivity extends AppCompatActivity {
         settings.setUseWideViewPort(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setDomStorageEnabled(true);
-        settings.setAllowFileAccess(true);
-        settings.setAllowFileAccessFromFileURLs(true);
-        settings.setAllowUniversalAccessFromFileURLs(true);
-        settings.setAllowContentAccess(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        settings.setAllowFileAccess(false);
+        settings.setAllowFileAccessFromFileURLs(false);
+        settings.setAllowUniversalAccessFromFileURLs(false);
+        settings.setAllowContentAccess(false);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
     }
 

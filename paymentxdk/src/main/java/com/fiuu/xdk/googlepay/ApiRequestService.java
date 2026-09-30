@@ -9,6 +9,8 @@ import android.util.Log;
 
 import com.fiuu.xdk.PaymentActivity;
 import com.fiuu.xdk.googlepay.Helper.ApplicationHelper;
+import com.fiuu.xdk.network.GatewayEndpoints;
+import com.fiuu.xdk.network.PaymentEnvironment;
 import com.google.android.gms.wallet.WalletConstants;
 
 import org.json.JSONArray;
@@ -48,21 +50,19 @@ import okhttp3.Response;
 
 public class ApiRequestService {
 
-    static class Production {
-        static final String BASE_PAYMENT = "https://pay.fiuu.com/";
-        static final String API_PAYMENT = "https://api.fiuu.com/";
-    }
-
-    static class Development {
-        static final String SB_PAYMENT_FIUU = "https://sandbox-payment.fiuu.com/";
-        static final String SB_API_FIUU = "https://sandbox-api.fiuu.com/";
-    }
-
     public static String merchantName = "";
     private static String signature;
     private static Boolean extendedVcode;
 
     public ApiRequestService() {
+    }
+
+    private static PaymentEnvironment getGPayEnvironment() {
+        if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_PRODUCTION) {
+            return PaymentEnvironment.PRODUCTION;
+        } else {
+            return PaymentEnvironment.SANDBOX;
+        }
     }
 
     public interface NetworkCallback {
@@ -72,17 +72,7 @@ public class ApiRequestService {
 
     public static void CancelTxn(String paymentV2Response, NetworkCallback callback, HashMap<String, Object> paymentDetails) {
 
-        Log.e("logGooglePay", "ActivityGP.tranID = " + ActivityGP.tranID);
-
-        String endPoint = "";
-
-        if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_PRODUCTION) {
-            endPoint = Production.BASE_PAYMENT + "RMS/GooglePay/cancel.php";
-        } else if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
-            endPoint = Development.SB_PAYMENT_FIUU + "RMS/GooglePay/cancel.php";
-        }
-
-        Log.e("logGooglePay", endPoint);
+        String endPoint = GatewayEndpoints.getGPayCancelUrl(getGPayEnvironment());
 
         OkHttpClient client = new OkHttpClient();
         RequestBody formBody;
@@ -155,7 +145,6 @@ public class ApiRequestService {
                     callback.onFailure("Unexpected response. Please try again or use other payment method. " + response.toString());
                 } else {
                     String responseBody = response.body().string();
-                    Log.e("logGooglePay", "onResponse responseBody = " + responseBody);
                     callback.onSuccess(responseBody);
                 }
             }
@@ -166,24 +155,13 @@ public class ApiRequestService {
 
         OkHttpClient client = new OkHttpClient();
         FormBody formBody = null;
-        String endPoint = "";
-
-        if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_PRODUCTION) {
-            endPoint = Production.BASE_PAYMENT + "RMS/GooglePay/createTxn.php";
-        } else if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
-            endPoint = Development.SB_PAYMENT_FIUU + "RMS/GooglePay/createTxn.php";
-        }
-
-        Log.e("logGooglePay", endPoint);
+        String endPoint = GatewayEndpoints.getGPayCreateTxnUrl(getGPayEnvironment());
 
         if (paymentDetails != null) {
-
-            Log.e("logGooglePay", "paymentDetails NOT NULL");
 
             if (paymentDetails.get("mp_extended_vcode") == null) {
                 extendedVcode = false;
             } else {
-                Log.e("logGooglePay", "mp_extended_vcode = " + paymentDetails.get("mp_extended_vcode"));
                 extendedVcode = (Boolean) paymentDetails.get("mp_extended_vcode");
             }
 
@@ -207,6 +185,7 @@ public class ApiRequestService {
                     .add("CustContact", Objects.requireNonNull(paymentDetails.get("mp_bill_mobile")).toString())
                     .add("CustEmail", Objects.requireNonNull(paymentDetails.get("mp_bill_email")).toString())
                     .add("mpsl_version", "2")
+                    .add("InternalVersion", "2")
                     .add("vc_channel", "indexAN")
                     .add("ReturnURL", "")
                     .add("NotificationURL", "")
@@ -221,32 +200,25 @@ public class ApiRequestService {
                 }
             } else {
                 formBuilder.add("paymentMethods[" + 0 + "]", "CC");
-                formBuilder.add("paymentMethods[" + 1 + "]", "TNG-EWALLET");
-                formBuilder.add("paymentMethods[" + 2 + "]", "SHOPEEPAY");
             }
 
-            appendBinLockFields(formBuilder, paymentDetails);
+            try {
+                appendBinLockFields(formBuilder, paymentDetails);
+            } catch (IllegalArgumentException e) {
+                callback.onFailure(e.getMessage());
+                return;
+            }
 
             formBody = formBuilder.build();
-
-            // Log all fields
-            for (int i = 0; i < formBody.size(); i++) {
-                String name = formBody.encodedName(i);
-                String value = formBody.encodedValue(i);
-                Log.e("logGooglePay", name + " = " + value);
-            }
 
             Request request = new Request.Builder()
                     .url(endPoint)
                     .post(formBody)
                     .build();
 
-            Log.e("logGooglePay", "before client.newCall");
-
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
-//                    Log.e("logGooglePay", "ApiRequestServicec createTxn.php onFailure = " + e.getMessage());
                     if (e instanceof UnknownHostException) {
                         // No internet or DNS issue
                         callback.onFailure("Unable to reach the server. Please check your internet connection or use other payment method. " + e.getMessage());
@@ -269,11 +241,9 @@ public class ApiRequestService {
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
                     if (!response.isSuccessful()) {
-//                        Log.e("logGooglePay", "Unexpected response: " + response.toString());
                         callback.onFailure("Unexpected response. Please try again or use other payment method. " + response.toString());
                     } else {
                         String responseBody = response.body().string();
-                        Log.e("logGooglePay", "onResponse responseBody = " + responseBody);
 
                         if (paymentDetails.get("mp_company") != null) {
                             merchantName = Objects.requireNonNull(paymentDetails.get("mp_company")).toString();
@@ -299,7 +269,6 @@ public class ApiRequestService {
     public Object GetPaymentRequest(JSONObject paymentInput, String paymentInfo ) {
 
         try {
-            String endPoint = "";
             String txnType = "SALS";
             String orderId = paymentInput.getString("orderId");
             String amount = paymentInput.getString("amount");
@@ -312,11 +281,7 @@ public class ApiRequestService {
             String merchantId = paymentInput.getString("merchantId");
             String verificationKey = paymentInput.getString("verificationKey");
 
-            if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_PRODUCTION) {
-                endPoint = Production.BASE_PAYMENT + "RMS/GooglePay/payment_v2.php";
-            } else if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
-                endPoint = Development.SB_PAYMENT_FIUU + "RMS/GooglePay/payment_v2.php";
-            }
+            String endPoint = GatewayEndpoints.getGPayPaymentV2Url(getGPayEnvironment());
 
             Uri uri = Uri.parse(endPoint)
                     .buildUpon()
@@ -342,23 +307,6 @@ public class ApiRequestService {
                 requery = WebActivity.paymentV2Requery;
             }
 
-            Log.e("logGooglePay", "endPoint = " + endPoint);
-            Log.e("logGooglePay", "MerchantID = " + merchantId);
-            Log.e("logGooglePay", "ReferenceNo = " + orderId);
-            Log.e("logGooglePay", "TxnType = " + txnType);
-            Log.e("logGooglePay", "TxnCurrency = " + currency);
-            Log.e("logGooglePay", "TxnAmount = " + amount);
-            Log.e("logGooglePay", "CustName = " + billName);
-            Log.e("logGooglePay", "CustEmail = " + billEmail);
-            Log.e("logGooglePay", "CustContact = " + billPhone);
-            Log.e("logGooglePay", "CustDesc = " + billDesc);
-            Log.e("logGooglePay", "Signature = " + vCode);
-            Log.e("logGooglePay", "mpsl_version = 2");
-            Log.e("logGooglePay", "requery = " + requery);
-            Log.e("logGooglePay", "GooglePay = " + GooglePayBase64);
-            Log.e("logGooglePay", "mp_bin_lock = " + paymentInput.opt("mp_bin_lock"));
-            Log.e("logGooglePay", "mp_bin_lock_err_msg = " + paymentInput.optString("mp_bin_lock_err_msg", ""));
-
             Uri.Builder builder = new Uri.Builder()
                     .appendQueryParameter("MerchantID", merchantId)
                     .appendQueryParameter("ReferenceNo", orderId)
@@ -375,11 +323,15 @@ public class ApiRequestService {
                     .appendQueryParameter("requery", requery)
                     .appendQueryParameter("GooglePay", GooglePayBase64);
 
-            appendBinLockFields(builder, paymentInput);
+            try {
+                appendBinLockFields(builder, paymentInput);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
 
             WebActivity.paymentV2Requery = "0";
 
-                return postRequest(uri, builder);
+            return postRequest(uri, builder);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -426,24 +378,25 @@ public class ApiRequestService {
         if (raw == null) {
             return bins;
         }
+        boolean sawCandidate = false;
         if (raw instanceof String[]) {
             for (String value : (String[]) raw) {
-                addBinValue(bins, value);
+                sawCandidate |= addBinValue(bins, value);
             }
-            return bins;
+            return requireValidBins(sawCandidate, bins);
         }
         if (raw instanceof Collection) {
             for (Object value : (Collection<?>) raw) {
-                addBinValue(bins, value);
+                sawCandidate |= addBinValue(bins, value);
             }
-            return bins;
+            return requireValidBins(sawCandidate, bins);
         }
         if (raw instanceof JSONArray) {
             JSONArray array = (JSONArray) raw;
             for (int i = 0; i < array.length(); i++) {
-                addBinValue(bins, array.optString(i, null));
+                sawCandidate |= addBinValue(bins, array.optString(i, null));
             }
-            return bins;
+            return requireValidBins(sawCandidate, bins);
         }
         String text = raw.toString().trim();
         if (text.isEmpty()) {
@@ -453,42 +406,51 @@ public class ApiRequestService {
             try {
                 JSONArray array = new JSONArray(text.replace('\'', '"'));
                 for (int i = 0; i < array.length(); i++) {
-                    addBinValue(bins, array.optString(i, null));
+                    sawCandidate |= addBinValue(bins, array.optString(i, null));
                 }
-                return bins;
+                return requireValidBins(sawCandidate, bins);
             } catch (JSONException ignored) {
-                // Fall through to comma-separated parsing.
+                throw binLockError();
             }
         }
         if (text.contains(",")) {
             for (String part : text.split(",")) {
-                addBinValue(bins, part);
+                sawCandidate |= addBinValue(bins, part);
             }
-            return bins;
+            return requireValidBins(sawCandidate, bins);
         }
-        addBinValue(bins, text);
+        sawCandidate = addBinValue(bins, text);
+        return requireValidBins(sawCandidate, bins);
+    }
+
+    private static List<String> requireValidBins(boolean sawCandidate, List<String> bins) {
+        if (sawCandidate && bins.isEmpty()) {
+            throw binLockError();
+        }
         return bins;
     }
 
-    private static void addBinValue(List<String> bins, Object value) {
+    private static IllegalArgumentException binLockError() {
+        return new IllegalArgumentException("mp_bin_lock contains no valid 6-8 digit BIN");
+    }
+
+    private static boolean addBinValue(List<String> bins, Object value) {
         if (value == null) {
-            return;
+            return false;
         }
         String bin = value.toString().trim();
-        if (!bin.isEmpty()) {
+        if (bin.isEmpty()) {
+            return false;
+        }
+        if (bin.matches("\\d{6,8}")) {
             bins.add(bin);
         }
+        return true;
     }
 
     public Object GetPaymentResult(JSONObject transaction ) {
         try {
-            String endPoint = "";
-
-            if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_PRODUCTION) {
-                endPoint = Production.API_PAYMENT + "RMS/q_by_tid.php";
-            } else if (ActivityGP.PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
-                endPoint = Development.SB_API_FIUU + "RMS/q_by_tid.php";
-            }
+            String endPoint = GatewayEndpoints.getQueryByTidUrl(getGPayEnvironment());
 
             Uri uri = Uri.parse(endPoint)
                     .buildUpon()
@@ -530,7 +492,6 @@ public class ApiRequestService {
             httpConnection = (HttpURLConnection) url.openConnection();
             httpConnection.setRequestMethod("POST");
             httpConnection.setRequestProperty("Accept", "application/json");
-            httpConnection.setRequestProperty("Cookies", "PHPSESSID=ad6081qpihsb9en1nr9nivbkl3");
             httpConnection.setRequestProperty("SDK-Version", "4.0.0");
             httpConnection.setDoOutput(true);
             httpConnection.setDoInput(true);
