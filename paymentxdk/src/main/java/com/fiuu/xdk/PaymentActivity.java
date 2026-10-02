@@ -157,7 +157,7 @@ public class PaymentActivity extends AppCompatActivity {
                     + "return nativeSubmit.apply(this,arguments);};})();";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "43a";
+    private final static String wrapperVersion = "45a";
     private static final String TNG_EWALLET_PACKAGE = "my.com.tngdigital.ewallet";
 
     private String filename;
@@ -208,7 +208,8 @@ public class PaymentActivity extends AppCompatActivity {
             mpMainUI.stopLoading();
         }
         String dataString = "{ \"error\" : \"Timeout\"  }";
-        ActivityLog.error(this, "webCoreTimeout", "Timer expired before the payment page started");
+        ActivityLog.step("error", "webCoreTimeout", "Timer expired before the payment page started");
+        ActivityLog.finish(this, "error", "failed");
         Intent result = new Intent();
         result.putExtra(XDKTransactionResult, dataString);
         setResult(RESULT_OK, result);
@@ -233,7 +234,7 @@ public class PaymentActivity extends AppCompatActivity {
 
     private void markMainUiStarted() {
         hasPageStarted = true;
-        ActivityLog.event(this, "pageStarted", "Payment page started");
+        ActivityLog.step("pageStarted", null, "Payment page started");
         // Connection is alive — cancel hard timeout so slow pages are never killed.
         timeoutHandler.removeCallbacks(connectionTimeoutRunnable);
     }
@@ -325,6 +326,30 @@ public class PaymentActivity extends AppCompatActivity {
      * - Channel/bank overlay open → dismiss it, then {@code javascript:closemolpay()} in one tap.
      * - Fully loaded → {@code javascript:closemolpay()}.
      */
+    private void logTransactionResult(String dataString) {
+        String type = "info";
+        String outcome = "completed";
+        try {
+            JSONObject json = new JSONObject(dataString);
+            ActivityLog.setChannelIfUnset(json.optString("Channel", ""));
+            String statCode = json.optString("StatCode", "");
+            String error = json.optString("error", "");
+            boolean cancelled = "11".equals(statCode) || error.toLowerCase(Locale.US).contains("cancel");
+            boolean failed = !cancelled && (json.has("error") || json.has("error_code")
+                    || (json.has("ErrorCode") && !json.isNull("ErrorCode") && !json.optString("ErrorCode").isEmpty()));
+            if (cancelled) {
+                type = "interrupted";
+                outcome = "cancelled";
+            } else if (failed) {
+                type = "error";
+                outcome = "failed";
+            }
+        } catch (JSONException ignored) {
+        }
+        ActivityLog.step("result", null, resultSummary(dataString));
+        ActivityLog.finish(this, type, outcome);
+    }
+
     private static String resultSummary(String dataString) {
         try {
             JSONObject json = new JSONObject(dataString);
@@ -348,7 +373,13 @@ public class PaymentActivity extends AppCompatActivity {
         isClosingPayment = true;
         dismissChannelOverlays();
         String dataString = "{ \"error\" : \"" + errorMsg + "\"  }";
-        ActivityLog.error(this, "paymentCancel", errorMsg);
+        if ("Transaction Cancelled".equals(errorMsg)) {
+            ActivityLog.step("cancel", errorMsg, null);
+            ActivityLog.finish(this, "interrupted", "cancelled");
+        } else {
+            ActivityLog.step("error", errorMsg, null);
+            ActivityLog.finish(this, "error", "failed");
+        }
         Intent result = new Intent();
         result.putExtra(XDKTransactionResult, dataString);
         setResult(RESULT_OK, result);
@@ -525,14 +556,16 @@ public class PaymentActivity extends AppCompatActivity {
                 paymentDetails.put(wrapper_version, wrapperVersion);
             }
             paymentDetails.put(device_info, gson.toJson(DeviceInfoUtil.getDeviceInfo(this)));
-            ActivityLog.bindSession(
+            ActivityLog.begin(this,
                     String.valueOf(paymentDetails.get(mp_order_ID)),
                     String.valueOf(paymentDetails.get(mp_merchant_ID)),
-                    String.valueOf(paymentDetails.get(mp_country)));
-            ActivityLog.event(this, "paymentStart",
-                    "channel=" + paymentDetails.get(mp_channel)
+                    String.valueOf(paymentDetails.get(mp_country)),
+                    String.valueOf(paymentDetails.get(mp_channel)));
+            ActivityLog.step("start",
+                    "orderId=" + paymentDetails.get(mp_order_ID)
                             + " amount=" + paymentDetails.get(mp_amount)
-                            + " currency=" + paymentDetails.get(mp_currency));
+                            + " currency=" + paymentDetails.get(mp_currency),
+                    null);
 
         }
 
@@ -916,7 +949,7 @@ public class PaymentActivity extends AppCompatActivity {
                     if (!dataString.isEmpty()) {
                         if (mpPaymentUI != null) {
                             mpPaymentUI.setVisibility(View.VISIBLE);
-                            ActivityLog.event(PaymentActivity.this, "channelScreen", "Channel screen opened");
+                            ActivityLog.step("channelScreen", null, "Channel screen opened");
                             String formAction = extractFormAction(dataString);
                             byte[] postData = buildPostData(dataString);
                             if (!formAction.isEmpty() && postData != null && postData.length > 0) {
@@ -977,7 +1010,7 @@ public class PaymentActivity extends AppCompatActivity {
 
                     if (isJSONValid(dataString)) {
                        // Log.d(logXDK, "isJSONValid setResult");
-                        ActivityLog.event(PaymentActivity.this, "paymentResult", resultSummary(dataString));
+                        logTransactionResult(dataString);
                         setResult(RESULT_OK, result);
 
                         // Check if mp_request_type is "Receipt", if it is, don't finish()
@@ -1105,6 +1138,7 @@ public class PaymentActivity extends AppCompatActivity {
                         }
                     }
 
+                    ActivityLog.setChannel("GooglePay");
                     openGPActivityWithResult();
                     return true;
                 }
@@ -1191,7 +1225,7 @@ public class PaymentActivity extends AppCompatActivity {
                 if (!isMainUILoaded && !url.equals("about:blank")) {
                     if (paymentDetails != null) {
                         isMainUILoaded = true;
-                        ActivityLog.event(PaymentActivity.this, "pageReady", "Payment page ready");
+                        ActivityLog.step("pageReady", null, "Payment page ready");
                         JSONObject json = new JSONObject(paymentDetails);
                         //                   // Log.d(logXDK, "MPMainUIWebClient onPageFinished paymentDetails = " + json);
                         //                    Init javascript
@@ -1229,9 +1263,9 @@ public class PaymentActivity extends AppCompatActivity {
             if ("mpMainUI".equals(tagString)) {
                 networkIssue = true;
                 timeoutHandler.removeCallbacks(connectionTimeoutRunnable);
-                ActivityLog.error(PaymentActivity.this, "onReceivedError", detail);
+                ActivityLog.step("webError", "mpMainUI", detail);
             } else {
-                ActivityLog.error(PaymentActivity.this, "onReceivedError", tagString + " " + detail);
+                ActivityLog.step("webError", tagString, detail);
             }
 
            // Log.d(logXDK, tagString + " onPageFinished url = " + url);
@@ -1254,13 +1288,13 @@ public class PaymentActivity extends AppCompatActivity {
                     + " host=" + (uri.getHost() == null ? "" : uri.getHost());
             //only handle error on fiuu side.
             if(!tagString.equals("mpMainUI")) {
-                ActivityLog.error(PaymentActivity.this, "onReceivedHttpError", tagString + " " + httpDetail);
+                ActivityLog.step("httpError", tagString, httpDetail);
                 return;
             }
             if (statusCode >= 400) {
                 networkIssue = true;
                 clearLoadWatchdogs();
-                ActivityLog.error(PaymentActivity.this, "onReceivedHttpError", httpDetail);
+                ActivityLog.step("httpError", "mpMainUI", httpDetail);
             }
             if (statusCode == 503) {
                // Log.e("WebView", "HTTP 503 Service Unavailable");
@@ -1285,7 +1319,7 @@ public class PaymentActivity extends AppCompatActivity {
 
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-            ActivityLog.error(PaymentActivity.this, "onReceivedSslError", ActivityLog.sslDetail(error));
+            ActivityLog.step("sslError", null, ActivityLog.sslDetail(error));
            super.onReceivedSslError(view, handler, error);
         }
 
@@ -1315,7 +1349,7 @@ public class PaymentActivity extends AppCompatActivity {
             if(tagString.equals("mpPaymentUI")){
                 mpBankUI = new WebView(PaymentActivity.this);
                 mpBankUI.setTag("mpBankUI");
-                ActivityLog.event(PaymentActivity.this, "bankScreen", "Bank or 3DS screen opened");
+                ActivityLog.step("bankScreen", null, "Bank or 3DS screen opened");
                 createWebView(mpBankUI, resultMsg);
                 return true;
             }
@@ -1359,6 +1393,9 @@ public class PaymentActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        if (isFinishing()) {
+            ActivityLog.finish(this, "interrupted", "interrupted");
+        }
         clearLoadWatchdogs();
         WeakReference<PaymentActivity> current = sCurrent;
         if (current != null && current.get() == this) {

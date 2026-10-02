@@ -13,6 +13,8 @@ import android.util.Log;
 
 import com.fiuu.xdk.BuildConfig;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
@@ -22,13 +24,12 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.text.Collator;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -36,9 +37,9 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 
 /**
- * Posts payment-process traces to the mobile activity log.
- * The URL defaults to {@link #DEFAULT_TELEMETRY_URL} and can be overridden
- * the same way {@code TapSDKConfig.telemetryUrl} overrides it in the tap SDK.
+ * Posts one payment-attempt trace to the mobile activity log.
+ * Steps stay in memory until the attempt ends, so AWS stores a single row
+ * whose process name is the channel.
  */
 public final class ActivityLog {
 
@@ -46,29 +47,51 @@ public final class ActivityLog {
     private static final String TAG = "ActivityLog";
     private static final MediaType JSON = MediaType.get("application/json; charset=UTF-8");
     private static final DateTimeFormatter DATETIME = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-    private static final int MAX_BREADCRUMBS = 40;
+    private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+    private static final int MAX_STEPS = 40;
+    private static final int MAX_FIELD = 800;
     private static final int MAX_DETAILS = 4000;
+    private static final String CHECKOUT = "checkout";
 
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
-    private static final List<String> BREADCRUMBS = new ArrayList<>();
-    private static final Set<String> SENT = new HashSet<>();
+    private static final ExecutorService CRASH_EXECUTOR = Executors.newSingleThreadExecutor();
     private static final OkHttpClient CLIENT = new OkHttpClient();
 
     private static volatile String telemetryUrl = DEFAULT_TELEMETRY_URL;
     private static final byte[] MARK = {(byte) 0xa3, (byte) 0x17, (byte) 0x5c, (byte) 0xe1, (byte) 0x2b, (byte) 0x90, (byte) 0x44, (byte) 0x6f};
     private static volatile String sessionNote;
+    private static volatile Trace current;
 
-    private static volatile Session session = new Session("","","");
+    private static final class Step {
+        final String name;
+        final String at;
+        final String request;
+        final String response;
+        int count = 1;
 
-    private static final class Session {
+        Step(String name, String at, String request, String response) {
+            this.name = name;
+            this.at = at;
+            this.request = request;
+            this.response = response;
+        }
+    }
+
+    private static final class Trace {
+        final Context app;
         final String referenceNumber;
         final String merchantId;
         final String country;
+        String channel;
+        boolean posted;
+        final List<Step> steps = new ArrayList<>();
 
-        Session(String referenceNumber, String merchantId, String country) {
+        Trace(Context app, String referenceNumber, String merchantId, String country, String channel) {
+            this.app = app;
             this.referenceNumber = referenceNumber;
             this.merchantId = merchantId;
             this.country = country;
+            this.channel = channel;
         }
     }
 
@@ -94,25 +117,134 @@ public final class ActivityLog {
         telemetryUrl = url.trim();
     }
 
-    public static void bindSession(String reference, String merchant, String countryCode) {
-        session = new Session(
-                reference == null ? "" : reference,
-                merchant == null ? "" : merchant,
-                countryCode == null ? "" : countryCode);
-        synchronized (BREADCRUMBS) {
-            BREADCRUMBS.clear();
+    /**
+     * Opens a trace, or keeps the open trace when the order id is unchanged.
+     * A more specific channel replaces {@code checkout}. Returns true when a new trace was opened.
+     */
+    public static boolean begin(Context context, String reference, String merchant, String countryCode, String channel) {
+        if (context == null) {
+            return false;
         }
-        synchronized (SENT) {
-            SENT.clear();
+        Context app = context.getApplicationContext();
+        String ref = reference == null ? "" : reference;
+        String merchantId = merchant == null ? "" : merchant;
+        String country = countryCode == null ? "" : countryCode;
+        String normalized = normalizeChannel(channel);
+        synchronized (ActivityLog.class) {
+            installCrashHandler();
+            Trace trace = current;
+            if (trace != null && !trace.posted && trace.referenceNumber.equals(ref)) {
+                if (!CHECKOUT.equals(normalized)) {
+                    trace.channel = normalized;
+                }
+                return false;
+            }
+            if (trace != null && !trace.posted) {
+                trace.posted = true;
+                current = null;
+                dispatch(trace, "interrupted", "interrupted", false);
+            }
+            current = new Trace(app, ref, merchantId, country, normalized);
+            return true;
         }
     }
 
-    public static void event(Context context, String process, String details) {
-        send(context, "info", process, details);
+    /** Forces the open trace onto a channel such as {@code GooglePay}. */
+    public static void setChannel(String channel) {
+        String normalized = normalizeChannel(channel);
+        if (CHECKOUT.equals(normalized)) {
+            return;
+        }
+        synchronized (ActivityLog.class) {
+            Trace trace = current;
+            if (trace != null && !trace.posted) {
+                trace.channel = normalized;
+            }
+        }
     }
 
-    public static void error(Context context, String process, String details) {
-        send(context, "error", process, details);
+    /** Sets the channel only while the trace is still {@code checkout}. */
+    public static void setChannelIfUnset(String channel) {
+        String normalized = normalizeChannel(channel);
+        if (CHECKOUT.equals(normalized)) {
+            return;
+        }
+        synchronized (ActivityLog.class) {
+            Trace trace = current;
+            if (trace != null && !trace.posted && CHECKOUT.equals(trace.channel)) {
+                trace.channel = normalized;
+            }
+        }
+    }
+
+    public static void step(String name, String request, String response) {
+        Trace trace;
+        synchronized (ActivityLog.class) {
+            trace = current;
+        }
+        if (trace == null || trace.posted) {
+            return;
+        }
+        String safeName = name == null || name.trim().isEmpty() ? "event" : name.trim();
+        String safeRequest = trimField(request);
+        String safeResponse = trimField(response);
+        synchronized (trace) {
+            if (trace.posted) {
+                return;
+            }
+            if (!trace.steps.isEmpty()) {
+                Step last = trace.steps.get(trace.steps.size() - 1);
+                if (last.name.equals(safeName)
+                        && same(last.request, safeRequest)
+                        && same(last.response, safeResponse)) {
+                    last.count++;
+                    return;
+                }
+            }
+            trace.steps.add(new Step(safeName, LocalDateTime.now().format(STAMP), safeRequest, safeResponse));
+            if (trace.steps.size() > MAX_STEPS) {
+                trace.steps.remove(0);
+            }
+        }
+    }
+
+    /**
+     * Posts the open trace once. Later calls do nothing until {@link #begin} opens another attempt.
+     */
+    public static void finish(Context context, String type, String outcome) {
+        Trace trace;
+        synchronized (ActivityLog.class) {
+            trace = current;
+            if (trace == null || trace.posted) {
+                return;
+            }
+            trace.posted = true;
+            current = null;
+        }
+        dispatch(trace, type, outcome, false);
+    }
+
+    /** Reads selected fields out of a JSON payload. Missing fields are skipped. */
+    public static String pick(String json, String... keys) {
+        if (json == null || json.isEmpty() || keys == null) {
+            return "";
+        }
+        try {
+            JSONObject object = new JSONObject(json);
+            StringBuilder builder = new StringBuilder();
+            for (String key : keys) {
+                if (key == null || !object.has(key) || object.isNull(key)) {
+                    continue;
+                }
+                if (builder.length() > 0) {
+                    builder.append(' ');
+                }
+                builder.append(key).append('=').append(object.optString(key));
+            }
+            return builder.toString();
+        } catch (JSONException e) {
+            return "";
+        }
     }
 
     public static String sslDetail(SslError error) {
@@ -142,6 +274,166 @@ public final class ActivityLog {
             }
         }
         return detail.toString();
+    }
+
+    private static void installCrashHandler() {
+        Thread.UncaughtExceptionHandler handler = Thread.getDefaultUncaughtExceptionHandler();
+        if (handler instanceof CrashHook) {
+            return;
+        }
+        Thread.setDefaultUncaughtExceptionHandler(new CrashHook(handler));
+    }
+
+    private static final class CrashHook implements Thread.UncaughtExceptionHandler {
+        private final Thread.UncaughtExceptionHandler previous;
+
+        CrashHook(Thread.UncaughtExceptionHandler previous) {
+            this.previous = previous;
+        }
+
+        @Override
+        public void uncaughtException(Thread thread, Throwable error) {
+            try {
+                recordCrash(error);
+            } catch (Throwable ignored) {
+            }
+            if (previous != null) {
+                previous.uncaughtException(thread, error);
+            }
+        }
+    }
+
+    private static void recordCrash(Throwable error) {
+        if (error == null) {
+            return;
+        }
+        String message = error.getClass().getSimpleName();
+        if (error.getMessage() != null && !error.getMessage().isEmpty()) {
+            message = message + ": " + error.getMessage();
+        }
+        step("crash", message, crashStack(error));
+        Trace trace;
+        synchronized (ActivityLog.class) {
+            trace = current;
+            if (trace == null || trace.posted) {
+                return;
+            }
+            trace.posted = true;
+            current = null;
+        }
+        dispatch(trace, "crash", "crash", true);
+    }
+
+    private static String crashStack(Throwable error) {
+        StackTraceElement[] frames = error.getStackTrace();
+        int limit = Math.min(frames.length, 8);
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < limit; i++) {
+            if (builder.length() > 0) {
+                builder.append(" | ");
+            }
+            builder.append(frames[i].toString());
+        }
+        return builder.toString();
+    }
+
+    private static void dispatch(Trace trace, String type, String outcome, boolean sync) {
+        if (trace.app == null) {
+            return;
+        }
+        String safeType = sanitizeType(type);
+        String safeOutcome = outcome == null || outcome.trim().isEmpty() ? safeType : outcome.trim();
+        List<Step> steps;
+        synchronized (trace) {
+            steps = new ArrayList<>(trace.steps);
+        }
+        String details = buildDetails(trace.channel, safeOutcome, steps);
+        String channel = trace.channel;
+        Session session = new Session(trace.referenceNumber, trace.merchantId, trace.country);
+        Context app = trace.app;
+        if (sync) {
+            try {
+                CRASH_EXECUTOR.submit(() -> post(app, safeType, channel, details, session)).get(3, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                Log.w(TAG, "activity log crash send failed process=" + channel + ": " + e.getMessage());
+            }
+            return;
+        }
+        EXECUTOR.execute(() -> post(app, safeType, channel, details, session));
+    }
+
+    private static String sanitizeType(String type) {
+        if ("error".equals(type) || "interrupted".equals(type) || "crash".equals(type) || "info".equals(type)) {
+            return type;
+        }
+        return "info";
+    }
+
+    private static String normalizeChannel(String channel) {
+        if (channel == null) {
+            return CHECKOUT;
+        }
+        String value = channel.trim();
+        if (value.isEmpty() || "null".equalsIgnoreCase(value)) {
+            return CHECKOUT;
+        }
+        return value;
+    }
+
+    private static String trimField(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() <= MAX_FIELD) {
+            return trimmed;
+        }
+        return trimmed.substring(0, MAX_FIELD);
+    }
+
+    private static boolean same(String left, String right) {
+        return left == null ? right == null : left.equals(right);
+    }
+
+    static String buildDetails(String channel, String outcome, List<Step> source) {
+        List<Step> steps = new ArrayList<>(source);
+        String text = renderDetails(channel, outcome, steps);
+        while (text.length() > MAX_DETAILS && steps.size() > 1) {
+            steps.remove(0);
+            text = renderDetails(channel, outcome, steps);
+        }
+        if (text.length() > MAX_DETAILS) {
+            return text.substring(text.length() - MAX_DETAILS);
+        }
+        return text;
+    }
+
+    private static String renderDetails(String channel, String outcome, List<Step> steps) {
+        try {
+            JSONArray array = new JSONArray();
+            for (Step step : steps) {
+                JSONObject item = new JSONObject();
+                item.put("step", step.name);
+                item.put("at", step.at);
+                if (step.request != null && !step.request.isEmpty()) {
+                    item.put("request", step.request);
+                }
+                if (step.response != null && !step.response.isEmpty()) {
+                    item.put("response", step.response);
+                }
+                if (step.count > 1) {
+                    item.put("count", step.count);
+                }
+                array.put(item);
+            }
+            JSONObject root = new JSONObject();
+            root.put("channel", channel == null ? CHECKOUT : channel);
+            root.put("outcome", outcome == null ? "" : outcome);
+            root.put("steps", array);
+            return root.toString();
+        } catch (JSONException e) {
+            return "{\"channel\":\"" + channel + "\",\"outcome\":\"" + outcome + "\"}";
+        }
     }
 
     private static String sslReason(int code) {
@@ -278,56 +570,22 @@ public final class ActivityLog {
         return root;
     }
 
-    private static void send(Context context, String type, String process, String details) {
-        if (context == null) {
-            return;
-        }
-        Context app = context.getApplicationContext();
-        String safeType = type == null ? "" : type;
-        String safeProcess = process == null ? "" : process;
-        String safeDetails = details == null ? "" : details;
-        String key = safeType + "\n" + safeProcess + "\n" + safeDetails;
-        synchronized (SENT) {
-            if (!SENT.add(key)) {
-                return;
-            }
-        }
-        note(safeProcess, safeDetails);
-        String traced = withBreadcrumbs(safeDetails);
-        Session queuedSession = session;
-        EXECUTOR.execute(() -> post(app, safeType, safeProcess, traced, key, queuedSession));
-    }
+    private static final class Session {
+        final String referenceNumber;
+        final String merchantId;
+        final String country;
 
-    private static void note(String process, String details) {
-        String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
-        String line = "[" + stamp + "] [" + process + "] " + details;
-        synchronized (BREADCRUMBS) {
-            BREADCRUMBS.add(line);
-            if (BREADCRUMBS.size() > MAX_BREADCRUMBS) {
-                BREADCRUMBS.remove(0);
-            }
+        Session(String referenceNumber, String merchantId, String country) {
+            this.referenceNumber = referenceNumber;
+            this.merchantId = merchantId;
+            this.country = country;
         }
     }
 
-    private static String withBreadcrumbs(String details) {
-        StringBuilder body = new StringBuilder(details);
-        body.append("\n--- Breadcrumbs ---");
-        synchronized (BREADCRUMBS) {
-            for (String line : BREADCRUMBS) {
-                body.append('\n').append(line);
-            }
-        }
-        if (body.length() > MAX_DETAILS) {
-            return body.substring(body.length() - MAX_DETAILS);
-        }
-        return body.toString();
-    }
-
-    private static void post(Context context, String type, String process, String details,
-                             String sentKey, Session session) {
+    private static void post(Context context, String type, String process, String details, Session session) {
         try {
             String datetime = gatewayDatetime();
-            String s = readS();
+            String secret = readS();
             JSONObject body = buildPayload(
                     Build.VERSION.RELEASE,
                     Build.MANUFACTURER,
@@ -347,7 +605,7 @@ public final class ActivityLog {
             JSONObject unsigned = new JSONObject(body.toString());
             unsigned.remove("checksum");
             unsigned.remove("datetime");
-            body.put("checksum", checksum(s, datetime, unsigned));
+            body.put("checksum", checksum(secret, datetime, unsigned));
             String payload = body.toString();
 
             Request request = new Request.Builder()
@@ -359,18 +617,10 @@ public final class ActivityLog {
             try (okhttp3.Response response = CLIENT.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     Log.w(TAG, "activity log HTTP " + response.code() + " process=" + process);
-                    forget(sentKey);
                 }
             }
         } catch (Exception e) {
             Log.w(TAG, "activity log failed process=" + process + ": " + e.getMessage());
-            forget(sentKey);
-        }
-    }
-
-    private static void forget(String sentKey) {
-        synchronized (SENT) {
-            SENT.remove(sentKey);
         }
     }
 

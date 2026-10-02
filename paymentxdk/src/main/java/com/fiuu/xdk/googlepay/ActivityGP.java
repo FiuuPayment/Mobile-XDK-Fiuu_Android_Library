@@ -135,6 +135,8 @@ public class ActivityGP extends AppCompatActivity {
         getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE,
                 android.view.WindowManager.LayoutParams.FLAG_SECURE);
 
+        paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(XDKPaymentDetails);
+
         boolean isRooted = PaymentActivity.isDeviceRooted(ActivityGP.this);
         if (isRooted) {
             new AlertDialog.Builder(this)
@@ -143,6 +145,9 @@ public class ActivityGP extends AppCompatActivity {
                     .setCancelable(false)
                     .setPositiveButton("OK", (dialog, which) -> {
                         dialog.dismiss();
+                        beginGooglePayTrace();
+                        ActivityLog.step("error", "This device appears to be rooted.", null);
+                        ActivityLog.finish(ActivityGP.this, "error", "failed");
                         finish();
                     })
                     .show();
@@ -150,7 +155,6 @@ public class ActivityGP extends AppCompatActivity {
             return; // stop further execution
         }
 
-        paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(XDKPaymentDetails);
 
         if (paymentDetails == null) {
             Intent resultCancel = new Intent();
@@ -189,6 +193,9 @@ public class ActivityGP extends AppCompatActivity {
                         .setMessage("Merchant ID is required.")
                         .setCancelable(false)
                         .setPositiveButton("OK", (dialog, which) -> {
+                            beginGooglePayTrace();
+                            ActivityLog.step("error", "Merchant ID is required..", null);
+                            ActivityLog.finish(ActivityGP.this, "error", "failed");
                             dialog.dismiss();
                             finish();
                         })
@@ -200,6 +207,13 @@ public class ActivityGP extends AppCompatActivity {
             Object countryValue = paymentDetails.get("mp_country");
             Object currencyValue = paymentDetails.get("mp_currency");
             Object vkeyValue = paymentDetails.get(PaymentActivity.mp_verification_key);
+            if (ActivityLog.begin(this,
+                    String.valueOf(paymentDetails.get(PaymentActivity.mp_order_ID)),
+                    MerchantID,
+                    countryValue == null ? "" : countryValue.toString(),
+                    "GooglePay")) {
+                ActivityLog.step("start", txnRequest(), null);
+            }
             if (countryValue == null || currencyValue == null || vkeyValue == null || vkeyValue.toString().trim().isEmpty()) {
                 sendCustomFailResponse("Payment aborted. Error : missing required payment fields");
                 return;
@@ -217,15 +231,12 @@ public class ActivityGP extends AppCompatActivity {
             } else {
                 PAYMENTS_ENVIRONMENT = WalletConstants.ENVIRONMENT_PRODUCTION;
             }
-            ActivityLog.bindSession(
-                    String.valueOf(paymentDetails.get(PaymentActivity.mp_order_ID)),
-                    MerchantID,
-                    COUNTRY_CODE);
-            ActivityLog.event(this, "googlePayStart", "Google Pay session started");
         }
 
         if (PAYMENTS_ENVIRONMENT == WalletConstants.ENVIRONMENT_TEST) {
             if ( ! MerchantID.toUpperCase().endsWith("_SB") && ! MerchantID.toUpperCase().startsWith("SB_")) {
+                ActivityLog.step("error", MerchantID + " is not a sandbox account.", null);
+                ActivityLog.finish(this, "error", "failed");
                 new AlertDialog.Builder(this)
                         .setTitle("Required Sandbox Account")
                         .setMessage(MerchantID + " is not a sandbox account.")
@@ -256,10 +267,14 @@ public class ActivityGP extends AppCompatActivity {
 
                         if (returnCode.contains("fail")) {
                             String message = jsonObject.getString("message");
+                            ActivityLog.step("createTxn", txnRequest(),
+                                    ActivityLog.pick(responseJson, "return_code", "TxnID", "message"));
                             sendCustomFailResponse(message);
                             return;
                         }
                     } catch (JSONException e) {
+                        ActivityLog.step("createTxn", txnRequest(), "invalid response");
+                        ActivityLog.finish(ActivityGP.this, "error", "failed");
                         new AlertDialog.Builder(ActivityGP.this)
                                 .setTitle("Account Issues")
                                 .setMessage("Please check production / sandbox info : mp_merchant_ID & mp_verification_key")
@@ -273,7 +288,8 @@ public class ActivityGP extends AppCompatActivity {
                     }
 
                     createTxnResult = responseJson;
-                    ActivityLog.event(ActivityGP.this, "googlePayCreateTxn", "Create transaction succeeded");
+                    ActivityLog.step("createTxn", txnRequest(),
+                            ActivityLog.pick(responseJson, "return_code", "TxnID", "message"));
 
                     // Check Google Pay availability
                     model = new ViewModelProvider(ActivityGP.this).get(ViewModelGP.class);
@@ -315,7 +331,8 @@ public class ActivityGP extends AppCompatActivity {
 
     private void sendCustomFailResponse(String failMessage) {
         Log.e("logGooglePay", "sendCustomFailResponse");
-        ActivityLog.error(this, "googlePayError", failMessage);
+        ActivityLog.step("error", failMessage, null);
+        ActivityLog.finish(this, "error", "failed");
         if (paymentDetails == null) {
             Intent resultCancel = new Intent();
             resultCancel.putExtra(PaymentActivity.XDKTransactionResult,
@@ -388,7 +405,7 @@ public class ActivityGP extends AppCompatActivity {
      */
     private void setGooglePayAvailable(Boolean available) {
         if (available) {
-            ActivityLog.event(this, "googlePaySheet", "Google Pay sheet requested");
+            ActivityLog.step("sheet", null, "Google Pay sheet requested");
             requestPayment();
         } else {
             Toast toast = Toast.makeText(getApplicationContext(),
@@ -559,7 +576,8 @@ public class ActivityGP extends AppCompatActivity {
 
                         Intent result = new Intent();
                         result.putExtra(PaymentActivity.XDKTransactionResult, response);
-                        ActivityLog.event(ActivityGP.this, "googlePayResult", "Google Pay completed");
+                        ActivityLog.step("result", null, "Google Pay completed");
+                        ActivityLog.finish(ActivityGP.this, "info", "completed");
                         setResult(RESULT_OK, result);
                         finish();
                     } else {
@@ -580,6 +598,9 @@ public class ActivityGP extends AppCompatActivity {
                                 JSONObject jsonObject = new JSONObject(response);
                                 String statCode = jsonObject.getString("StatCode");
                                 if (statCode.equalsIgnoreCase("11")) {
+                                    ActivityLog.step("cancel", "StatCode 11",
+                                            ActivityLog.pick(response, "StatCode", "ErrorCode", "ErrorDesc", "error"));
+                                    ActivityLog.finish(ActivityGP.this, "interrupted", "cancelled");
                                     Intent resultCancel = new Intent();
                                     resultCancel.putExtra(PaymentActivity.XDKTransactionResult, response);
                                     setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
@@ -618,17 +639,68 @@ public class ActivityGP extends AppCompatActivity {
             } else {
                 response = null;
             }
+
+            boolean hasCancelResponse = response != null && !response.isEmpty();
             if (response == null || response.isEmpty()) {
-                // Treat 997 like 998: if data is null or "response" is missing, build a cancel JSON.
                 response = buildCancelJson();
+            }
+
+            boolean failedCancel = false;
+            if (hasCancelResponse) {
+                try {
+                    JSONObject cancelResposnse = new JSONObject(response);
+                    String statCode = cancelResposnse.optString("StatCode", "");
+                    String errorCode = cancelResposnse.optString("ErrorCode", "");
+                    failedCancel = "11".equalsIgnoreCase(statCode) &&
+                            !"GOOGLEPAY_C1".equalsIgnoreCase(errorCode);
+                } catch (JSONException e) {
+                    ActivityLog.step("cancel", "Google Pay cancelled",
+                            ActivityLog.pick(response, "JSONException", "ErrorCode", "ErrorDesc"+e.getMessage(), "error"));
+                }
             }
             Intent resultCancel = new Intent();
             resultCancel.putExtra(PaymentActivity.XDKTransactionResult, response);
-            Log.e("logGooglePay", "RESULT_CANCELED ActivityGP 2");
-            ActivityLog.error(this, "googlePayCancel", "Google Pay cancelled");
+            ActivityLog.step("cancel", "Google Pay cancelled",
+                    ActivityLog.pick(response, "StatCode", "ErrorCode", "ErrorDesc", "error"));
+            ActivityLog.finish(this, failedCancel ? "error":"interrupted", failedCancel?"failed":"cancelled");
             setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
             finish(); // finish ActivityGP
         }
+    }
+
+    /**
+     * Opens a Google Pay trace for an early failure. A checkout trace with the same order id is reused.
+     * The normal-path {@link ActivityLog#begin} still records the start step.
+     */
+    private void beginGooglePayTrace() {
+        String orderId = "";
+        String merchantId = "";
+        String country = "";
+        if (paymentDetails != null) {
+            Object order = paymentDetails.get(PaymentActivity.mp_order_ID);
+            if (order != null) {
+                orderId = order.toString();
+            }
+            Object merchant = paymentDetails.get(PaymentActivity.mp_merchant_ID);
+            if (merchant != null) {
+                merchantId = merchant.toString();
+            }
+            Object countryValue = paymentDetails.get("mp_country");
+            if (countryValue != null) {
+                country = countryValue.toString();
+            }
+        }
+        ActivityLog.begin(this, orderId, merchantId, country, "GooglePay");
+    }
+
+    private String txnRequest() {
+        if (paymentDetails == null) {
+            return "MerchantID=" + MerchantID;
+        }
+        return "MerchantID=" + MerchantID
+                + " ReferenceNo=" + paymentDetails.get(PaymentActivity.mp_order_ID)
+                + " TxnAmount=" + paymentDetails.get(PaymentActivity.mp_amount)
+                + " TxnCurrency=" + paymentDetails.get(PaymentActivity.mp_currency);
     }
 
     private String buildCancelJson() {
@@ -645,6 +717,9 @@ public class ActivityGP extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        if (isFinishing()) {
+            ActivityLog.finish(this, "interrupted", "interrupted");
+        }
         super.onDestroy();
         if (paymentDetails != null) {
             paymentDetails.clear();

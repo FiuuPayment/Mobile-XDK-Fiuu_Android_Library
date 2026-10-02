@@ -185,7 +185,6 @@ public class ApiRequestService {
                     .add("CustContact", Objects.requireNonNull(paymentDetails.get("mp_bill_mobile")).toString())
                     .add("CustEmail", Objects.requireNonNull(paymentDetails.get("mp_bill_email")).toString())
                     .add("mpsl_version", "2")
-                    .add("InternalVersion", "2")
                     .add("vc_channel", "indexAN")
                     .add("ReturnURL", "")
                     .add("NotificationURL", "")
@@ -297,8 +296,10 @@ public class ApiRequestService {
                 extendedVCode
             );
 
+            JSONObject googlePay = new JSONObject(paymentInfo);
+            googlePay.put("internalVersion", 2);
             String GooglePayBase64 = Base64.getEncoder()
-                                    .encodeToString(paymentInfo.getBytes());
+                                    .encodeToString(googlePay.toString().getBytes(StandardCharsets.UTF_8));
 
             String requery;
             if (WebActivity.paymentV2Requery.isEmpty()) {
