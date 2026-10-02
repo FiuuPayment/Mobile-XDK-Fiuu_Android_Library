@@ -496,7 +496,7 @@ public class WebActivity extends AppCompatActivity {
                 if (request != null && request.isForMainFrame()) {
                     Uri uri = request.getUrl();
                     String host = uri == null || uri.getHost() == null ? "" : uri.getHost();
-                    ActivityLog.error(WebActivity.this, "googlePayWebError",
+                    ActivityLog.step("webError", host,
                             "code=" + error.getErrorCode() + " " + error.getDescription() + " host=" + host);
                 }
                 super.onReceivedError(view, request, error);
@@ -508,7 +508,7 @@ public class WebActivity extends AppCompatActivity {
                         && errorResponse.getStatusCode() >= 400) {
                     Uri uri = request.getUrl();
                     String host = uri == null || uri.getHost() == null ? "" : uri.getHost();
-                    ActivityLog.error(WebActivity.this, "googlePayWebHttp",
+                    ActivityLog.step("httpError", host,
                             "status=" + errorResponse.getStatusCode()
                                     + " " + errorResponse.getReasonPhrase()
                                     + " host=" + host);
@@ -518,7 +518,7 @@ public class WebActivity extends AppCompatActivity {
 
             @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-                ActivityLog.error(WebActivity.this, "googlePayWebSsl", ActivityLog.sslDetail(error));
+                ActivityLog.step("sslError", null, ActivityLog.sslDetail(error));
                 super.onReceivedSslError(view, handler, error);
             }
         });
