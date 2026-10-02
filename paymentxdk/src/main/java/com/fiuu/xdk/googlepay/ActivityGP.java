@@ -135,6 +135,8 @@ public class ActivityGP extends AppCompatActivity {
         getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE,
                 android.view.WindowManager.LayoutParams.FLAG_SECURE);
 
+        paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(XDKPaymentDetails);
+
         boolean isRooted = PaymentActivity.isDeviceRooted(ActivityGP.this);
         if (isRooted) {
             new AlertDialog.Builder(this)
@@ -143,6 +145,7 @@ public class ActivityGP extends AppCompatActivity {
                     .setCancelable(false)
                     .setPositiveButton("OK", (dialog, which) -> {
                         dialog.dismiss();
+                        beginGooglePayTrace();
                         ActivityLog.step("error", "This device appears to be rooted.", null);
                         ActivityLog.finish(ActivityGP.this, "error", "failed");
                         finish();
@@ -190,6 +193,7 @@ public class ActivityGP extends AppCompatActivity {
                         .setMessage("Merchant ID is required.")
                         .setCancelable(false)
                         .setPositiveButton("OK", (dialog, which) -> {
+                            beginGooglePayTrace();
                             ActivityLog.step("error", "Merchant ID is required..", null);
                             ActivityLog.finish(ActivityGP.this, "error", "failed");
                             dialog.dismiss();
@@ -662,6 +666,31 @@ public class ActivityGP extends AppCompatActivity {
             setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
             finish(); // finish ActivityGP
         }
+    }
+
+    /**
+     * Opens a Google Pay trace for an early failure. A checkout trace with the same order id is reused.
+     * The normal-path {@link ActivityLog#begin} still records the start step.
+     */
+    private void beginGooglePayTrace() {
+        String orderId = "";
+        String merchantId = "";
+        String country = "";
+        if (paymentDetails != null) {
+            Object order = paymentDetails.get(PaymentActivity.mp_order_ID);
+            if (order != null) {
+                orderId = order.toString();
+            }
+            Object merchant = paymentDetails.get(PaymentActivity.mp_merchant_ID);
+            if (merchant != null) {
+                merchantId = merchant.toString();
+            }
+            Object countryValue = paymentDetails.get("mp_country");
+            if (countryValue != null) {
+                country = countryValue.toString();
+            }
+        }
+        ActivityLog.begin(this, orderId, merchantId, country, "GooglePay");
     }
 
     private String txnRequest() {
