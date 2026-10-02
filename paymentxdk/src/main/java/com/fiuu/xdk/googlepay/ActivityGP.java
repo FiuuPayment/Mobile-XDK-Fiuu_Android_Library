@@ -143,6 +143,8 @@ public class ActivityGP extends AppCompatActivity {
                     .setCancelable(false)
                     .setPositiveButton("OK", (dialog, which) -> {
                         dialog.dismiss();
+                        ActivityLog.step("error", "This device appears to be rooted.", null);
+                        ActivityLog.finish(ActivityGP.this, "error", "failed");
                         finish();
                     })
                     .show();
@@ -150,7 +152,6 @@ public class ActivityGP extends AppCompatActivity {
             return; // stop further execution
         }
 
-        paymentDetails = (HashMap<String, Object>) getIntent().getSerializableExtra(XDKPaymentDetails);
 
         if (paymentDetails == null) {
             Intent resultCancel = new Intent();
@@ -189,6 +190,8 @@ public class ActivityGP extends AppCompatActivity {
                         .setMessage("Merchant ID is required.")
                         .setCancelable(false)
                         .setPositiveButton("OK", (dialog, which) -> {
+                            ActivityLog.step("error", "Merchant ID is required..", null);
+                            ActivityLog.finish(ActivityGP.this, "error", "failed");
                             dialog.dismiss();
                             finish();
                         })
@@ -632,16 +635,30 @@ public class ActivityGP extends AppCompatActivity {
             } else {
                 response = null;
             }
+
+            boolean hasCancelResponse = response != null && !response.isEmpty();
             if (response == null || response.isEmpty()) {
-                // Treat 997 like 998: if data is null or "response" is missing, build a cancel JSON.
                 response = buildCancelJson();
+            }
+
+            boolean failedCancel = false;
+            if (hasCancelResponse) {
+                try {
+                    JSONObject cancelResposnse = new JSONObject(response);
+                    String statCode = cancelResposnse.optString("StatCode", "");
+                    String errorCode = cancelResposnse.optString("ErrorCode", "");
+                    failedCancel = "11".equalsIgnoreCase(statCode) &&
+                            !"GOOGLEPAY_C1".equalsIgnoreCase(errorCode);
+                } catch (JSONException e) {
+                    ActivityLog.step("cancel", "Google Pay cancelled",
+                            ActivityLog.pick(response, "JSONException", "ErrorCode", "ErrorDesc"+e.getMessage(), "error"));
+                }
             }
             Intent resultCancel = new Intent();
             resultCancel.putExtra(PaymentActivity.XDKTransactionResult, response);
-            Log.e("logGooglePay", "RESULT_CANCELED ActivityGP 2");
             ActivityLog.step("cancel", "Google Pay cancelled",
                     ActivityLog.pick(response, "StatCode", "ErrorCode", "ErrorDesc", "error"));
-            ActivityLog.finish(this, "interrupted", "cancelled");
+            ActivityLog.finish(this, failedCancel ? "error":"interrupted", failedCancel?"failed":"cancelled");
             setResult(RESULT_CANCELED, resultCancel); // pass back to MainActivity
             finish(); // finish ActivityGP
         }

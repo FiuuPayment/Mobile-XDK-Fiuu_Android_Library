@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -53,6 +54,7 @@ public final class ActivityLog {
     private static final String CHECKOUT = "checkout";
 
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
+    private static final ExecutorService CRASH_EXECUTOR = Executors.newSingleThreadExecutor();
     private static final OkHttpClient CLIENT = new OkHttpClient();
 
     private static volatile String telemetryUrl = DEFAULT_TELEMETRY_URL;
@@ -350,7 +352,11 @@ public final class ActivityLog {
         Session session = new Session(trace.referenceNumber, trace.merchantId, trace.country);
         Context app = trace.app;
         if (sync) {
-            post(app, safeType, channel, details, session);
+            try {
+                CRASH_EXECUTOR.submit(() -> post(app, safeType, channel, details, session)).get(3, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                Log.w(TAG, "activity log crash send failed process=" + channel + ": " + e.getMessage());
+            }
             return;
         }
         EXECUTOR.execute(() -> post(app, safeType, channel, details, session));
