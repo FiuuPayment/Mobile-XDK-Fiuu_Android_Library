@@ -52,6 +52,7 @@ android {
     }
 }
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation libs.legacy.support.v4
     implementation libs.appcompat
@@ -73,7 +74,7 @@ group = findProperty('group') ?: 'com.github.FiuuPayment'
 def resolvedVersion = findProperty('version')
 version = (resolvedVersion && resolvedVersion.toString() != 'unspecified')
         ? resolvedVersion
-        : '3.34.45'
+        : '3.34.46'
 
 afterEvaluate {
     publishing {
