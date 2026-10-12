@@ -57,6 +57,7 @@ import com.fiuu.xdk.network.GatewayEndpoints;
 import com.fiuu.xdk.log.ActivityLog;
 import com.fiuu.xdk.network.PaymentEnvironment;
 import com.fiuu.xdk.utils.DeviceInfoUtil;
+import com.fiuu.xdk.utils.HtmlForm;
 import com.fiuu.xdk.utils.SecurityUtils;
 import com.google.gson.Gson;
 
@@ -68,12 +69,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class PaymentActivity extends AppCompatActivity {
 
@@ -157,7 +155,7 @@ public class PaymentActivity extends AppCompatActivity {
                     + "return nativeSubmit.apply(this,arguments);};})();";
     private final static String module_id = "module_id";
     private final static String wrapper_version = "wrapper_version";
-    private final static String wrapperVersion = "45a";
+    private final static String wrapperVersion = "46a";
     private static final String TNG_EWALLET_PACKAGE = "my.com.tngdigital.ewallet";
 
     private String filename;
@@ -950,8 +948,8 @@ public class PaymentActivity extends AppCompatActivity {
                         if (mpPaymentUI != null) {
                             mpPaymentUI.setVisibility(View.VISIBLE);
                             ActivityLog.step("channelScreen", null, "Channel screen opened");
-                            String formAction = extractFormAction(dataString);
-                            byte[] postData = buildPostData(dataString);
+                            String formAction = HtmlForm.extractFormAction(dataString);
+                            byte[] postData = HtmlForm.buildPostData(dataString);
                             if (!formAction.isEmpty() && postData != null && postData.length > 0) {
                                 mpPaymentUI.post(() -> mpPaymentUI.postUrl(formAction, postData));
                             } else {
@@ -1639,37 +1637,6 @@ public class PaymentActivity extends AppCompatActivity {
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
-    }
-
-    private String extractFormAction(String html) {
-        Matcher m = Pattern.compile("action=[\"']([^\"']*)[\"']").matcher(html);
-        return m.find() ? m.group(1) : "";
-    }
-
-    private byte[] buildPostData(String html) {
-        try {
-            StringBuilder sb = new StringBuilder();
-            Matcher inputMatcher = Pattern.compile("<input([^>]*)>", Pattern.CASE_INSENSITIVE).matcher(html);
-            Pattern attrPattern = Pattern.compile("([a-zA-Z_][\\w-]*)=[\"']([^\"']*)[\"']");
-            while (inputMatcher.find()) {
-                String attrs = inputMatcher.group(1);
-                Matcher attrMatcher = attrPattern.matcher(attrs);
-                String name = null, value = null;
-                while (attrMatcher.find()) {
-                    if ("name".equalsIgnoreCase(attrMatcher.group(1))) name = attrMatcher.group(2);
-                    else if ("value".equalsIgnoreCase(attrMatcher.group(1))) value = attrMatcher.group(2);
-                }
-                if (name != null && value != null) {
-                    if (sb.length() > 0) sb.append("&");
-                    sb.append(URLEncoder.encode(name, "UTF-8"))
-                      .append("=")
-                      .append(URLEncoder.encode(value, "UTF-8"));
-                }
-            }
-            return sb.toString().getBytes("UTF-8");
-        } catch (Exception e) {
-            return null;
-        }
     }
 
 }

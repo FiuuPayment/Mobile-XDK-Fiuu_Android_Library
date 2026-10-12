@@ -34,6 +34,7 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.fiuu.xdk.R;
 import com.fiuu.xdk.log.ActivityLog;
+import com.fiuu.xdk.utils.HtmlForm;
 import com.fiuu.xdk.googlepay.Helper.GooglePayHelper;
 import com.google.android.gms.wallet.WalletConstants;
 
@@ -562,9 +563,9 @@ public class WebActivity extends AppCompatActivity {
                     JSONObject txnData = response.getJSONObject("TxnData");
 
                     StringBuilder html = new StringBuilder();
-                    html.append(String.format("<form id='prForm' action='%s' method='%s'>\n",
-                            txnData.getString("RequestURL"),
-                            txnData.getString("RequestMethod"))
+                    html.append(String.format("<form id=\"prForm\" action=\"%s\" method=\"%s\">\n",
+                            HtmlForm.escapeAttribute(txnData.getString("RequestURL")),
+                            HtmlForm.escapeAttribute(txnData.getString("RequestMethod")))
                     );
                     if (txnData.has("AppDeepLinkURL")) {
 //                        AppData.getInstance().setRedirectAppUrl(txnData.getString("AppDeepLinkURL"));
@@ -587,7 +588,10 @@ public class WebActivity extends AppCompatActivity {
                                     if (requestData.has("checkoutUrl")) {
 //                                        AppData.getInstance().setRedirectAppUrl(requestData.getString("checkoutUrl"));
                                     }
-                                    html.append(String.format("<input type='hidden' name='%s' value='%s'>\n", key, requestData.getString(key)));
+                                    html.append(String.format(
+                                            "<input type=\"hidden\" name=\"%s\" value=\"%s\">\n",
+                                            HtmlForm.escapeAttribute(key),
+                                            HtmlForm.escapeAttribute(requestData.getString(key))));
                                 }
                             }
                         }

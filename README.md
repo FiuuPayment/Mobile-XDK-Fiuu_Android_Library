@@ -6,7 +6,11 @@ This is a fully functional Fiuu Android payment library designed for seamless in
 It can be integrated using the `com.fiuu.xdk` package via Gradle, sourced from [JitPack](https://jitpack.io/#FiuuPayment/Mobile-XDK-Fiuu_Android_Library).
 For reference, this repository includes a sample application (`app` / `com.fiuu.xdkandroid`) that demonstrates integration with the Fiuu Android payment library (`paymentxdk` module).
 
-**Current library version:** `3.34.45`
+**Current library version:** `3.34.46`
+
+## Bug fixes (v3.34.46)
+
+- `mp_bill_name` is posted in full when the name contains an apostrophe. `NOR A'BIDAH` is no longer cut to `NOR A` on checkout or the Google Pay redirect.
 
 ## Security and payment updates (v3.34.45)
 
@@ -92,7 +96,7 @@ Add the dependency in your app module `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:3.34.45'
+    implementation 'com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:3.34.46'
 }
 ```
 
