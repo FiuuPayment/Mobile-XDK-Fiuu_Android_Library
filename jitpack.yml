@@ -9,4 +9,4 @@ install:
     export JAVA_HOME="${SDKMAN_CANDIDATES_DIR:-$HOME/.sdkman/candidates}/java/current"
     export PATH="$JAVA_HOME/bin:$PATH"
     java -version
-    ./gradlew :paymentxdk:publishReleasePublicationToMavenLocal -x test -x lint
+    ./gradlew :composeApp:publishAndroidReleasePublicationToMavenLocal -x test -x lint
