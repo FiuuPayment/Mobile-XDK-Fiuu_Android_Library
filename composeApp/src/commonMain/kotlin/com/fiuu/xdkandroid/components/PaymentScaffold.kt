@@ -1,10 +1,13 @@
 package com.fiuu.xdkandroid.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +28,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
@@ -65,6 +70,7 @@ fun PaymentScaffold(
     bodyOverlay: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val showLoadingDisabledSnackbar = {
@@ -149,11 +155,22 @@ fun PaymentScaffold(
             }
         }
     ) { padding ->
-        Box(Modifier.padding(padding)) {
+        Box(
+            Modifier
+                .padding(padding)
+                .consumeWindowInsets(padding)
+                // Tapping empty space closes the keyboard. Text fields, buttons and scroll drags
+                // consume their own touches first, so they keep working as before.
+                .pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) }
+        ) {
             // The timer lives in the body rather than topBar so bodyOverlay can cover it too — and
             // so it stays visible when showAppBar is false (mp_closebutton_display hides the close
             // button, not the time left).
-            Column(Modifier.fillMaxSize()) {
+            // imePadding: hosts run edge-to-edge, so the window doesn't resize for the keyboard and
+            // it would cover the bottom of the form. Shrinking the body lets each screen's
+            // verticalScroll bring the focused field above the keyboard. consumeWindowInsets stops
+            // the nav-bar inset Scaffold already padded from being added again on top of the IME.
+            Column(Modifier.fillMaxSize().imePadding()) {
                 if (secondsRemaining != null) SessionTimerBar(secondsRemaining, timerBackground)
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     content()

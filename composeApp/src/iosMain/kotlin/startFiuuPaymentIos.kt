@@ -3,6 +3,7 @@ package com.fiuu.xdkandroid
 import FiuuPaymentSDK
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.uikit.OnFocusBehavior
 import androidx.compose.ui.window.ComposeUIViewController
 import com.fiuu.xdkandroid.data.remote.dto.PaymentResponseDto
 import com.fiuu.xdkandroid.domain.entity.reportParamWarnings
@@ -62,7 +63,14 @@ fun startFiuuPaymentIos(
     // Use a var so the lambdas below can reference the VC after it's created
     var vcRef: UIViewController? = null
 
-    val vc = ComposeUIViewController(configure = { enforceStrictPlistSanityCheck = false }) {
+    // DoNothing: PaymentScaffold already shrinks its body by the keyboard (imePadding) so each form
+    // scrolls the focused field above it. The default, FocusableAboveKeyboard, also slides the whole
+    // view up — the iOS twin of Android's adjustPan — which pushed the app bar off-screen and left a
+    // gap over the keyboard (see ProvideFiuuPaymentSDK's soft-input mode).
+    val vc = ComposeUIViewController(configure = {
+        enforceStrictPlistSanityCheck = false
+        onFocusBehavior = OnFocusBehavior.DoNothing
+    }) {
         CompositionLocalProvider(
             localWebViewBridge provides bridge,
             localSecureTokenStore provides IosSecureTokenStore(),

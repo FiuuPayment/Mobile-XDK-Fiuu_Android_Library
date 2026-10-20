@@ -51,6 +51,10 @@ data class PaymentUiState(
     val cardTokensRemovable: Boolean = false,
     val clickToPayRequest: ClickToPayRequest? = null,
     val isSamsungPayReady: Boolean = false,
+    // GooglePayHandler.isReadyToPay() / ApplePayHandler.isAvailable(), checked once at launch —
+    // gate the wallet buttons like isSamsungPayReady. Always false on the other platform.
+    val isGooglePayReady: Boolean = false,
+    val isApplePayReady: Boolean = false,
     val inquiryResult: PaymentInquireResponseDto? = null,
     // Driven by PaymentViewModel.fetchInstalmentTenure(), triggered from CardInstalmentEntryScreen
     // whenever its card number/expiry become valid. Only the ineligible-card error shape (Status/

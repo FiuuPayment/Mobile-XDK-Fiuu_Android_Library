@@ -1,6 +1,10 @@
 package com.fiuu.xdkandroid.samsungPay
 
 object SamsungPayConfig {
+    // Samsung Pay isn't released yet: while false it reports unavailable (tile hidden, direct and
+    // express payments return an error), whether or not the host app ships Samsung's jar.
+    const val ENABLED = false
+
     // Register your service at https://developer.samsung.com/samsung-pay
     // Set your own Samsung Pay service ID (sandbox or production) before enabling Samsung Pay.
     const val SERVICE_ID = ""

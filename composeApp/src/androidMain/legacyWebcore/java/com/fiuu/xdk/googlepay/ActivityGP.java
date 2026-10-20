@@ -16,8 +16,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.fiuu.xdk.PaymentActivity;
-import com.fiuu.xdklibrary.R;
-import com.fiuu.xdklibrary.databinding.ActivityGooglepayBinding;
+import com.fiuu.xdk.R;
+import com.fiuu.xdk.databinding.ActivityGooglepayBinding;
 import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.tasks.Task;

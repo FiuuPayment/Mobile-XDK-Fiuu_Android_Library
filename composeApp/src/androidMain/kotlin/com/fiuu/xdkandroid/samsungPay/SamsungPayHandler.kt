@@ -58,6 +58,10 @@ actual class SamsungPayHandler actual constructor(activity: Any) {
     }
 
     actual fun isReadyToPay(callback: (Boolean) -> Unit) {
+        if (!SamsungPayConfig.ENABLED) {
+            callback(false)
+            return
+        }
         if (DEBUG_MOCK_MODE) {
             FiuuLogger.log("SamsungPay isReadyToPay DEBUG_MOCK_MODE=true → ready=true")
             callback(true)
@@ -111,6 +115,10 @@ actual class SamsungPayHandler actual constructor(activity: Any) {
         currencyCode: String,
         onResult: (SamsungPayPaymentResult) -> Unit,
     ) {
+        if (!SamsungPayConfig.ENABLED) {
+            onResult(SamsungPayPaymentResult.Error("Samsung Pay is not available yet"))
+            return
+        }
         if (DEBUG_MOCK_MODE) {
             // Returns a fake token so the full ViewModel → API path can be tested without a real Samsung device
             val fakeToken = """{"token":"SAMSUNG_PAY_MOCK_TOKEN","method":"3DS","type":"S","3ds":{"type":"S","v":"2.0"}}"""

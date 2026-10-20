@@ -62,7 +62,11 @@ local.properties
 *.ap_
 *.dex
 *.aar
-# Samsung Pay SDK copies synced into the demo apps by setup-demo-apps (source: composeApp/libs)
+# Samsung Pay SDK: Samsung's jar, not ours to redistribute (BLT-03). The library compiles against
+# :samsungpay-stubs. A developer's own copy (repo root or composeApp/libs) is only the source
+# setup-demo-apps copies into the demo apps.
+/samsungpay_*.jar
+composeApp/libs/
 demo-app/**/libs/samsungpay_*.jar
 sampleAndroidApp/release/
 ui_dump.xml

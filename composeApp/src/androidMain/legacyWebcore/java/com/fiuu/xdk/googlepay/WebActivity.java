@@ -34,7 +34,7 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.fiuu.xdk.utils.SystemBarInsets;
 
-import com.fiuu.xdklibrary.R;
+import com.fiuu.xdk.R;
 import com.fiuu.xdk.googlepay.Helper.GooglePayHelper;
 import com.google.android.gms.wallet.WalletConstants;
 

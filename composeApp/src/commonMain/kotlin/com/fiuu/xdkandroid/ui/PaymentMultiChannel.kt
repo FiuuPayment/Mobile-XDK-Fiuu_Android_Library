@@ -88,9 +88,9 @@ fun PaymentMultiChannel(
         val cashChannels = channels.filter { it.channelType == "OTC" }
         // The backend returns whatever PLUGIN channels the merchant has configured regardless of
         // the device it's rendering on (e.g. Apple Pay for an Android-only integration) — filter
-        // each wallet down to the platform that can actually present it. Samsung Pay additionally
-        // requires state.isSamsungPayReady, the real SamsungPayHandler.isReadyToPay() SDK check
-        // (Android-only device/app readiness), since "Android" alone isn't "has Samsung Pay".
+        // each wallet down to the platform that can actually present it, and to a device that can
+        // pay with it: state.isApplePayReady / isGooglePayReady / isSamsungPayReady come from each
+        // handler's own readiness check, since "iOS"/"Android" alone isn't "has that wallet".
         // Mastercard Click to Pay (maskname "Mastercard C2P", titled after the merchant, e.g.
         // "RAZER MERCHANT SERVICES") is hidden — C2P is only reachable via the card flow.
         val pluginPaymentChannels = channels.filter { it.channelType == "PLUGIN" }.filter { channel ->
@@ -99,11 +99,11 @@ fun PaymentMultiChannel(
                 maskName.contains("C2P", ignoreCase = true) ||
                     maskName.contains("Click to Pay", ignoreCase = true) -> false
                 maskName.contains("ApplePay", ignoreCase = true) ||
-                    maskName.contains("Apple Pay", ignoreCase = true) -> isIOSPlatform()
+                    maskName.contains("Apple Pay", ignoreCase = true) -> isIOSPlatform() && state.isApplePayReady
                 maskName.contains("SamsungPay", ignoreCase = true) ||
                     maskName.contains("Samsung Pay", ignoreCase = true) -> isAndroidPlatform() && state.isSamsungPayReady
                 maskName.contains("GooglePay", ignoreCase = true) ||
-                    maskName.contains("Google Pay", ignoreCase = true) -> isAndroidPlatform()
+                    maskName.contains("Google Pay", ignoreCase = true) -> isAndroidPlatform() && state.isGooglePayReady
                 else -> true
             }
         }
@@ -226,13 +226,15 @@ fun PaymentMultiChannel(
 
         when (screen) {
             PaymentScreen.Methods -> {
-                Box {
+                // The footer is a row of its own under the list, not overlaid on it — overlaid, it
+                // covered the list's last card and, with the keyboard up, the focused Order Details field.
+                Column(Modifier.fillMaxSize().background(Color(0xFFF4F6F8))) {
                     LazyColumn (
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color(0xFFF4F6F8))
-                            .padding(16.dp),
-                        contentPadding = PaddingValues(bottom = 56.dp)
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, top = 16.dp, end = 16.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
                     ) {
                         item {
                             Column {
@@ -259,13 +261,13 @@ fun PaymentMultiChannel(
                                 // One Quick Pay card for every wallet button — Apple Pay used to get
                                 // its own card, so iOS showed an empty card plus an Apple Pay card.
                                 val quickPayItems = buildList {
-                                    if (isAndroidPlatform()) {
+                                    if (isAndroidPlatform() && state.isGooglePayReady) {
                                         add(PaymentChannel(name = "GooglePay", title = "Google Pay", status = 1))
                                     }
                                     if (state.isSamsungPayReady) {
                                         add(PaymentChannel(name = "SamsungPay", title = "Samsung Pay", status = 1))
                                     }
-                                    if (isMultiChannel && !paymentRequest.apMerchantId.isNullOrBlank() && isIOSPlatform()) {
+                                    if (isMultiChannel && !paymentRequest.apMerchantId.isNullOrBlank() && isIOSPlatform() && state.isApplePayReady) {
                                         add(
                                             pluginChannels.firstOrNull {
                                                 it.maskName?.contains("ApplePay", ignoreCase = true) == true
@@ -322,10 +324,9 @@ fun PaymentMultiChannel(
                                                     PayWithItem(
                                                         title = "Fiuu CASH",
                                                         channels = cashChannels
-                                                    ),PayWithItem(
-                                                        title = "Plugin",
-                                                        channels = pluginPaymentChannels
                                                     ),
+                                                    // No "Plugin" tile: its wallets (Google/Samsung/Apple Pay) are
+                                                    // offered by the Quick Pay card above.
                                                 ).filter { it.channels.isNotEmpty() }
                                             ) {
                                                     item -> onScreenChange(item.destination ?: PaymentScreen.Channels(item))
@@ -350,8 +351,7 @@ fun PaymentMultiChannel(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
-                            .align(Alignment.BottomCenter),
+                            .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {

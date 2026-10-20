@@ -55,7 +55,7 @@ import com.fiuu.xdk.googlepay.ActivityGP;
 import com.fiuu.xdk.models.DeviceInfo;
 import com.fiuu.xdk.utils.DeviceInfoUtil;
 import com.fiuu.xdk.utils.SystemBarInsets;
-import com.fiuu.xdklibrary.R;
+import com.fiuu.xdk.R;
 import com.fiuu.xdkandroid.googlePay.WebcoreGooglePayBridge;
 import com.fiuu.xdkandroid.telemetry.FiuuTelemetryLogger;
 import com.fiuu.xdkandroid.telemetry.platform.AndroidTelemetryContext;

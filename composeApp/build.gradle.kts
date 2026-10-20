@@ -73,7 +73,7 @@ kotlin {
             implementation("com.google.android.gms:play-services-wallet:19.4.0")
             // Compile-only: Samsung's SDK isn't ours to redistribute and would clash with a host's own copy.
             // Hosts that offer Samsung Pay add the jar to their app; SamsungPayHandler checks for it (BLT-03).
-            // We compile against API stubs (:samsungpay-stubs) so the repo builds without the jar.
+            // We compile against stand-in classes, so Samsung's jar isn't in the repo either.
             compileOnly(project(":samsungpay-stubs"))
 
             // Legacy Webcore dependencies
@@ -124,7 +124,7 @@ compose.resources {
 }
 
 android {
-    namespace = "com.fiuu.xdklibrary"
+    namespace = "com.fiuu.xdk"
     compileSdk = 36
 
     sourceSets.getByName("main") {
@@ -168,9 +168,10 @@ publishing {
 // Only the Android publication is what JitPack ships; renaming every publication
 // (kotlinMultiplatform, iOS...) to the same artifactId would make them collide. Done in
 // afterEvaluate because the Kotlin plugin assigns "composeApp-android" late and would overwrite it.
+// Must stay the repo name so 3.34.x hosts upgrade by bumping the version only.
 afterEvaluate {
     publishing.publications.named<MavenPublication>("androidRelease") {
-        artifactId = "FiuuXDKLibrary"
+        artifactId = "Mobile-XDK-Fiuu_Android_Library"
     }
 }
 

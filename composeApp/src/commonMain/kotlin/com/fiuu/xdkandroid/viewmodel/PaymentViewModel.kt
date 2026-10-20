@@ -1702,7 +1702,11 @@ class PaymentViewModel(
             it.copy(paymentError = null)
         } }
 
-    fun isApplePayAvailable(): Boolean = applePayHandler.isAvailable()
+    fun checkApplePayReady() {
+        _uiState.update { it.copy(isApplePayReady = applePayHandler.isAvailable()) } }
+
+    fun setGooglePayReady(ready: Boolean) {
+        _uiState.update { it.copy(isGooglePayReady = ready) } }
 
     // Mirrors triggerSamsungPay()/handleSamsungPayResult(): no channel object needed and no
     // onChannelSelected() call — toProcessApiPayload() resolves the ApplePay branch purely from

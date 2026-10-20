@@ -66,6 +66,10 @@ val localSamsungPayReadiness = staticCompositionLocalOf<((Boolean) -> Unit) -> U
     { callback -> callback(false) }
 }
 
+val localGooglePayReadiness = staticCompositionLocalOf<(buildMode: Int, callback: (Boolean) -> Unit) -> Unit> {
+    { _, callback -> callback(false) }
+}
+
 val localSecureTokenStore = staticCompositionLocalOf<SecureTokenStore> {
     error("SecureTokenStore not provided")
 }
@@ -86,6 +90,7 @@ fun FiuuPaymentSDK(
     val googlePayPayment = localGooglePayment.current
     val samsungPayPayment = localSamsungPayment.current
     val checkSamsungPayReady = localSamsungPayReadiness.current
+    val checkGooglePayReady = localGooglePayReadiness.current
     val secureTokenStore = localSecureTokenStore.current
     val imageSaver = localImageSaver.current
     val networkConnectivityChecker = localNetworkConnectivityChecker.current
@@ -291,6 +296,8 @@ fun FiuuPaymentSDK(
 
     LaunchedEffect(Unit) {
         checkSamsungPayReady { ready -> vm.setSamsungPayReady(ready) }
+        checkGooglePayReady(params.resolveBuildMode()) { ready -> vm.setGooglePayReady(ready) }
+        vm.checkApplePayReady()
     }
 
     val samsungPayTriggered by vm.samsungPayTrigger.collectAsState()

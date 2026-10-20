@@ -19,6 +19,7 @@ import com.fiuu.xdkandroid.domain.entity.resolveCoreEnv
 import com.fiuu.xdkandroid.domain.resumePaymentStatus
 import com.fiuu.xdkandroid.googlePay.GooglePayHandler
 import com.fiuu.xdkandroid.samsungPay.SamsungPayHandler
+import localGooglePayReadiness
 import localGooglePayment
 import localImageSaver
 import localNetworkConnectivityChecker
@@ -135,6 +136,30 @@ fun ProvideFiuuPaymentSDK(
             onDispose { googlePayHandler.unregisterLauncher() }
         }
 
+        // PaymentScaffold shrinks its body by the keyboard (imePadding) so forms scroll above it.
+        // A host Activity without android:windowSoftInputMode="adjustResize" gets pan by default,
+        // and the system then also shifts the whole window up: app bar off-screen and a blank gap
+        // over the keyboard. Force resize while the SDK is shown, then give the host its mode back.
+        // Set once here rather than per screen, so swapping screens can't restore it mid-session.
+        DisposableEffect(activity) {
+            val window = activity.window
+            val previousAdjust = window.attributes.softInputMode and
+                android.view.WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST
+            @Suppress("DEPRECATION") // still honoured; the window draws edge-to-edge regardless
+            window.setSoftInputMode(
+                (window.attributes.softInputMode and
+                    android.view.WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST.inv()) or
+                    android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            )
+            onDispose {
+                window.setSoftInputMode(
+                    (window.attributes.softInputMode and
+                        android.view.WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST.inv()) or
+                        previousAdjust
+                )
+            }
+        }
+
         CompositionLocalProvider(
             localWebViewBridge provides webViewBridge,
             localGooglePayment provides { amountMinorUnits, currencyCode, merchantId, buildMode, onResult ->
@@ -145,6 +170,9 @@ fun ProvideFiuuPaymentSDK(
             },
             localSamsungPayReadiness provides { callback ->
                 samsungPayHandler.isReadyToPay(callback)
+            },
+            localGooglePayReadiness provides { buildMode, callback ->
+                googlePayHandler.isReadyToPay(buildMode, callback)
             },
             localSecureTokenStore provides secureTokenStore,
             localImageSaver provides imageSaver,

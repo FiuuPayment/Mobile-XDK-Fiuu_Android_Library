@@ -32,17 +32,17 @@ dependencies {
 }
 ```
 
-> Replace `<TAG_OR_VERSION>` with your Git tag, e.g. `1.0.4` or `v1.0.4` depending on how you tagged in GitHub/JitPack.
+> Replace `<TAG_OR_VERSION>` with the release tag, e.g. `4.0.0` (the first release of this SDK). Tags match `SDK_VERSION_NAME` exactly, with no `v` prefix.
 
 ### Bumping the SDK version
 
 `BuildInfo.kt` (`composeApp/src/commonMain/kotlin/com/fiuu/xdkandroid/utils/BuildInfo.kt`) is the
 single source of truth for the library version, split like an Android app's `versionName`/`versionCode`:
 
-- `SDK_VERSION_NAME` (e.g. `"1.0.4"`) — the semantic version. Shown in the SDK's own payment UI
+- `SDK_VERSION_NAME` (e.g. `"4.0.0"`, no zero-padding) — the semantic version. Shown in the SDK's own payment UI
   footer ("Version ...") and parsed by `composeApp/build.gradle.kts` at configure time to set the
   Maven publish version — bump this before tagging a release.
-- `SDK_VERSION_CODE` (e.g. `2026091501L`, `yyyyMMddNN`) — an internal build identifier, bumped on
+- `SDK_VERSION_CODE` (e.g. `2026101901L`, `yyyyMMddNN`) — an internal build identifier, bumped on
   every build so two builds sharing the same `SDK_VERSION_NAME` can still be told apart (e.g. by
   support/QA on Sandbox/UAT). Shown alongside the version in the UI footer; never read by Gradle
   and never part of the Maven publish version.
@@ -140,6 +140,10 @@ since Google Pay production access is tied to your app's own identity, not this 
 No other setup is required — the manifest meta-data and ProGuard/R8 rules ship with the library.
 
 ## Samsung Pay setup
+
+> **Not available yet.** Samsung Pay is disabled in this release: its tile is hidden and Samsung
+> Pay payments return an error, even if your app includes the Samsung Pay SDK. It will be enabled
+> in an upcoming release; the steps below describe the setup it will need.
 
 The Samsung Pay SDK is **not** bundled in the AAR — Samsung distributes it to registered partners
 through the [Samsung Developer portal](https://developer.samsung.com/pay), and a bundled copy

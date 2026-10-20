@@ -3,7 +3,7 @@ package com.fiuu.xdkandroid.platform
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import com.fiuu.xdklibrary.R
+import com.fiuu.xdk.R
 
 actual val roboto: FontFamily = FontFamily(
     Font(R.font.roboto_regular, FontWeight.Normal),
