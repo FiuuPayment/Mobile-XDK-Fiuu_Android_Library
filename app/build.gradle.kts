@@ -14,8 +14,10 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
+// Merchant credentials live in .env at the project root (copy .env.example).
+// They are compiled into BuildConfig, so rebuild after editing .env.
 val envProperties = Properties()
-val envFile = rootProject.file("../.env").takeIf { it.exists() } ?: rootProject.file(".env")
+val envFile = rootProject.file(".env")
 if (envFile.exists()) {
     envFile.bufferedReader().use { reader ->
         reader.lineSequence()
