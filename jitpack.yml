@@ -2,6 +2,8 @@ jdk:
   - openjdk17
 install:
   - |
+    # The subshell keeps set -eu from leaking into JitPack's own build script.
+    (
     set -eu
     # Release zips live on the GitHub repo that published them.
     # 3.34.x assets are on FiuuPayment; 4.0.0 is on fiuu-mobile.
@@ -110,3 +112,4 @@ install:
       -DartifactId=Mobile-XDK-Fiuu_Android_Library \
       -Dversion="$VERSION" \
       -Dpackaging=aar
+    )
