@@ -122,7 +122,7 @@ kotlin {
 }
 
 dependencies {
-    implementation("com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:4.0.0")
+    implementation("com.github.FiuuPayment:Mobile-XDK-Fiuu_Android_Library:3.34.47")
 
     // AndroidX & Jetpack Compose
     implementation("androidx.core:core-ktx:1.15.0")
