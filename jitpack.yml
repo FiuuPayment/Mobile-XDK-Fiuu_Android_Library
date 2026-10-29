@@ -1,6 +1,6 @@
 jdk:
   - openjdk17
 install:
-  - curl -fsSL -o fiuu-xdk.zip "https://github.com/fiuu-mobile/Mobile-XDK-Fiuu_Android_Library/releases/download/${VERSION}/Mobile-XDK-Fiuu_Android_Library-${VERSION}.zip"
+  - curl -fsSL -o fiuu-xdk.zip "https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library/releases/download/${VERSION}/Mobile-XDK-Fiuu_Android_Library-${VERSION}.zip"
   - unzip -o fiuu-xdk.zip -d fiuu-xdk
   - mvn install:install-file -Dfile=fiuu-xdk/Mobile-XDK-Fiuu_Android_Library-${VERSION}.aar -DpomFile=fiuu-xdk/Mobile-XDK-Fiuu_Android_Library-${VERSION}.pom -DgroupId=com.github.fiuu-mobile -DartifactId=Mobile-XDK-Fiuu_Android_Library -Dversion=${VERSION} -Dpackaging=aar
