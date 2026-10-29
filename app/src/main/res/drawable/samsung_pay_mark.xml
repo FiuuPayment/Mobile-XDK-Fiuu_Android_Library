@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+
+    <!-- Samsung blue rounded-square background -->
+    <path
+        android:fillColor="#1428A0"
+        android:pathData="M4,0h32c2.21,0 4,1.79 4,4v32c0,2.21 -1.79,4 -4,4h-32c-2.21,0 -4,-1.79 -4,-4v-32c0,-2.21 1.79,-4 4,-4z"/>
+
+    <!-- Samsung Pay "S" mark in white -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:pathData="M26.5,13.5C25,11.8 22.8,11 20,11C16.2,11 13.5,13.2 13.5,16.5C13.5,19.8 15.8,21.2 20,22.5C24.2,23.8 26.5,25.2 26.5,28.5C26.5,31.8 23.8,34 20,34C17.2,34 15,33.2 13.5,31.5"/>
+</vector>

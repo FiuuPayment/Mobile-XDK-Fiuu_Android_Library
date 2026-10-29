@@ -1,131 +1,26 @@
-# ==============================================================================
-# Global / System Ignores
-# ==============================================================================
+*.iml
+.gradle
+/local.properties
+/key.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
 .DS_Store
-.apple_desktop
-.apple_double
-Thumbs.db
-*.swp
-*~
-*.bak
-
-# ==============================================================================
-# Secrets & Local Configurations
-# ==============================================================================
-local.properties
+/build
+/captures
+.externalNativeBuild
+.cxx
+*.apk
+*.aar
+app/libs/*.aar
 key.properties
-secrets.properties
-.env
-*.env
-!.env.example
-*.env.local
-env.js
-!env.example.js
-env.json
-!env.example.json
 *.jks
 *.keystore
-*.p12
-*.mobileprovision
-demo-app/backup/
-demo-app/binaries/
-review/
-documentations/test-reports
-# ==============================================================================
-# Kotlin, JVM & Gradle
-# ==============================================================================
-.gradle/
-build/
-**/build/
-*.class
-.kotlin/
-kotlin-js-store/
-.konan/
-
-# ==============================================================================
-# IDE & Editors
-# ==============================================================================
+.env
+*.env
 .idea/
-*.iml
-*.iws
-*.ipr
-.vscode/
-.navigation/
-captures/
-local.properties
-
-# ==============================================================================
-# Android
-# ==============================================================================
-*.apk
-*.aab
-*.ap_
-*.dex
-*.aar
-# Samsung Pay SDK: Samsung's jar, not ours to redistribute (BLT-03). The library compiles against
-# :samsungpay-stubs. A developer's own copy (repo root or composeApp/libs) is only the source
-# setup-demo-apps copies into the demo apps.
-/samsungpay_*.jar
-composeApp/libs/
-demo-app/**/libs/samsungpay_*.jar
-sampleAndroidApp/release/
-ui_dump.xml
-
-# ==============================================================================
-# iOS & Xcode
-# ==============================================================================
-*.xcframework
-*.xcframework.zip
-*.xcworkspace
-!*.xcodeproj/*.xcworkspace
-*.xcresult
-*.xcuserstate
-xcuserdata/
-**/xcuserdata/
-DerivedData/
-*.hmap
-*.ipa
-*.dSYM.zip
-*.dSYM
-
-# ==============================================================================
-# Flutter / Dart
-# ==============================================================================
-.dart_tool/
-**/.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-*.dill
-pubspec.lock
-
-# Flutter iOS & Android intermediate folders
-**/ios/Pods/
-**/ios/.symlinks/
-**/ios/Podfile.lock
-**/android/.gradle/
-
-# ==============================================================================
-# Cordova / Node / Web
-# ==============================================================================
-**/node_modules/
-**/platforms/
-**/plugins/
-
-# Keep plugin source inside cordova-plugin-fiuu-xdk
-!demo-app/cordova/cordova-plugin-fiuu-xdk/**
-
-# ==============================================================================
-# Python & Test Runner
-# ==============================================================================
-.venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# ==============================================================================
-# Tool Specifics
-# ==============================================================================
-CLAUDE.md
-
+.kotlin/
+app/libs/*.jar

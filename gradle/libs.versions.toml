@@ -4,7 +4,8 @@ androidx-activity = "1.9.3"
 androidx-lifecycle = "2.8.4"
 browserVersion = "1.8.0"
 composeMultiplatform = "1.8.0"
-kotlin = "2.1.21"
+kamelImage = "1.0.0"
+kotlin = "2.3.20"
 kotlinx-coroutines = "1.10.1"
 kotlinx-datetime = "0.7.1"
 krypto = "4.0.10"
@@ -16,9 +17,16 @@ kotlinx-serialization = "1.8.0"
 [libraries]
 androidx-browser-v150 = { module = "androidx.browser:browser", version.ref = "browserVersion" }
 androidx-webkit-v1120 = { module = "androidx.webkit:webkit", version.ref = "webkitVersion" }
+kamel-decoder-animated-image = { module = "media.kamel:kamel-decoder-animated-image", version.ref = "kamelImage" }
+kamel-decoder-image-bitmap = { module = "media.kamel:kamel-decoder-image-bitmap", version.ref = "kamelImage" }
+kamel-decoder-image-bitmap-resizing = { module = "media.kamel:kamel-decoder-image-bitmap-resizing", version.ref = "kamelImage" }
+kamel-decoder-image-vector = { module = "media.kamel:kamel-decoder-image-vector", version.ref = "kamelImage" }
+kamel-decoder-svg-std = { module = "media.kamel:kamel-decoder-svg-std", version.ref = "kamelImage" }
+kamel-fetcher-resources-android = { module = "media.kamel:kamel-fetcher-resources-android", version.ref = "kamelImage" }
+kamel-image = { module = "media.kamel:kamel-image", version.ref = "kamelImage" }
+kamel-image-default = { module = "media.kamel:kamel-image-default", version.ref = "kamelImage" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
