@@ -1,6 +1,112 @@
 jdk:
   - openjdk17
 install:
-  - curl -fsSL -o fiuu-xdk.zip "https://github.com/FiuuPayment/Mobile-XDK-Fiuu_Android_Library/releases/download/${VERSION}/Mobile-XDK-Fiuu_Android_Library-${VERSION}.zip"
-  - unzip -o fiuu-xdk.zip -d fiuu-xdk
-  - mvn install:install-file -Dfile=fiuu-xdk/Mobile-XDK-Fiuu_Android_Library-${VERSION}.aar -DpomFile=fiuu-xdk/Mobile-XDK-Fiuu_Android_Library-${VERSION}.pom -DgroupId=com.github.fiuu-mobile -DartifactId=Mobile-XDK-Fiuu_Android_Library -Dversion=${VERSION} -Dpackaging=aar
+  - |
+    set -eu
+    # Release zips live on the GitHub repo that published them.
+    # 3.34.x assets are on FiuuPayment; 4.0.0 is on fiuu-mobile.
+    # JitPack serves com.github.<owner>, so the installed group must match the repo being built.
+    git config --global --add safe.directory '*' || true
+    ORIGIN=$(git config --get remote.origin.url || true)
+    OWNER=$(printf '%s\n' "$ORIGIN" | sed -n 's#.*github.com[:/]\([^/]*\)/Mobile-XDK-Fiuu_Android_Library.*#\1#p')
+    OWNER=${OWNER%.git}
+    if [ -z "$OWNER" ]; then
+      OWNER=FiuuPayment
+    fi
+    GROUP_ID="com.github.${OWNER}"
+    echo "Installing ${GROUP_ID}:Mobile-XDK-Fiuu_Android_Library:${VERSION}"
+
+    fetch_release() {
+      url="https://github.com/${1}/Mobile-XDK-Fiuu_Android_Library/releases/download/${VERSION}/Mobile-XDK-Fiuu_Android_Library-${VERSION}.zip"
+      echo "Trying ${url}"
+      rm -f fiuu-xdk.zip
+      if curl -fsSL -o fiuu-xdk.zip "$url"; then
+        return 0
+      fi
+      rm -f fiuu-xdk.zip
+      return 1
+    }
+
+    downloaded=0
+    for candidate in "$OWNER" FiuuPayment fiuu-mobile; do
+      if [ "$downloaded" -eq 1 ]; then
+        break
+      fi
+      case " ${tried:-} " in
+        *" ${candidate} "*) continue ;;
+      esac
+      tried="${tried:-} ${candidate}"
+      if fetch_release "$candidate"; then
+        downloaded=1
+      fi
+    done
+    if [ "$downloaded" -ne 1 ]; then
+      echo "No GitHub release zip for ${VERSION} on ${OWNER}, FiuuPayment, or fiuu-mobile" >&2
+      exit 1
+    fi
+
+    rm -rf fiuu-xdk
+    unzip -q -o fiuu-xdk.zip -d fiuu-xdk
+
+    AAR="fiuu-xdk/Mobile-XDK-Fiuu_Android_Library-${VERSION}.aar"
+    if [ ! -f "$AAR" ]; then
+      AAR=$(find fiuu-xdk -type f -path '*/outputs/aar/*-release.aar' ! -path '*__MACOSX*' -print -quit)
+    fi
+    if [ -z "$AAR" ] || [ ! -f "$AAR" ]; then
+      echo "Release zip for ${VERSION} does not contain a release AAR" >&2
+      find fiuu-xdk -type f -name '*.aar' ! -path '*__MACOSX*' >&2 || true
+      exit 1
+    fi
+    echo "Using AAR ${AAR}"
+
+    POM="fiuu-xdk/Mobile-XDK-Fiuu_Android_Library-${VERSION}.pom"
+    PACKAGED=$(find fiuu-xdk -type f -name "Mobile-XDK-Fiuu_Android_Library-${VERSION}.pom" ! -path '*__MACOSX*' -print -quit || true)
+    if [ -n "$PACKAGED" ] && [ -f "$PACKAGED" ]; then
+      awk -v g="$GROUP_ID" -v v="$VERSION" '
+        !gdone && /<groupId>/ { sub(/<groupId>[^<]*<\/groupId>/, "<groupId>" g "</groupId>"); gdone=1 }
+        !vdone && /<version>/ { sub(/<version>[^<]*<\/version>/, "<version>" v "</version>"); vdone=1 }
+        !/published-with-gradle-metadata/ { print }
+      ' "$PACKAGED" > "${POM}.tmp"
+      mv "${POM}.tmp" "$POM"
+    else
+      GRADLE=$(find fiuu-xdk -type f -path '*/paymentxdk/build.gradle' ! -path '*__MACOSX*' -print -quit || true)
+      if [ -z "$GRADLE" ] || [ ! -f "$GRADLE" ]; then
+        echo "Release zip for ${VERSION} has no POM and no paymentxdk/build.gradle" >&2
+        exit 1
+      fi
+      LIBS=$(find fiuu-xdk -type f -name 'release-artifact-libraries.xml' ! -path '*__MACOSX*' -print -quit || true)
+      VB_VER=""
+      if [ -n "$LIBS" ]; then
+        VB_VER=$(grep -o 'androidx.databinding:viewbinding:[0-9][0-9.]*' "$LIBS" | head -n 1 | cut -d: -f3 || true)
+      fi
+      {
+        echo '<?xml version="1.0" encoding="UTF-8"?>'
+        echo '<project xmlns="http://maven.apache.org/POM/4.0.0">'
+        echo '  <modelVersion>4.0.0</modelVersion>'
+        echo "  <groupId>${GROUP_ID}</groupId>"
+        echo '  <artifactId>Mobile-XDK-Fiuu_Android_Library</artifactId>'
+        echo "  <version>${VERSION}</version>"
+        echo '  <packaging>aar</packaging>'
+        echo '  <dependencies>'
+        if [ -n "$VB_VER" ]; then
+          printf '    <dependency>\n      <groupId>androidx.databinding</groupId>\n      <artifactId>viewbinding</artifactId>\n      <version>%s</version>\n      <scope>compile</scope>\n    </dependency>\n' "$VB_VER"
+        fi
+        grep -E "implementation[[:space:]]+['\"][^'\"]+:[^'\"]+:[^'\"]+['\"]" "$GRADLE" | while IFS= read -r line; do
+          coord=$(printf '%s\n' "$line" | sed -n "s/.*['\"]\\([^'\"]*\\)['\"].*/\\1/p")
+          printf '    <dependency>\n      <groupId>%s</groupId>\n      <artifactId>%s</artifactId>\n      <version>%s</version>\n      <scope>runtime</scope>\n    </dependency>\n' \
+            "$(printf '%s\n' "$coord" | cut -d: -f1)" \
+            "$(printf '%s\n' "$coord" | cut -d: -f2)" \
+            "$(printf '%s\n' "$coord" | cut -d: -f3)"
+        done
+        echo '  </dependencies>'
+        echo '</project>'
+      } > "$POM"
+    fi
+
+    mvn -B install:install-file \
+      -Dfile="$AAR" \
+      -DpomFile="$POM" \
+      -DgroupId="$GROUP_ID" \
+      -DartifactId=Mobile-XDK-Fiuu_Android_Library \
+      -Dversion="$VERSION" \
+      -Dpackaging=aar
